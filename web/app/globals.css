@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #f3efe6;
+  --color-card: #fbf9f4;
+  --color-ink: #14120f;
+  --color-mute: #6f6a60;
+  --color-desk: #0b6b43;
+  --color-stamp: #c2361f;
+  --color-amber: #e9a825;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --font-serif: var(--font-serif-display), Georgia, serif;
+  --font-sans: var(--font-plex-sans), system-ui, sans-serif;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  /* faint ledger rules */
+  background-image: repeating-linear-gradient(0deg, transparent 0 31px, rgb(20 18 15 / 0.04) 31px 32px);
+}
+
+@layer components {
+  .card { @apply border-[1.5px] border-ink bg-card shadow-[4px_4px_0_0_var(--color-ink)]; }
+  .label { @apply font-mono text-[11px] uppercase tracking-[0.14em] text-mute; }
+  .num { @apply font-mono tabular-nums; }
+  .pill { @apply inline-block px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest; }
+  .tag { @apply inline-block border border-current px-1 font-mono text-[9px] uppercase tracking-widest; }
+  .link { @apply underline decoration-1 underline-offset-2 hover:text-desk; }
+  .btn { @apply inline-flex items-center justify-center gap-2 border-[1.5px] border-ink px-4 py-2 font-mono text-xs uppercase tracking-widest transition-transform active:translate-x-[2px] active:translate-y-[2px] disabled:cursor-not-allowed disabled:opacity-40; }
+  .btn-primary { @apply bg-ink text-paper hover:bg-desk hover:border-desk; }
+  .btn-ghost { @apply bg-transparent hover:bg-ink hover:text-paper; }
+  .btn-danger { @apply border-stamp bg-stamp text-paper; }
+  .input { @apply w-full border-[1.5px] border-ink bg-paper px-3 py-2 font-mono text-sm outline-none focus:border-desk focus:bg-card; }
+  .tbl { @apply w-full border-collapse text-sm; }
+  .tbl th { @apply font-mono text-[11px] uppercase tracking-[0.14em] text-mute border-b-[1.5px] border-ink px-2 py-2 text-left font-normal; }
+  .tbl td { @apply border-b border-ink/15 px-2 py-2 align-top; }
+  .h1 { @apply font-serif text-5xl leading-[0.95] tracking-tight md:text-6xl; }
+}

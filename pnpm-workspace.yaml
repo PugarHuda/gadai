@@ -1,0 +1,18 @@
+packages:
+  - shared
+  - agent
+  - web
+allowBuilds:
+  '@reown/appkit': false
+  bigint-buffer: false
+  bufferutil: false
+  protobufjs: false
+  utf-8-validate: false
+minimumReleaseAgeExclude:
+  - '@dynamic-labs-wallet/core@1.1.13'
+  - '@dynamic-labs-wallet/node-evm@1.1.13'
+  - '@dynamic-labs-wallet/node@1.1.13'
+  - '@dynamic-labs-wallet/primitives@1.1.13'
+  - viem@2.56.8
+
+# contracts/ is Foundry (forge), not a pnpm package.

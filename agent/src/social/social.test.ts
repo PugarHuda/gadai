@@ -1,0 +1,93 @@
+// Cheap checks for the money/security paths of flash + social (no network). Run: node --test src/social/social.test.ts
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { createHmac } from "node:crypto";
+import { ADDR, FLASH_EIP712_DOMAIN, type Memo, type Quote } from "@feedesk/shared";
+import type { Ctx } from "../ctx.ts";
+import { insertLoan, openDb } from "../db/index.ts";
+import { assertVaultOrder, hasOpenFlashOrder } from "../flash/index.ts";
+import { applyWebhook, hasDelegation, verifyWebhook } from "./delegation.ts";
+import { publishSignals, validateFollow } from "./index.ts";
+
+const mkCtx = (): Ctx => ({ db: openDb(":memory:"), log: () => {} } as unknown as Ctx);
+const VAULT = "0x1074393effFCf1A15e306cD3931F48eDA9ABcd55", TOKEN = "0x5f980dcfc4c0fa3911554cf5ab288ed0eb13dba3";
+
+test("assertVaultOrder: only 'sell token from vault, USDC back to vault, ≤ amount' passes", () => {
+  const td = (m: object, d: object = {}) => ({ domain: { ...FLASH_EIP712_DOMAIN, ...d }, primaryType: "FlashOrder", types: {},
+    message: { swapper: VAULT, recipient: VAULT, fromToken: TOKEN, toToken: ADDR.USDC, fromAmount: 100n, ...m } }) as any;
+  assert.doesNotThrow(() => assertVaultOrder(td({}), VAULT, TOKEN, 100n));
+  assert.throws(() => assertVaultOrder(td({ recipient: "0x000000000000000000000000000000000000dEaD" }), VAULT, TOKEN, 100n), /recipient/);
+  assert.throws(() => assertVaultOrder(td({ toToken: ADDR.WETH }), VAULT, TOKEN, 100n), /tokens/);
+  assert.throws(() => assertVaultOrder(td({ fromAmount: 101n }), VAULT, TOKEN, 100n), /fromAmount/);
+  assert.throws(() => assertVaultOrder(td({}, { chainId: 1 }), VAULT, TOKEN, 100n), /domain/);
+});
+
+test("hasOpenFlashOrder: keeper order stays open until SETTLED; vault1271 until terminal", () => {
+  const ctx = mkCtx();
+  const put = (id: string, loan: number, mode: string, status: string) => ctx.db.prepare(
+    "INSERT INTO flash_orders (id,loan_id,mode,funder,token,amount_raw,status,usdc_out_raw,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
+  ).run(id, loan, mode, VAULT, TOKEN, "1", status, "0", "t", "t");
+  put("a", 1, "keeper", "ORDER_STATUS_FILLED"); assert.equal(hasOpenFlashOrder(ctx, 1), true);
+  put("b", 2, "keeper", "SETTLING"); assert.equal(hasOpenFlashOrder(ctx, 2), true);
+  put("c", 3, "keeper", "SETTLED"); assert.equal(hasOpenFlashOrder(ctx, 3), false);
+  put("d", 4, "vault1271", "ORDER_STATUS_FILLED"); assert.equal(hasOpenFlashOrder(ctx, 4), false);
+  put("e", 5, "vault1271", "ORDER_STATUS_ACCEPTED"); assert.equal(hasOpenFlashOrder(ctx, 5), true);
+});
+
+test("verifyWebhook: raw and re-serialized HMAC accepted, anything else rejected", () => {
+  const raw = '{"a": 1}', h = (p: string) => "sha256=" + createHmac("sha256", "s").update(p).digest("hex");
+  assert.equal(verifyWebhook(raw, h(raw), "s"), true);
+  assert.equal(verifyWebhook(raw, h('{"a":1}'), "s"), true);
+  assert.equal(verifyWebhook(raw, h(raw), "other"), false);
+  assert.equal(verifyWebhook(raw, undefined, "s"), false);
+  assert.equal(verifyWebhook(raw, "sha256=00", "s"), false);
+});
+
+test("applyWebhook: duplicate eventId and a late 'created' cannot undo a revoke", () => {
+  const ctx = mkCtx(), addr = "0x00000000000000000000000000000000000000aa";
+  const created = (eventId: string, timestamp: string) => ({ eventName: "wallet.delegation.created", eventId, timestamp, userId: "u",
+    data: { chain: "EVM", publicKey: addr, walletId: "w1", encryptedDelegatedShare: {}, encryptedWalletApiKey: {} } });
+  const revoked = (eventId: string, timestamp: string) => ({ eventName: "wallet.delegation.revoked", eventId, timestamp, data: { walletId: "w1" } });
+  assert.equal(applyWebhook(ctx, created("e1", "2026-09-19T01:00:00Z")), "stored");
+  assert.equal(hasDelegation(ctx, addr), true);
+  assert.equal(applyWebhook(ctx, revoked("e2", "2026-09-19T02:00:00Z")), "revoked");
+  assert.equal(hasDelegation(ctx, addr), false);
+  assert.match(applyWebhook(ctx, created("e1", "2026-09-19T01:00:00Z")), /duplicate/); // replay
+  assert.match(applyWebhook(ctx, created("e3", "2026-09-19T01:30:00Z")), /older than a revoke/); // late delivery
+  assert.equal(hasDelegation(ctx, addr), false);
+  assert.equal(applyWebhook(ctx, created("e4", "2026-09-19T03:00:00Z")), "stored"); // genuine re-grant
+  assert.equal(hasDelegation(ctx, addr), true);
+  assert.match(applyWebhook(ctx, { eventName: "wallet.delegation.revoked", data: { walletId: "w1" } }), /missing/);
+});
+
+test("validateFollow: bounds and mode-specific fields", () => {
+  const ok = { follower: VAULT, personaId: "prudent", mode: "bracket", sizeUsdc: 5, tpPct: 50, slPct: 20, dcaDays: 0, auto: false };
+  assert.equal(validateFollow(ok).tpPct, 50);
+  assert.equal(validateFollow({ ...ok, mode: "dca", dcaDays: 3 }).tpPct, 0);
+  for (const bad of [{ follower: "nope" }, { personaId: "x" }, { sizeUsdc: 10_001 }, { sizeUsdc: 0 }, { slPct: 100 }, { mode: "dca", dcaDays: 1 }, { mode: "dca", dcaDays: 2.5 }])
+    assert.throws(() => validateFollow({ ...ok, ...bad }));
+  assert.equal(validateFollow({ ...ok, auto: "true" }).auto, false); // only literal true enables delegated spending
+});
+
+test("publishSignals: approvals queue one mirror per follow, re-approvals of the same token within 24h are deduped", () => {
+  const ctx = mkCtx();
+  const follow = (persona: string, follower: string) => ctx.db.prepare(`INSERT INTO follows (follower,persona_id,mode,size_usdc,tp_pct,sl_pct,dca_days,auto,active,created_at)
+    VALUES (?,?,'bracket',5,50,20,0,1,1,'t')`).run(follower, persona, );
+  follow("prudent", "0x01"); follow("prudent", "0x02"); follow("skeptic", "0x03");
+  const loan = () => insertLoan(ctx.db, { status: "APPROVED", borrower: VAULT as any, token: TOKEN as any, symbol: "GITLAWB", poolId: "0x01" as any, feesManager: VAULT as any });
+  const memo: Memo = { personaId: "prudent", model: "m", decision: "approve", principalRaw: "1", maxNotePrice: 0.9, confidence: 0.7, rationale: "r", risks: [] };
+  const quote = { inputs: { token: TOKEN, symbol: "GITLAWB" } } as unknown as Quote;
+  const mirrors = () => Number((ctx.db.prepare("SELECT COUNT(*) n FROM mirror_orders").get() as any).n);
+
+  const sigs = publishSignals(ctx, loan(), [memo, { ...memo, personaId: "skeptic", decision: "decline" }], quote);
+  assert.equal(sigs.length, 2);
+  assert.equal(mirrors(), 2); // two prudent followers; the skeptic declined
+  publishSignals(ctx, loan(), [memo], quote); // same token re-applied → no new buys
+  assert.equal(mirrors(), 2);
+  ctx.db.prepare("UPDATE mirror_orders SET status = 'failed' WHERE follower = '0x01'").run();
+  publishSignals(ctx, loan(), [memo], quote); // a failed mirror does not block a retry
+  assert.equal(mirrors(), 3);
+  ctx.db.prepare("UPDATE mirror_orders SET created_at = '2000-01-01T00:00:00.000Z'").run();
+  publishSignals(ctx, loan(), [memo], quote); // after 24h the signal counts again
+  assert.equal(mirrors(), 5);
+});

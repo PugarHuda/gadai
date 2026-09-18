@@ -1,0 +1,436 @@
+// Follow the Desk (SPEC §3.H, §7): every persona memo is a public, scored signal; followers mirror approvals with
+// Definitive Flash orders — market entry + attached Bracket (TP/SL), or DCA as a long Flash TWAP.
+// One-click: browser signs the MirrorQuote. Auto: agent signs through the follower's Dynamic delegation.
+import type { Hono } from "hono";
+import { createPublicClient, http, isAddress, maxUint256, parseAbi, parseUnits, encodeFunctionData, type PublicClient } from "viem";
+import { base } from "viem/chains";
+import {
+  ADDR, CHAIN_ID_BASE, ERC20_ABI, FEE_VAULT_ABI, flashCancelMessage, followMessage, unfollowMessage,
+  type Address, type Follow, type FollowSigned, type Hex, type LeaderboardRow, type Memo, type MirrorOrder, type MirrorQuote,
+  type MirrorStatus, type MirrorSubmit, type Quote, type Signal, type TxRequest,
+} from "@feedesk/shared";
+import { opt, type Ctx } from "../ctx.ts";
+import { getLoan, now, useNonce } from "../db/index.ts";
+import { attributionFields, decStr, feeFields, flash, parseTypedData, searchToken } from "../flash/index.ts";
+import { PERSONAS } from "../underwriter/index.ts";
+import { applyWebhook, delegatedSigner, hasDelegation, missingDelegationEnv, verifyWebhook } from "./delegation.ts";
+import { leaderboardRow, mirrorPnl, noteOutstanding, rankRows, type LoanOutcome, type PersonaStats } from "./score.ts";
+
+const erc20 = parseAbi(ERC20_ABI);
+const vaultAbi = parseAbi(FEE_VAULT_ABI);
+const MAX_IMPACT = 0.03; // SPEC: estimatedPriceImpact ≤ 3%
+type R = Record<string, any>;
+
+// Mirror orders are real Base mainnet trades even in DEMO_FORK (signals reference real tokens; Flash is mainnet-only).
+let mainPubMemo: PublicClient | undefined;
+const mainPub = (ctx: Ctx): PublicClient =>
+  ctx.demoFork ? (mainPubMemo ??= createPublicClient({ chain: base, transport: http(opt("BASE_RPC_URL", "https://base-rpc.publicnode.com")) }) as PublicClient) : ctx.pub;
+
+// ─── row mappers ───
+const toSignal = (r: R): Signal => ({
+  id: Number(r.id), loanId: Number(r.loan_id), personaId: r.persona_id, token: r.token, symbol: r.symbol, decision: r.decision,
+  score: r.score, principalRaw: r.principal_raw, maxNotePrice: r.max_note_price, rationale: r.rationale, createdAt: r.created_at,
+});
+const toFollow = (r: R): Follow => ({
+  id: Number(r.id), follower: r.follower, personaId: r.persona_id, mode: r.mode, sizeUsdc: r.size_usdc, tpPct: r.tp_pct,
+  slPct: r.sl_pct, dcaDays: Number(r.dca_days), auto: !!r.auto, createdAt: r.created_at,
+});
+const toMirror = (r: R): MirrorOrder => ({
+  id: Number(r.id), followId: Number(r.follow_id), signalId: Number(r.signal_id), follower: r.follower, token: r.token, symbol: r.symbol,
+  mode: r.mode, sizeUsdc: r.size_usdc, status: r.status, flashOrderId: r.flash_order_id, bracketStatus: r.bracket_status,
+  filledTokenRaw: r.filled_token_raw, avgPriceUsd: r.avg_price_usd, pnlUsd: r.pnl_usd, error: r.error, createdAt: r.created_at,
+  bracketOrderId: r.quote_json ? JSON.parse(r.quote_json).bracketOrderId ?? null : null,
+});
+const mirrorRow = (ctx: Ctx, id: number) => ctx.db.prepare("SELECT * FROM mirror_orders WHERE id = ?").get(id) as R | undefined;
+const setMirror = (ctx: Ctx, id: number, patch: Record<string, string | number | null>) => {
+  const keys = Object.keys(patch);
+  ctx.db.prepare(`UPDATE mirror_orders SET ${keys.map((k) => `${k} = ?`).join(", ")}, updated_at = ? WHERE id = ?`).run(...Object.values(patch), now(), id);
+};
+const failMirror = (ctx: Ctx, id: number, error: string) => { setMirror(ctx, id, { status: "failed", error }); return toMirror(mirrorRow(ctx, id)!); };
+
+// ─── signals ───
+let kick: (() => void) | undefined; // wakes the auto-mirror executor
+
+/** One public signal per memo; approvals queue a pending mirror order for each active follower of that persona. */
+export function publishSignals(ctx: Ctx, loanId: number, memos: Memo[], quote: Quote): Signal[] {
+  const loan = getLoan(ctx.db, loanId);
+  const token = (quote.inputs?.token ?? loan?.token) as Address | undefined;
+  const symbol = quote.inputs?.symbol ?? loan?.symbol;
+  if (!token || !symbol) throw new Error(`publishSignals: loan ${loanId} has no token`);
+  const ins = ctx.db.prepare(`INSERT INTO signals (loan_id,persona_id,token,symbol,decision,score,principal_raw,max_note_price,rationale,created_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?)`);
+  // At most one live mirror per (follow, token) per 24h: re-underwriting the same token (re-applies, repeat approvals)
+  // must not make followers buy it again and again.
+  const since = new Date(Date.now() - 86_400_000).toISOString();
+  const queue = ctx.db.prepare(`INSERT INTO mirror_orders (follow_id,signal_id,follower,token,symbol,mode,size_usdc,status,created_at,updated_at)
+    SELECT ?,?,?,?,?,?,?,'pending_signature',?,? WHERE NOT EXISTS (SELECT 1 FROM mirror_orders
+      WHERE follow_id = ?1 AND lower(token) = lower(?4) AND status <> 'failed' AND created_at > ?10)`);
+  const out: Signal[] = [];
+  for (const m of memos) {
+    const id = Number(ins.run(loanId, m.personaId, token, symbol, m.decision, Math.round(m.confidence * 100), m.principalRaw, m.maxNotePrice, m.rationale, now()).lastInsertRowid);
+    out.push(toSignal(ctx.db.prepare("SELECT * FROM signals WHERE id = ?").get(id) as R));
+    if (m.decision !== "approve") continue;
+    const follows = ctx.db.prepare("SELECT * FROM follows WHERE persona_id = ? AND active = 1").all(m.personaId) as R[];
+    let queued = 0;
+    for (const f of follows) queued += Number(queue.run(f.id, id, f.follower, token, symbol, f.mode, f.size_usdc, now(), now(), since).changes);
+    if (follows.length) ctx.log("social", `signal ${id} (${m.personaId} approves ${symbol}) → ${queued}/${follows.length} mirror orders queued (rest deduped, 24h)`);
+  }
+  kick?.();
+  return out;
+}
+
+// ─── leaderboard ───
+let lbCache: { at: number; rows: LeaderboardRow[] } | undefined;
+
+export async function leaderboard(ctx: Ctx): Promise<LeaderboardRow[]> {
+  if (lbCache && Date.now() - lbCache.at < 30_000) return lbCache.rows;
+  const counts = ctx.db.prepare("SELECT persona_id, decision, COUNT(*) n FROM signals GROUP BY persona_id, decision").all() as R[];
+  const followers = ctx.db.prepare("SELECT persona_id, COUNT(DISTINCT follower) n FROM follows WHERE active = 1 GROUP BY persona_id").all() as R[];
+  const funded = ctx.db.prepare(`SELECT DISTINCT s.persona_id, l.id loan_id, l.vault FROM signals s JOIN loans l ON l.id = s.loan_id
+    WHERE s.decision = 'approve' AND l.status IN ('ACTIVE','RELEASED') AND l.vault IS NOT NULL`).all() as R[];
+  const vaults = [...new Set(funded.map((r) => r.vault as Address))];
+  const outcome = new Map<string, Omit<LoanOutcome, "loanId" | "daysToRepay">>();
+  if (vaults.length) {
+    const res = await ctx.pub.multicall({
+      contracts: vaults.flatMap((v) => (["faceValue", "debtOutstanding", "drawDebt"] as const).map((fn) => ({ address: v, abi: vaultAbi, functionName: fn }))),
+    });
+    vaults.forEach((v, i) => {
+      const [a, b, c] = res.slice(i * 3, i * 3 + 3);
+      if (a?.status !== "success" || b?.status !== "success" || c?.status !== "success") return ctx.log("social", `leaderboard: vault ${v} unreadable, skipped`);
+      outcome.set(v, { faceRaw: a.result as bigint, noteOutstandingRaw: noteOutstanding(b.result as bigint, c.result as bigint) });
+    });
+  }
+  const ev = (loanId: number, kind: string) => (ctx.db.prepare("SELECT created_at FROM loan_events WHERE loan_id = ? AND kind = ? ORDER BY id LIMIT 1").get(loanId, kind) as R | undefined)?.created_at;
+  const days = (loanId: number) => {
+    const a = ev(loanId, "disbursed"), b = ev(loanId, "released");
+    return a && b ? (Date.parse(b) - Date.parse(a)) / 86_400_000 : null;
+  };
+  const mirrors = ctx.db.prepare(`SELECT f.persona_id, m.pnl_usd, m.quote_json FROM mirror_orders m JOIN follows f ON f.id = m.follow_id
+    WHERE m.pnl_usd IS NOT NULL`).all() as R[];
+  const rows = PERSONAS.map((p) => {
+    const n = (d: string) => Number(counts.find((c) => c.persona_id === p.id && c.decision === d)?.n ?? 0);
+    const s: PersonaStats = {
+      approvals: n("approve"), declines: n("decline"),
+      followers: Number(followers.find((f) => f.persona_id === p.id)?.n ?? 0),
+      loans: funded.filter((r) => r.persona_id === p.id && outcome.has(r.vault)).map((r) => ({ loanId: Number(r.loan_id), ...outcome.get(r.vault)!, daysToRepay: days(Number(r.loan_id)) })),
+      mirrors: mirrors.filter((m) => m.persona_id === p.id).map((m) => ({ spentUsdc: JSON.parse(m.quote_json).fill?.spentUsdc ?? 0, pnlUsd: m.pnl_usd })),
+    };
+    return leaderboardRow(p, s);
+  });
+  lbCache = { at: Date.now(), rows: rankRows(rows) };
+  return lbCache.rows;
+}
+
+// ─── mirror orders (Flash) ───
+const txReq = (to: Address, data: Hex, label: string): TxRequest => ({ to, data, value: "0", chainId: CHAIN_ID_BASE, label });
+
+/** Approvals the follower still needs for one Flash order: Flash's approveTx (to the settlement) and/or ERC20→Permit2 for a permit. */
+async function approvalsFor(pub: PublicClient, owner: Address, evm: { approveTx?: { to: Address; data: Hex } | null; permitTypedData?: string | null; orderTypedData: string }, label: string) {
+  const o = parseTypedData(evm.orderTypedData).message;
+  const need: TxRequest[] = [];
+  const allowance = (spender: Address) => pub.readContract({ address: o.fromToken, abi: erc20, functionName: "allowance", args: [owner, spender] }) as Promise<bigint>;
+  if (evm.permitTypedData) {
+    if ((await allowance(ADDR.PERMIT2)) < o.fromAmount) need.push(txReq(o.fromToken, encodeFunctionData({ abi: erc20, functionName: "approve", args: [ADDR.PERMIT2, maxUint256] }), `${label}: approve Permit2`));
+  } else if (evm.approveTx?.to && (await allowance(ADDR.FLASH_SETTLEMENT)) < o.fromAmount) {
+    need.push(txReq(evm.approveTx.to, evm.approveTx.data, `${label}: approve Flash`));
+  }
+  return need;
+}
+
+/** Fresh Flash quote for a pending mirror. Runs the SPEC risk gates (riskFlagged, impact ≤ 3%); failures mark the mirror failed. */
+export async function quoteMirror(ctx: Ctx, id: number): Promise<MirrorQuote> {
+  const m = mirrorRow(ctx, id);
+  if (!m) throw Object.assign(new Error("mirror not found"), { status: 404 });
+  if (m.status !== "pending_signature") throw Object.assign(new Error(`mirror is ${m.status}`), { status: 409 });
+  const f = ctx.db.prepare("SELECT * FROM follows WHERE id = ?").get(m.follow_id) as R;
+  if (!f?.active) { failMirror(ctx, id, "follow was removed"); throw Object.assign(new Error("follow was removed"), { status: 409 }); }
+  const asset = await searchToken(m.token);
+  if (asset.riskFlagged) { failMirror(ctx, id, "Flash /search riskFlagged this token"); throw Object.assign(new Error("token is riskFlagged by Flash"), { status: 409 }); }
+  const px = asset.priceUsd;
+  const order: R = {
+    targetChain: "base", contraChain: "base", targetAsset: m.token, contraAsset: ADDR.USDC, side: "buy", qty: String(m.size_usdc),
+    funderAddress: m.follower, ...feeFields(),
+    ...(m.mode === "bracket"
+      ? { orderType: "market", attachedBracket: { takeProfit: { notionalPrice: decStr(px * (1 + f.tp_pct / 100)) }, stopLoss: { notionalPrice: decStr(px * (1 - f.sl_pct / 100)) } } }
+      : { orderType: "twap", twapBucketCount: Number(f.dca_days) }),
+  };
+  const q = await flash("/quote", m.mode === "dca" ? { ...order, durationSeconds: Number(f.dca_days) * 86_400 } : order);
+  const impact = Math.abs(Number(q.estimatedPriceImpact ?? 0));
+  if (impact > MAX_IMPACT) {
+    failMirror(ctx, id, `price impact ${(impact * 100).toFixed(2)}% > 3%`);
+    throw Object.assign(new Error(`price impact ${(impact * 100).toFixed(2)}% > 3%`), { status: 409 });
+  }
+  if (!q.evm?.orderTypedData) throw new Error("Flash quote returned no orderTypedData (funderAddress missing?)");
+  const pub = mainPub(ctx);
+  const qb = q.attachedBracket;
+  const res: MirrorQuote = {
+    mirrorId: id, quoteId: q.quoteId,
+    approveTxs: await approvalsFor(pub, m.follower, q.evm, "entry"),
+    permitTypedData: q.evm.permitTypedData || null,
+    orderTypedData: q.evm.orderTypedData,
+    bracket: qb ? { orderTypedData: qb.evm.orderTypedData, permitTypedData: qb.evm.permitTypedData || null, approveTxs: await approvalsFor(pub, m.follower, qb.evm, "bracket exit") } : null,
+    preview: {
+      spendUsdc: m.size_usdc, estTokenOut: q.to?.amount ?? "0", priceImpact: impact * 100,
+      ...(m.mode === "bracket" ? { tpPriceUsd: Number(order.attachedBracket.takeProfit.notionalPrice), slPriceUsd: Number(order.attachedBracket.stopLoss.notionalPrice) } : {}),
+    },
+  };
+  // Keep the last few quotes by quoteId: submit pairs signatures with the exact quote they were made over, so a
+  // re-quote by anyone else cannot invalidate a signature in flight.
+  const prev = m.quote_json ? JSON.parse(m.quote_json).recent ?? {} : {};
+  const recent = Object.fromEntries([...Object.entries(prev).slice(-4), [q.quoteId, { order, q }]]);
+  setMirror(ctx, id, { quote_json: JSON.stringify({ order, q, px, decimals: asset.decimals, recent }), error: null });
+  return res;
+}
+
+/** Post the signed order to Flash. `order` is echoed without durationSeconds (quote-only field). */
+export async function submitMirror(ctx: Ctx, id: number, s: MirrorSubmit): Promise<MirrorOrder> {
+  const m = mirrorRow(ctx, id);
+  if (!m) throw Object.assign(new Error("mirror not found"), { status: 404 });
+  if (m.status !== "pending_signature" || !m.quote_json) throw Object.assign(new Error("quote the mirror first"), { status: 409 });
+  if (!/^0x[0-9a-fA-F]+$/.test(s.userSignature ?? "")) throw Object.assign(new Error("userSignature required"), { status: 400 });
+  if (typeof s.quoteId !== "string") throw Object.assign(new Error("quoteId required (the MirrorQuote.quoteId you signed)"), { status: 400 });
+  const stored = JSON.parse(m.quote_json);
+  const picked = stored.recent?.[s.quoteId];
+  if (!picked) throw Object.assign(new Error("unknown or expired quoteId: re-quote and sign again"), { status: 409 });
+  const { order, q } = picked;
+  const body: R = { ...order, quoteId: q.quoteId, userSignature: s.userSignature, evmOrderTypedData: q.evm.orderTypedData, ...attributionFields() };
+  if (q.evm.permitTypedData) {
+    if (!s.evmPermitSignature) throw Object.assign(new Error("evmPermitSignature required"), { status: 400 });
+    Object.assign(body, { evmPermitTypedData: q.evm.permitTypedData, evmPermitSignature: s.evmPermitSignature });
+  }
+  if (order.attachedBracket) {
+    const qb = q.attachedBracket;
+    if (!s.bracketUserSignature) throw Object.assign(new Error("bracketUserSignature required"), { status: 400 });
+    if (qb.evm.permitTypedData && !s.bracketPermitSignature) throw Object.assign(new Error("bracketPermitSignature required"), { status: 400 });
+    body.attachedBracket = {
+      ...order.attachedBracket, userSignature: s.bracketUserSignature, deadline: qb.deadline, signedMaxFromAmount: qb.signedMaxFromAmount,
+      ...(qb.salt ? { salt: qb.salt } : {}),
+      ...(qb.evm.permitTypedData ? { evmPermitTypedData: qb.evm.permitTypedData, evmPermitSignature: s.bracketPermitSignature } : {}),
+    };
+  }
+  try {
+    const r = await flash("/order", body);
+    setMirror(ctx, id, {
+      status: "submitted", flash_order_id: r.orderId, bracket_status: r.attachedBracket?.status ?? null, error: null,
+      quote_json: JSON.stringify({ order, q, px: stored.px, decimals: stored.decimals }), // the quote actually placed
+    });
+    ctx.log("social", `mirror ${id} → Flash order ${r.orderId}`);
+  } catch (e) {
+    // Flash rejected (bad sig, stale quote, …): stay pending so the follower can re-quote and re-sign.
+    setMirror(ctx, id, { error: (e as Error).message });
+    throw Object.assign(new Error((e as Error).message), { status: 502 });
+  }
+  return toMirror(mirrorRow(ctx, id)!);
+}
+
+/** Auto mode: agent signs approvals + typed data with the follower's Dynamic delegation. */
+async function executeAuto(ctx: Ctx, id: number) {
+  const m = mirrorRow(ctx, id)!;
+  const missing = missingDelegationEnv();
+  if (missing.length) return failMirror(ctx, id, `auto-mirror needs env ${missing.join(", ")} (see .env.example)`);
+  if (!hasDelegation(ctx, m.follower)) return failMirror(ctx, id, "no active Dynamic delegation for follower");
+  const signer = await delegatedSigner(ctx, m.follower, mainPub(ctx));
+  const mq = await quoteMirror(ctx, id);
+  for (const tx of [...mq.approveTxs, ...(mq.bracket?.approveTxs ?? [])]) await signer.send({ to: tx.to, data: tx.data });
+  return submitMirror(ctx, id, {
+    quoteId: mq.quoteId,
+    userSignature: await signer.signTypedData(mq.orderTypedData),
+    ...(mq.permitTypedData ? { evmPermitSignature: await signer.signTypedData(mq.permitTypedData) } : {}),
+    ...(mq.bracket ? { bracketUserSignature: await signer.signTypedData(mq.bracket.orderTypedData) } : {}),
+    ...(mq.bracket?.permitTypedData ? { bracketPermitSignature: await signer.signTypedData(mq.bracket.permitTypedData) } : {}),
+  });
+}
+
+const TERMINAL = ["ORDER_STATUS_FILLED", "ORDER_STATUS_CANCELLED", "ORDER_STATUS_REJECTED", "ORDER_STATUS_TERMINATED"];
+const num = (s: string | null | undefined) => Number(s || 0);
+
+/** Refresh fills, bracket exits and PnL (tokens held × current Flash price + exit USDC − spent). */
+export async function pollMirrors(ctx: Ctx): Promise<void> {
+  const rows = ctx.db.prepare(`SELECT * FROM mirror_orders WHERE flash_order_id IS NOT NULL AND status <> 'failed'
+    AND NOT (status = 'cancelled' AND COALESCE(filled_token_raw,'0') = '0') AND COALESCE(bracket_status,'') NOT LIKE 'exited:%'`).all() as R[];
+  const prices = new Map<string, number>();
+  const price = async (token: string) => {
+    if (!prices.has(token)) prices.set(token, (await searchToken(token as Address)).priceUsd);
+    return prices.get(token)!;
+  };
+  for (const m of rows) {
+    try {
+      const stored = JSON.parse(m.quote_json);
+      // Closed entry with no bracket (filled market/DCA, cancelled-with-fill): the fill is final, only re-mark PnL.
+      // ponytail: saves the Flash /orders budget for live orders; one /search per token per cycle remains.
+      if ((m.status === "filled" || m.status === "cancelled") && !m.bracket_status && stored.fill) {
+        const pnl = mirrorPnl(stored.fill, await price(m.token));
+        setMirror(ctx, m.id, { pnl_usd: Math.round(pnl * 1e4) / 1e4 });
+        continue;
+      }
+      const { order } = await flash(`/orders/${m.flash_order_id}?funderAddress=${m.follower}`);
+      const bought = num(order.filled?.targetAmount), spent = num(order.filled?.contraAmount);
+      const status: MirrorStatus =
+        order.status === "ORDER_STATUS_FILLED" ? "filled"
+        : order.status === "ORDER_STATUS_PARTIALLY_FILLED" ? "partially_filled"
+        : order.status === "ORDER_STATUS_REJECTED" ? "failed"
+        : order.status === "ORDER_STATUS_CANCELLED" || order.status === "ORDER_STATUS_TERMINATED" ? "cancelled"
+        : "submitted";
+      let bracketStatus: string | null = order.attachedBracket?.status ?? m.bracket_status;
+      let sold = 0, exitUsdc = 0;
+      const bid = order.attachedBracket?.bracketOrderId;
+      if (bid) {
+        const { order: b } = await flash(`/orders/${bid}?funderAddress=${m.follower}`);
+        sold = num(b.filled?.targetAmount); exitUsdc = num(b.filled?.contraAmount);
+        bracketStatus = TERMINAL.includes(b.status) ? `exited:${b.status}` : `${order.attachedBracket.status}:${b.status}`;
+      } else if (bracketStatus === "never_activated" && TERMINAL.includes(order.status)) bracketStatus = "exited:never_activated";
+      let pnl: number | null = null;
+      if (spent > 0) pnl = Math.round(mirrorPnl({ spentUsdc: spent, boughtTokens: bought, soldTokens: sold, exitUsdc }, await price(m.token)) * 1e4) / 1e4;
+      setMirror(ctx, m.id, {
+        status, bracket_status: bracketStatus, pnl_usd: pnl,
+        filled_token_raw: parseUnits(order.filled?.targetAmount || "0", stored.decimals).toString(),
+        avg_price_usd: order.filled?.averageNotionalPrice ? Number(order.filled.averageNotionalPrice) : null,
+        error: status === "failed" ? order.closeReason ?? "rejected by Flash" : null,
+        quote_json: JSON.stringify({ ...stored, bracketOrderId: bid ?? stored.bracketOrderId ?? null, fill: { spentUsdc: spent, boughtTokens: bought, soldTokens: sold, exitUsdc } }),
+      });
+    } catch (e) {
+      ctx.log("social", `poll mirror ${m.id} failed: ${(e as Error).message}`);
+    }
+  }
+}
+
+// ─── routes ───
+const bad = (msg: string) => Object.assign(new Error(msg), { status: 400 });
+
+async function verifySig(ctx: Ctx, address: Address, message: string, nonce: unknown, signature: unknown) {
+  if (typeof nonce !== "string" || nonce.length < 8 || typeof signature !== "string") throw bad("nonce (≥8 chars) and signature required");
+  const ok = await mainPub(ctx).verifyMessage({ address, message, signature: signature as Hex });
+  if (!ok) throw Object.assign(new Error("signature does not match follower"), { status: 401 });
+  if (!useNonce(ctx.db, nonce)) throw Object.assign(new Error("nonce already used"), { status: 409 });
+}
+
+export function validateFollow(b: any): Omit<Follow, "id" | "createdAt"> {
+  if (!isAddress(b?.follower ?? "")) throw bad("follower must be an address");
+  if (!PERSONAS.some((p) => p.id === b.personaId)) throw bad(`personaId must be one of ${PERSONAS.map((p) => p.id).join(", ")}`);
+  if (b.mode !== "bracket" && b.mode !== "dca") throw bad("mode must be bracket|dca");
+  const size = Number(b.sizeUsdc);
+  if (!(size >= 1 && size <= 10_000)) throw bad("sizeUsdc must be 1..10000");
+  const tp = Number(b.tpPct), sl = Number(b.slPct), days = Number(b.dcaDays);
+  if (b.mode === "bracket" && !(tp > 0 && tp <= 1000 && sl > 0 && sl < 100)) throw bad("bracket needs tpPct 0..1000 and slPct 0..100");
+  if (b.mode === "dca" && !(Number.isInteger(days) && days >= 2 && days <= 365)) throw bad("dca needs integer dcaDays 2..365 (Flash twapBucketCount ≥ 2)");
+  return { follower: b.follower, personaId: b.personaId, mode: b.mode, sizeUsdc: size, tpPct: b.mode === "bracket" ? tp : 0,
+    slPct: b.mode === "bracket" ? sl : 0, dcaDays: b.mode === "dca" ? days : 0, auto: b.auto === true };
+}
+
+export function register(app: Hono, ctx: Ctx) {
+  const wrap = (fn: (c: any) => Promise<Response>) => async (c: any) => {
+    try { return await fn(c); } catch (e: any) {
+      if (e?.status) return c.json({ error: e.message }, e.status);
+      throw e;
+    }
+  };
+
+  app.get("/api/signals", (c) => {
+    const pid = c.req.query("personaId"), limit = Math.min(200, Number(c.req.query("limit") ?? 50) || 50);
+    const rows = (pid ? ctx.db.prepare("SELECT * FROM signals WHERE persona_id = ? ORDER BY id DESC LIMIT ?").all(pid, limit)
+      : ctx.db.prepare("SELECT * FROM signals ORDER BY id DESC LIMIT ?").all(limit)) as R[];
+    return c.json(rows.map(toSignal));
+  });
+
+  app.get("/api/leaderboard", async (c) => c.json(await leaderboard(ctx)));
+
+  app.get("/api/follows", (c) => {
+    const f = c.req.query("follower");
+    if (!f) return c.json({ error: "follower required (per-persona follower counts are on /api/leaderboard)" }, 400);
+    return c.json((ctx.db.prepare("SELECT * FROM follows WHERE active = 1 AND follower = ? ORDER BY id DESC").all(f.toLowerCase()) as R[]).map(toFollow));
+  });
+
+  app.post("/api/follows", wrap(async (c) => {
+    const b = (await c.req.json().catch(() => null)) as FollowSigned | null;
+    const f = validateFollow(b);
+    if (f.auto) {
+      const missing = missingDelegationEnv();
+      if (missing.length) return c.json({ error: `auto-mirror unavailable: missing env ${missing.join(", ")} (see .env.example)` }, 503);
+    }
+    await verifySig(ctx, f.follower, followMessage(b!, b!.nonce), b!.nonce, b!.signature); // exactly what the client signed
+    const id = Number(ctx.db.prepare(`INSERT INTO follows (follower,persona_id,mode,size_usdc,tp_pct,sl_pct,dca_days,auto,active,created_at)
+      VALUES (?,?,?,?,?,?,?,?,1,?)`).run(f.follower.toLowerCase(), f.personaId, f.mode, f.sizeUsdc, f.tpPct, f.slPct, f.dcaDays, f.auto ? 1 : 0, now()).lastInsertRowid);
+    lbCache = undefined;
+    return c.json(toFollow(ctx.db.prepare("SELECT * FROM follows WHERE id = ?").get(id) as R));
+  }));
+
+  app.delete("/api/follows/:id", wrap(async (c) => {
+    const id = Number(c.req.param("id"));
+    const row = ctx.db.prepare("SELECT * FROM follows WHERE id = ? AND active = 1").get(id) as R | undefined;
+    if (!row) return c.json({ error: "follow not found" }, 404);
+    const b = await c.req.json().catch(() => ({}));
+    await verifySig(ctx, row.follower, unfollowMessage(id, b.nonce), b.nonce, b.signature);
+    ctx.db.prepare("UPDATE follows SET active = 0 WHERE id = ?").run(id);
+    ctx.db.prepare("UPDATE mirror_orders SET status = 'failed', error = 'follow was removed', updated_at = ? WHERE follow_id = ? AND status = 'pending_signature'").run(now(), id);
+    lbCache = undefined;
+    return c.json({ ok: true });
+  }));
+
+  app.get("/api/mirrors", (c) => {
+    const f = c.req.query("follower");
+    if (!f) return c.json({ error: "follower required" }, 400);
+    return c.json((ctx.db.prepare("SELECT * FROM mirror_orders WHERE follower = ? ORDER BY id DESC LIMIT 200").all(f.toLowerCase()) as R[]).map(toMirror));
+  });
+
+  // Auto mirrors are quoted + signed only by the executor; the public one-click routes must not touch them.
+  const oneClick = (id: number) => {
+    const row = ctx.db.prepare("SELECT f.auto FROM mirror_orders m JOIN follows f ON f.id = m.follow_id WHERE m.id = ?").get(id) as R | undefined;
+    if (!row) throw Object.assign(new Error("mirror not found"), { status: 404 });
+    if (row.auto) throw Object.assign(new Error("auto-mirrored: the desk signs this order via your Dynamic delegation"), { status: 409 });
+    return id;
+  };
+  app.post("/api/mirrors/:id/quote", wrap(async (c) => c.json(await quoteMirror(ctx, oneClick(Number(c.req.param("id")))))));
+
+  app.post("/api/mirrors/:id/submit", wrap(async (c) => c.json(await submitMirror(ctx, oneClick(Number(c.req.param("id"))), await c.req.json()))));
+
+  /** body {userSignature, leg?: "entry"|"bracket"}: sign flashCancelMessage(entry flashOrderId | bracketOrderId). */
+  app.post("/api/mirrors/:id/cancel", wrap(async (c) => {
+    const id = Number(c.req.param("id"));
+    const m = mirrorRow(ctx, id);
+    if (!m?.flash_order_id) return c.json({ error: "mirror has no Flash order" }, 409);
+    const { userSignature, leg = "entry" } = await c.req.json();
+    const orderId = leg === "bracket" ? toMirror(m).bracketOrderId : m.flash_order_id;
+    if (!orderId) return c.json({ error: "bracket is not active yet (no bracketOrderId)" }, 409);
+    await flash(`/orders/${orderId}/cancel`, { cancelMessage: flashCancelMessage(orderId), userSignature });
+    // Entry cancel is final here; a bracket cancel is picked up by pollMirrors (bracket_status → exited:ORDER_STATUS_CANCELLED).
+    if (leg !== "bracket") setMirror(ctx, id, { status: "cancelled" });
+    return c.json(toMirror(mirrorRow(ctx, id)!));
+  }));
+
+  app.post("/api/dynamic/webhook", async (c) => {
+    const secret = process.env.DYNAMIC_WEBHOOK_SECRET;
+    if (!secret) return c.json({ error: "Missing env DYNAMIC_WEBHOOK_SECRET (see .env.example)" }, 503);
+    const raw = await c.req.text();
+    if (!verifyWebhook(raw, c.req.header("x-dynamic-signature-256"), secret)) return c.json({ error: "bad signature" }, 401);
+    const result = applyWebhook(ctx, JSON.parse(raw));
+    ctx.log("social", `dynamic webhook: ${result}`);
+    return c.json({ ok: true });
+  });
+}
+
+// ─── loops ───
+export function start(ctx: Ctx): () => void {
+  let autoBusy = false, pollBusy = false;
+  const runAuto = async () => {
+    if (autoBusy) return;
+    autoBusy = true;
+    try {
+      const rows = ctx.db.prepare(`SELECT m.id FROM mirror_orders m JOIN follows f ON f.id = m.follow_id
+        WHERE m.status = 'pending_signature' AND f.auto = 1 AND f.active = 1 ORDER BY m.id`).all() as R[];
+      for (const { id } of rows) {
+        try { await executeAuto(ctx, Number(id)); } catch (e) {
+          const cur = mirrorRow(ctx, Number(id));
+          if (cur?.status === "pending_signature") failMirror(ctx, Number(id), `auto-mirror: ${(e as Error).message}`);
+        }
+      }
+    } finally { autoBusy = false; }
+  };
+  kick = () => void runAuto();
+  const a = setInterval(runAuto, 20_000);
+  const p = setInterval(async () => {
+    if (pollBusy) return;
+    pollBusy = true;
+    try { await pollMirrors(ctx); lbCache = undefined; } finally { pollBusy = false; }
+  }, 30_000);
+  return () => { clearInterval(a); clearInterval(p); kick = undefined; };
+}

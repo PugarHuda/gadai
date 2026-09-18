@@ -1,0 +1,25 @@
+# Agent must run on Linux (Dynamic MPC SDK ships no Windows binaries). node_modules live in named
+# volumes so the Linux install never collides with the Windows install used by web/.
+services:
+  agent:
+    image: node:26-bookworm
+    working_dir: /app
+    env_file: .env
+    environment:
+      FORK_RPC_URL: http://anvil:8545
+      DB_PATH: /data/feedesk.db
+    ports: ["8787:8787"]
+    volumes:
+      - .:/app
+      - nm_root:/app/node_modules
+      - nm_agent:/app/agent/node_modules
+      - nm_shared:/app/shared/node_modules
+      - nm_web:/app/web/node_modules
+      - agent_data:/data
+    command: sh -c "npm i -g pnpm@11 >/dev/null && pnpm install --filter @feedesk/agent... && pnpm agent"
+  anvil: # only needed for DEMO_FORK=1 (docker compose --profile fork up)
+    profiles: ["fork"]
+    image: ghcr.io/foundry-rs/foundry:latest
+    entrypoint: ["anvil", "--fork-url", "${BASE_RPC_URL:-https://base-rpc.publicnode.com}", "--chain-id", "8453", "--host", "0.0.0.0"]
+    ports: ["8545:8545"]
+volumes: { nm_root: {}, nm_agent: {}, nm_shared: {}, nm_web: {}, agent_data: {} }

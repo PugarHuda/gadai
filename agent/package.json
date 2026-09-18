@@ -1,0 +1,31 @@
+{
+  "name": "@feedesk/agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=../.env src/index.ts",
+    "dev": "node --watch --env-file-if-exists=../.env src/index.ts",
+    "bootstrap:dynamic": "node --env-file-if-exists=../.env src/wallet/bootstrap.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --env-file-if-exists=../.env \"src/**/*.test.ts\"",
+    "fork:borrower": "node --env-file-if-exists=../.env src/demo/fork-borrower.ts"
+  },
+  "dependencies": {
+    "@feedesk/shared": "workspace:*",
+    "@dynamic-labs-wallet/core": "1.1.13",
+    "@dynamic-labs-wallet/node": "1.1.13",
+    "@dynamic-labs-wallet/node-evm": "1.1.13",
+    "@flynetdev/core": "0.8.1",
+    "@hono/node-server": "^2.1.1",
+    "hono": "^4.13.8",
+    "viem": "^2.56.8"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.1",
+    "typescript": "^7.0.2"
+  }
+}

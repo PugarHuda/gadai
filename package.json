@@ -1,0 +1,21 @@
+{
+  "name": "fee-desk",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.21.0",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "agent": "pnpm --filter @feedesk/agent start",
+    "agent:docker": "docker compose up --build agent",
+    "web": "pnpm --filter @feedesk/web dev",
+    "web:build": "pnpm --filter @feedesk/web build",
+    "fork": "node --env-file-if-exists=.env scripts/forge.mjs fork",
+    "contracts:build": "cd contracts && forge build",
+    "contracts:test": "node --env-file-if-exists=.env scripts/forge.mjs test",
+    "contracts:deploy": "node --env-file-if-exists=.env scripts/forge.mjs deploy",
+    "typecheck": "pnpm -r typecheck",
+    "contracts:deploy:fork": "node --env-file-if-exists=.env scripts/forge.mjs deploy:fork"
+  }
+}

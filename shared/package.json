@@ -1,0 +1,14 @@
+{
+  "name": "@feedesk/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit --strict --target es2022 --module nodenext --moduleResolution nodenext --allowImportingTsExtensions --erasableSyntaxOnly src/index.ts"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}
