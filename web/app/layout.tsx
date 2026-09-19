@@ -3,6 +3,7 @@ import { Archivo, Chivo_Mono } from "next/font/google";
 import "./globals.css";
 import { missingEnv, ENV } from "@/lib/env";
 import { Providers } from "@/lib/wallet";
+import Link from "next/link";
 import { Nav } from "@/components/nav";
 
 const sans = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-archivo" });
@@ -38,7 +39,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {ENV.DEMO_FORK && (
               <div role="note" className="sticky top-0 z-50 border-b border-ink bg-ink px-4 py-1.5 text-center text-xs text-paper">
                 <span className="pill mr-2 border-amber text-amber">Demo fork</span>
-                Anvil fork of Base (<span className="font-mono">{ENV.FORK_RPC_URL}</span>). On-chain state is local; Flash orders are mainnet only.
+                Anvil fork of Base (<span className="font-mono">{ENV.FORK_RPC_URL}</span>). On-chain state is local; Flash orders are mainnet only. Mainnet actions: see{" "}
+                <Link href="/evidence" className="underline underline-offset-2">Evidence</Link>.
               </div>
             )}
             <Nav />
@@ -51,6 +53,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <span>Uniswap CCA and Trading API</span>
                 <span>Definitive Flash</span>
                 <span>Blackbird Flynet</span>
+                <span className="flex gap-x-4 sm:ml-auto">
+                  <a className="link" href="https://github.com/PugarHuda/gadai" target="_blank" rel="noreferrer">GitHub</a>
+                  <Link className="link" href="/demo">Demo</Link>
+                  <Link className="link" href="/evidence">Evidence</Link>
+                </span>
               </div>
             </footer>
           </Providers>

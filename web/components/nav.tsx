@@ -10,6 +10,8 @@ const LINKS = [
   ["/notes", "Lend"],
   ["/desk", "Follow the Desk"],
   ["/dine", "Dine"],
+  ["/demo", "Demo"],
+  ["/evidence", "Evidence"],
 ] as const;
 
 export function Nav() {

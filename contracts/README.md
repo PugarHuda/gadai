@@ -3,7 +3,7 @@
 | File | What it does |
 |---|---|
 | `src/FeeDesk.sol` | Registry and factory. `createLoan` (keeper only) deploys one `FeeVault` per loan. It allows one open loan per pool. |
-| `src/FeeVault.sol` | The lien on Doppler fee rights. It confirms the pledge, runs the FeeNote CCA, disburses, collects fees, swaps WETH→USDC via the Uniswap SwapProxy, handles Flash EIP-1271 orders, dining draws, redemption and permissionless release. |
+| `src/FeeVault.sol` | The lien on Doppler fee rights. It confirms the pledge, runs the FeeNote CCA, disburses, collects fees, swaps WETH→USDC via the Uniswap SwapProxy, handles Flash EIP-1271 orders, redemption and permissionless release. It still contains the dining-draw path (`addDraw`), which the agent no longer calls (see below). |
 | `src/FeeNote.sol` | Per-loan ERC-20 (6 decimals). 1 note = 1 USDC of face value. Only the vault can mint or burn it. |
 | `src/interfaces/` | FeesManager (verified Blockscout source) and CCA v2.1.0 (vendored from the tag). |
 | `script/Deploy.s.sol` | Deploys FeeDesk and prints `FEE_DESK_ADDRESS=`. |
@@ -32,6 +32,10 @@ Pick `face` so that `floor · face >= principal`. Then selling every note at the
 The DEMO_FORK needs an archive-capable RPC for anvil. publicnode refuses historical state ("Archive requests require a personal token") a few minutes after the fork block. Re-fork right before the demo, or use a keyed RPC.
 
 `startAuction` enforces this on-chain (`floorPriceQ96 · faceValue >= principal · Q96`) and bounds timing: start within 300 blocks, length ≤ 43,200 blocks (~1 day), claim delay ≤ 1,800 blocks.
+
+## Dining draws: unused
+
+`addDraw` is unused by the agent since 2026-09-19. Gadai's Blackbird Flynet app has no rewards or payment scopes yet (pending Blackbird review), so no FLY can be issued against a draw, and booking debt with nothing disbursed would not be truthful. The function stays in the deployed bytecode and still requires a fresh borrower signature and `drawLimit`, so it cannot add debt the borrower did not sign; with no draws, `drawDebt` stays 0 and repayment is just `noteSupply`. The agent now uses `drawLimit` only as the loan's dining budget for the concierge. The draw notes below describe what the contract allows, not what the agent does.
 
 ## Loan terms, stated plainly
 

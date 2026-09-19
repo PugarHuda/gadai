@@ -29,7 +29,7 @@ The source facts are in `IDEAS.md` (Idea 1 and the verification table) and `docs
    WETH leg ─Uniswap Trading API (SwapProxy)─► USDC                                ├─ flash/      Flash TWAP (token leg), orders
    token leg ─Definitive Flash TWAP (vault = EIP-1271 funder)─► USDC               ├─ social/     signals, leaderboard, mirrors
                                                                                    ├─ cca/        auction launch/settle/bid plans
-                                                                                   └─ flynet/     Blackbird OAuth, recs, FLY draws
+                                                                                   └─ flynet/     Blackbird OAuth, dining concierge
 ```
 
 One process runs the agent: Hono REST, background loops and the SQLite file. The web app calls only the agent's REST API plus the chain (reads, and user-signed txs). All API keys stay on the agent.
@@ -156,21 +156,12 @@ Cancellation covers three cases: the borrower never pledged (keeper), a pledge w
 - **Leaderboard:** see §7.
 
 ### I. Dine on your fees. Track: Blackbird Flynet
-1. On the loan page (borrower or controller), **Connect Blackbird**: `GET /api/flynet/connect?loanId&nonce&sig`, where `sig` signs `flynetLinkMessage`. This is Flynet OAuth with PKCE, scopes `read:profile read:wallets read:user_checkins read:memberships`. The callback stores the tokens in `flynet_links`.
-2. `GET /api/loans/:id/dine`: member profile, SPENDING wallet FLY balance and USD value, draw limit and draws.
-3. `GET /api/flynet/restaurants?loanId`:
-   - Call `listLocations`, keep `paymentsEnabled`, drop `coordinate {0,0}`.
-   - Add open hours, `listSpecials`/`listChallenges` for the top candidates, and the member's `listCheckIns`/`listMemberships`.
-   - The Bankr LLM ranks the top 5 and writes a `reason` for each.
-4. **Draw:** `GET /api/loans/:id/dine/draw-message?amountUsdCents=N` returns `DrawQuote {message, amountRaw, nonce, deadline}`: the vault's own `drawMessage(amountRaw, drawNonce, deadline)` (deadline = chain time + 15 min). The borrower personal_signs `message`, then `POST /api/loans/:id/dine/draw {amountUsdCents, locationId?, nonce, deadline, signature}`:
-   1. Verify the signature is the borrower's (EIP-191, or EIP-1271 for a contract wallet) over that exact vault message; `nonce` must equal the vault's current `drawNonce` and `deadline` must not have passed.
-   2. Check the loan is Active and `drawn + amount ≤ drawLimit`. One open draw per loan.
-   3. FLY amount = USD / FLY price. The price comes from the app balance, and failing that from the member wallet (`balanceUsd.value / balance.value`, at least $1 of FLY). If neither gives a price, return 409 "cannot price FLY".
-   4. Check the app FLY float with `rewards.getBalance()`. If it's short, return 409 "desk FLY float insufficient".
-   5. The agent wallet calls `vault.addDraw(usdcRaw, deadline, borrowerSig)`; the vault re-derives the message and checks the signature on-chain, so the keeper cannot add debt the borrower did not sign. Debt first: the draw row is `pending`, then `recorded`.
-   6. `rewards.issueReward({userId: sub, amount, idempotencyKey:"feedesk-draw-<drawId>"})` → `issued`. An unknown `addDraw` outcome is decided by on-chain state: `drawNonce` past the signed nonce means it landed; past the deadline means it never can (`failed`); otherwise the loop resends the same signed args.
-   7. The borrower pays at the restaurant in the Blackbird app (the only payee path the docs allow). The fee stream repays the draw through `payDesk`.
-5. **Settle leftover FLY:** `POST /api/loans/:id/dine/settle` → `createPaymentIntent` + `confirmPaymentIntent` to our own merchant (member token), which pulls leftover FLY back. The agent then pays the equivalent USDC into the vault from the desk wallet, which reduces `drawDebt` through `payDesk` accounting.
+Changed 2026-09-19 (COORDINATION `[flynet] DECISION` 22:55): **FLY dining draws are removed.** The production app "hackathon 2" is approved with `read:profile read:wallets read:user_checkins read:checkins read:app read:balance read:restaurant_specials read:restaurant_challenges write:save_to_list read:memberships read:tags`. Payments and rewards (`write:rewards`, payment intents) are pending Blackbird review, so Gadai issues no FLY, pulls none back and books no draw debt. `FeeVault.addDraw` stays in the contract, unused by the agent. The loan's `drawLimit` is now its **dining budget** for planning only. Flynet runs on production (`FLYNET_ENV=production`, `x-api-key`).
+1. **Catalog.** `GET /api/flynet/restaurants?query&region&cuisine&price(1-4)&page&loanId?` → `DinePlaceList`. All Blackbird locations (`GET /locations`, paged) are cached 6 h in memory and SQLite; hours 6 h, specials/challenges 1 h. If Flynet fails, the last good copy is served and labelled stale. `GET /api/flynet/restaurants/:locationId` → `DinePlaceDetail` (hours, specials, challenges, sibling locations).
+2. **Plan.** `POST /api/loans/:id/dine/plan {request, partySize 1-20, time? HH:MM|ISO, near? {lat,lng}}` → `DinePlan`. The request is parsed (city, neighborhood, cuisine, late, price, reservations, "somewhere new"), the catalog is pre-ranked (one venue per brand, budget fit, distance), live hours are read for the top 12 and specials/challenges for the top 6. The Bankr LLM orders the shortlist and writes one sentence per pick from the given facts only; with no credits the plan is labelled `ranker: "deterministic"`. Missing hours, failed reads and over-budget picks become notes.
+3. **Member passport** (optional). The borrower signs `flynetLinkMessage(loanId, nonce)`; `GET /api/flynet/connect?loanId&nonce&sig` starts Flynet OAuth + PKCE, and `/api/flynet/callback` exchanges the code server-side with `client_secret`, stores tokens in `flynet_links` and hands the page a member session (`#member=…`). `GET /api/loans/:id/dine/passport` (member session) returns profile, status tier, wallets/FLY balance, check-ins, places visited and gaps nearby, and personalizes the plan. `DELETE /api/loans/:id/dine/member` unlinks.
+4. **State.** `GET /api/loans/:id/dine` → `DineState {budgetRaw, linked, memberLogin, payments}`; `payments.enabled` is `false` with the reason. `GET /api/flynet/status` reports the environment and the app's allowed scopes.
+5. **Paying.** The member pays at the venue in the Blackbird app. Gadai moves no FLY or USDC for dining until Blackbird grants payment scopes.
 
 ### J. Bankr Skill (chat)
 `skill/gadai/SKILL.md` + `catalog.json` (repo layout `<slug>/SKILL.md`). A Bankr agent installs it from our public GitHub URL. Steps in the Skill:
@@ -232,7 +223,7 @@ The contract in `agent/src/ctx.ts` applies. Each `src/<m>/index.ts` may export `
 | `flash` (agent-social-flash) | `flash(path, body?, method?)` (throws on non-2xx with the Flash error) · `searchToken(token): Promise<{priceUsd: number; riskFlagged: boolean}>` · `twapSellTokenLeg(ctx, loan, amount: bigint): Promise<{orderId: string}>` (both modes) · `pollFlashOrders(ctx): Promise<void>` |
 | `social` (agent-social-flash) | `publishSignals(ctx, loanId, memos: Memo[], quote: Quote): Signal[]` (also queues mirrors) · `register`: `/api/signals`, `/api/leaderboard`, `/api/follows*`, `/api/mirrors*`, `/api/dynamic/webhook` · `start`: mirror poller + auto-mirror executor |
 | `cca` (agent-flynet-cca) | `launchAuction(ctx, loan): Promise<{auction: Address; txHash: Hex}>` (includes the anchor bid) · `auctionState(ctx, loan): Promise<AuctionState>` · `bidPlan(ctx, loan, req: BidPlanRequest): Promise<BidPlan>` · `exitPlan(ctx, loan, req): Promise<ExitPlan>` · `start`: settle watcher (disburse/cancel, desk exit + claim) · `register`: `/api/loans/:id/auction*` |
-| `flynet` (agent-flynet-cca) | `recommend(ctx, loanId): Promise<Recommendation[]>` · `register`: `/api/flynet/*`, `/api/loans/:id/dine*` · `start`: reconciles `pending` draws against the vault (`drawNonce`, deadline), issues FLY for `recorded` ones, pays settle credits, and refreshes tokens |
+| `flynet` (agent-flynet-cca) | `register`: `/api/flynet/*`, `/api/loans/:id/dine*` (flow I). No background loop since draws were removed (2026-09-19). |
 
 ## 6. Data model (`agent/src/db/schema.sql`, owned by agent-core; other modules request changes via COORDINATION)
 
@@ -280,7 +271,7 @@ DTO names refer to `shared/src/index.ts`.
 
 | Method and path | Owner | Request | Response |
 |---|---|---|---|
-| GET `/api/health` | core | none | `{ok:true, demoFork, block}` |
+| GET `/api/health` | core | none | `{ok:true, demoFork, block, chainNote}` |
 | GET `/api/desk` | core | none | `DeskInfo` |
 | GET `/api/quote?token&borrower` | core | none | `Quote` (engine only, no LLM) |
 | POST `/api/loans` | core | `ApplyRequest` | `LoanDetail` (APPROVED or DECLINED). 502 if the lead memo fails |
@@ -302,11 +293,22 @@ DTO names refer to `shared/src/index.ts`.
 | POST `/api/dynamic/webhook` | social | Dynamic webhook body | `{ok}` (HMAC `x-dynamic-signature-256`) |
 | GET `/api/flynet/connect?loanId&nonce&sig` | flynet | none | 302 to the Flynet authorize URL |
 | GET `/api/flynet/callback?code&state` | flynet | none | 302 to `${WEB_URL}/dine/:loanId` |
-| GET `/api/flynet/restaurants?loanId` | flynet | none | `Recommendation[]` |
+| GET `/api/flynet/status` | flynet | none | `FlynetStatus` (env, app name, allowed scopes) |
+| GET `/api/flynet/restaurants?query&region&cuisine&price&page&loanId` | flynet | none | `DinePlaceList` (`loanId` optional, 404 if unknown) |
+| GET `/api/flynet/restaurants/:locationId` | flynet | none | `DinePlaceDetail` |
 | GET `/api/loans/:id/dine` | flynet | none | `DineState` |
-| GET `/api/loans/:id/dine/draw-message?amountUsdCents` | flynet | none | `DrawQuote` |
-| POST `/api/loans/:id/dine/draw` | flynet | `DrawRequest` | `Draw` |
-| POST `/api/loans/:id/dine/settle` | flynet | `{nonce, signature}` (`diningSettleMessage`) | `DineState` |
+| POST `/api/loans/:id/dine/plan` | flynet | `DinePlanRequest` | `DinePlan`; 400 on bad input |
+| GET `/api/loans/:id/dine/passport` | flynet | member session header | `DinePassport`; 401 without a session |
+| DELETE `/api/loans/:id/dine/member` | flynet | member session header | `{ok}` |
+
+| GET `/api/board` | board | none | Credit Line Board `{generatedAt, ethUsd, totals, rows}` (README "Credit Line Board") |
+| GET `/api/risk/:token` · POST `/api/admin/risk/:token` | risk | none · `x-admin-token` | cached x402 risk verdict (never spends) · forced paid purchase under the daily budget |
+| GET `/api/erc8004/desk` · GET `/api/erc8004/:agentId` | erc8004 | none | desk agent id and registries · `getSummary` repayment reputation |
+| GET `/.well-known/agent-card.json` | erc8004 | none | ERC-8004 registration file (the desk's `agentURI`) |
+| GET `/api/signals/:id` · GET `/api/signals/:id/flash-quote` | social | none | `SignalCard` · live Flash `/quote` for the mirror (never `/order`) |
+| GET `/api/creator-tokens`, `/api/loans/:id/pledge-tx`, `/api/flash/info`, `/api/rpc` | core / flash | none | helpers used by the web app and the skill |
+
+Removed 2026-09-19 with the draws: `/api/loans/:id/dine/draw-message`, `/dine/draw`, `/dine/settle`.
 
 **Leaderboard score** (social):
 - `repaidPct` = Σ(face − outstanding) / Σ face over loans the persona approved that reached Active, read on-chain.
@@ -325,7 +327,7 @@ DTO names refer to `shared/src/index.ts`.
 | `/loans/[id]` | Terms, memos, timeline (`loan_events` with tx links), debt bar, auction panel (clearing price, raised/required, bid form with a copy-persona-price button, exit/claim), keeper activity (swaps, Flash fills), Redeem notes, Release button |
 | `/notes` | Open FeeNote auctions and the user's bids and notes |
 | `/desk` | Leaderboard, signal feed, follow form (bracket TP/SL or DCA days, auto toggle with delegation via `useWalletDelegation`), "my mirrors" queue with Sign & submit, and cancel |
-| `/dine/[id]` | Connect Blackbird, member passport (from `/dine`), restaurant picks with reasons, draw form (signs `drawMessage`), draws list with FLY amounts and `addDraw` tx |
+| `/dine/[id]` | Dining budget, concierge request form and plan (picks with reasons, hours, specials, challenges, cost vs budget), Log in with Blackbird → member passport, "Payment: not enabled" note |
 
 ## 9. Track integration map (the README links these files; skill-docs fills in the line numbers at the end)
 
@@ -335,13 +337,13 @@ DTO names refer to `shared/src/index.ts`.
 | **Dynamic** | The agent wallet (agent signing token, MPC) signs createLoan, the anchor bid, `disburse`, and every keeper tx after the LLM decision. Embedded wallets sign pledges, bids, releases, redeems and mirror orders. Delegated access runs auto-mirroring. | `agent/src/wallet/`, `agent/src/keeper/`, `agent/src/social/` (delegation), `web/app/providers.tsx`, `web/app/apply`, `web/app/desk` |
 | **Uniswap** | FeeNote is a new ERC-20 asset (a claim on the loan's fee stream), sold in a CCA that funds the loan. Agents price it: persona `maxNotePrice` and the desk anchor bid. The Trading API gives ETH pricing and the keeper's WETH→USDC swap through SwapProxy from a contract swapper. Also FEEDBACK.md. | `contracts/src/FeeVault.sol` (`startAuction`, `swapWethToUsdc`), `contracts/src/FeeNote.sol`, `agent/src/cca/`, `agent/src/uniswap/`, `web/app/loans/[id]` (bids), `FEEDBACK.md` |
 | **Definitive Flash** | The keeper sells the creator-token leg with a Flash **TWAP**, with the vault as the EIP-1271 funder. Follow the Desk turns public credit signals into a leaderboard, and followers mirror them with a Flash market entry plus an **attached Bracket** (TP/SL), or a DCA built as a long TWAP. Tag @DefinitiveFi. | `agent/src/flash/`, `agent/src/social/`, `contracts/src/FeeVault.sol` (`authorizeFlashOrder`, `isValidSignature`), `web/app/desk` |
-| **Blackbird Flynet** | The borrower draws a FLY dining line against pledged fees: Flynet OAuth member context, restaurant data (locations, hours, specials, challenges, check-ins), `issue_reward` to the member, `addDraw` on-chain, and repayment auto-deducted from the fee stream (`payDesk`). Leftover FLY comes back through a payment intent. | `agent/src/flynet/`, `contracts/src/FeeVault.sol` (`addDraw`, `payDesk`), `web/app/dine/[id]` |
+| **Blackbird Flynet** | Dining concierge on live production Flynet data (locations, hours, specials, challenges) planned inside the loan's dining budget, plus a member passport via Flynet OAuth (profile, wallets, check-ins). No FLY moves: payments and rewards are pending Blackbird review. | `agent/src/flynet/`, `web/app/dine/` |
 
 ## 10. DEMO_FORK
 1. `pnpm fork` (or `docker compose --profile fork up anvil`), then deploy FeeDesk to the fork and set `FORK_FEE_DESK_ADDRESS`.
 2. Fund the agent wallet on the fork: `anvil_setBalance` for gas, and USDC with `anvil_impersonateAccount` from a USDC whale followed by `transfer`.
 3. Borrower = `TEST_POOL.beneficiary`. Pledge with `cast send --unlocked --from 0xfdb6… <feesManager> "updateBeneficiary(bytes32,address)" <poolId> <vault>`. The UI labels this "fork impersonation".
-4. Bankr fee reads and the LLM are live mainnet APIs. Uniswap `/swap` calldata comes from mainnet state and runs on the fresh fork. CCA runs on the fork, with `anvil_mine` to advance blocks (web button, fork only). Flash is **disabled** on the fork (mainnet-only settlement), so the token leg stays in the vault and the UI shows "Flash: mainnet only". Flynet runs on staging as usual.
+4. Bankr fee reads and the LLM are live mainnet APIs. Uniswap `/swap` calldata comes from mainnet state and runs on the fresh fork. CCA runs on the fork, with `anvil_mine` to advance blocks (web button, fork only). Flash is **disabled** on the fork (mainnet-only settlement), so the token leg stays in the vault and the UI shows "Flash: mainnet only". Flynet runs on production, read-only.
 5. The real-money path (mainnet, a small $5–20 loan) is the same code with `DEMO_FORK=0`.
 
 ## 11. Env vars

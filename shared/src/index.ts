@@ -414,7 +414,9 @@ export type Loan = {
 };
 
 export type LoanEvent = { id: number; loanId: number; kind: LoanEventKind; txHash: Hex | null; data: unknown; createdAt: string };
-export type LoanDetail = Loan & { events: LoanEvent[]; signals: Signal[]; memos: Memo[] };
+/** DEMO_FORK only: set on every payload carrying a pledge tx (loans, loan detail, pledge-tx); pledgeChatText is then null. */
+export type ForkNotice = { fork?: true; warning?: string };
+export type LoanDetail = Loan & ForkNotice & { events: LoanEvent[]; signals: Signal[]; memos: Memo[] };
 
 /** POST /api/loans body. The BORROWER (fee beneficiary) signs applyMessage via EIP-191 personal_sign (EOA, 1271 or 6492). */
 export type ApplyRequest = {
@@ -431,6 +433,8 @@ export type PledgeRequest = { txHash?: Hex };
 export type DeskInfo = {
   chainId: number;
   demoFork: boolean;
+  /** Human-readable chain label; in DEMO_FORK it says the chain is a fork and real fee rights must not be pledged. */
+  chainNote: string;
   desk: Address;
   agentWallet: Address;
   treasury: Address;

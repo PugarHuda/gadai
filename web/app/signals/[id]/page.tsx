@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { api } from "@/lib/api";
 import { SITE, signalText, type SignalCard } from "@/components/share";
 import { SignalView } from "@/components/signal-view";
@@ -17,6 +18,27 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   };
 }
 
+/** Which 404 did the agent give? Its catch-all answers "no route GET …" (a bare Hono 404 is "404 404 Not Found"); the signal route answers "signal N not found". */
+const why404 = (e: unknown) => {
+  const m = e instanceof Error ? e.message : "";
+  if (/^no route |^404 /.test(m)) return "route";
+  if (/not found/i.test(m)) return "signal";
+  return null; // offline or other errors: SignalView shows its own designed state
+};
+
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
-  return <SignalView id={(await params).id} />;
+  const { id } = await params;
+  const miss = await api(`/api/signals/${encodeURIComponent(id)}`).then(() => null, why404);
+  if (!miss) return <SignalView id={id} />;
+  return (
+    <div className="space-y-4">
+      <h1 className="h1">{miss === "route" ? "Signals are not served by this agent" : `No signal #${id}`}</h1>
+      <p role="alert" className="max-w-[60ch] text-sm">
+        {miss === "route"
+          ? "The Gadai agent answered, but it has no /api/signals route. It is running an older build; restart it from the current code and reload this page."
+          : "The agent has no signal with this id. Signals are numbered from 1 and appear when an underwriter writes a credit memo."}
+      </p>
+      <Link href="/desk" className="link text-sm">See the underwriters and their signals</Link>
+    </div>
+  );
 }

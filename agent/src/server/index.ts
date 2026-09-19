@@ -5,10 +5,10 @@ import { HTTPException } from "hono/http-exception";
 import { serve } from "@hono/node-server";
 import { timingSafeEqual } from "node:crypto";
 import { encodeFunctionData, isAddress, isAddressEqual, isHash, parseAbi, getAddress, recoverMessageAddress, zeroAddress } from "viem";
-import type { Address, ApplyRequest, ApplyResponse, ClaimFirst, DebtState, DeskInfo, Hex, Loan, LoanDetail, LoanStatus, Memo, PledgeRequest, Quote, Signal, Terms, TxRequest } from "@feedesk/shared";
+import type { Address, ApplyRequest, ApplyResponse, ClaimFirst, DebtState, DeskInfo, ForkNotice, Hex, Loan, LoanDetail, LoanStatus, Memo, PledgeRequest, Quote, Signal, Terms, TxRequest } from "@feedesk/shared";
 import { applyMessage, CHAIN_ID_BASE, FEE_DESK_ABI, FEE_VAULT_ABI, FEES_MANAGER_ABI, VAULT_STATUS } from "@feedesk/shared";
 import type { Ctx } from "../ctx.ts";
-import { jsonBody, need, opt } from "../ctx.ts";
+import { jsonBody, need, opt, posInt } from "../ctx.ts";
 import * as db from "../db/index.ts";
 import { assertClaimTx, assertPledgeTx, buildClaim, buildTransferBeneficiary, claimableFees, creatorFees, dust } from "../bankr/index.ts";
 import { PERSONAS, quote, underwrite } from "../underwriter/index.ts";
@@ -19,6 +19,21 @@ const addr = (v: unknown, name: string): Address => {
   return getAddress(v);
 };
 const vaultAbi = parseAbi(FEE_VAULT_ABI);
+
+// ─── DEMO_FORK safety: a fork vault has no code on Base mainnet. A pledge tx (chainId 8453) or the Bankr chat phrase
+// executed on mainnet would move the borrower's REAL fee rights to that address, unrecoverably. ───
+export const FORK_REFUSAL = "This desk runs on a DEMO fork of Base; do not pledge real fee rights. Use the mainnet desk once it opens.";
+export const FORK_WARNING = "DEMO FORK: this desk runs on a local fork of Base, not Base mainnet. Submit this pledge tx ONLY to the fork " +
+  "(the desk's /api/rpc). Signed and sent on Base mainnet, it moves your REAL fee rights to a vault address with no code there: unrecoverable.";
+export const chainNote = (demoFork: boolean) => demoFork
+  ? "DEMO: Anvil fork of Base mainnet (chainId 8453 reused). Nothing here is on Base mainnet; do not pledge real fee rights."
+  : "Base mainnet (chainId 8453).";
+/** In DEMO_FORK every payload carrying a pledge tx is tagged {fork, warning}; the Bankr chat phrase (always executed by
+ * Bankr on mainnet) is withheld. */
+function forkSafe<T extends object>(ctx: Pick<Ctx, "demoFork">, x: T): T & ForkNotice {
+  if (!ctx.demoFork) return x;
+  return { ...x, fork: true, warning: FORK_WARNING, ...("pledgeChatText" in x ? { pledgeChatText: null } : {}) };
+}
 const deskAbi = parseAbi(FEE_DESK_ABI);
 
 /** EIP-191 personal_sign by `signer`: EOA via ecrecover (offline), else ERC-1271/6492 via the RPC. */
@@ -76,7 +91,7 @@ async function detail(ctx: Ctx, id: number): Promise<LoanDetail> {
       ctx.log("server", `loan ${id}: readDebt unavailable`, (e as Error).message); // show the loan anyway, debt: null
     }
   }
-  return { ...loan, debt, events: db.listEvents(ctx.db, id), signals: db.listLoanSignals(ctx.db, id), memos: db.listMemos(ctx.db, id) };
+  return forkSafe(ctx, { ...loan, debt, events: db.listEvents(ctx.db, id), signals: db.listLoanSignals(ctx.db, id), memos: db.listMemos(ctx.db, id) });
 }
 
 const OPEN: LoanStatus[] = ["APPROVED", "PLEDGED", "AUCTION", "ACTIVE"];
@@ -110,7 +125,10 @@ async function claimFirst(ctx: Ctx, id: number, borrower: Address, inp: NonNulla
 async function apply(ctx: Ctx, req: ApplyRequest): Promise<ApplyResponse> {
   const token = addr(req.token, "token"), borrower = addr(req.borrower, "borrower");
   const controller = req.controller ? addr(req.controller, "controller") : borrower;
-  const via = req.via === "bankr-skill" ? "bankr-skill" : "web";
+  if (req.via !== undefined && req.via !== "web" && req.via !== "bankr-skill") throw bad('via must be "web" or "bankr-skill"');
+  // DEMO_FORK: only the desk's own web app / fork scripts (explicit via:"web", which submit through the fork RPC) may apply.
+  if (ctx.demoFork && req.via !== "web") throw bad(FORK_REFUSAL, 409);
+  const via = req.via ?? "web";
   // Only the fee beneficiary can apply (and name a controller, which may later authorize dining draws).
   if (typeof req.nonce !== "string" || req.nonce.length < 8 || req.nonce.length > 128)
     throw bad("nonce (8..128 chars) and signature over applyMessage(token, borrower, controller, nonce) required", 401);
@@ -251,12 +269,14 @@ async function pledgeLocked(ctx: Ctx, id: number, req: PledgeRequest): Promise<L
 
   if (loan.status === "APPROVED") {
     const fm = { address: loan.feesManager, abi: parseAbi(FEES_MANAGER_ABI), functionName: "getShares" } as const;
-    const [vaultShares, borrowerShares] = await Promise.all([
+    const [vaultShares, borrowerShares, pledgeShares] = await Promise.all([
       ctx.pub.readContract({ ...fm, args: [loan.poolId, loan.vault] }),
       ctx.pub.readContract({ ...fm, args: [loan.poolId, loan.borrower] }),
+      ctx.pub.readContract({ address: loan.vault, abi: vaultAbi, functionName: "pledgeShares" }),
     ]);
-    if (vaultShares === 0n || borrowerShares !== 0n)
-      throw bad(`fee rights not moved yet: getShares(vault)=${vaultShares}, getShares(borrower)=${borrowerShares}. Submit pledgeTx first.`, 409);
+    // Same condition FeeVault.confirmPledge enforces (else it reverts NotPledged): a dust pledge gets this 409 instead.
+    if (vaultShares < pledgeShares || borrowerShares !== 0n)
+      throw bad(`fee rights not moved yet: getShares(vault)=${vaultShares} (needs >= pledgeShares ${pledgeShares}), getShares(borrower)=${borrowerShares}. Submit pledgeTx first.`, 409);
     // Soft check only: on-chain getShares above is authoritative (and FeeVault.confirmPledge re-checks it on-chain).
     const bankrSees = ctx.demoFork ? null : await claimableFees(loan.token, loan.vault, true).then((c) => c.eligible, () => null);
     if (!bankrSees) ctx.log("server", `loan ${id}: Bankr claimable-fees eligible=${bankrSees} for vault (${ctx.demoFork ? "DEMO_FORK: API reads mainnet" : "indexer lag or contract beneficiary not indexed"}); proceeding on on-chain shares`);
@@ -338,7 +358,7 @@ export function createApp(ctx: Ctx): Hono {
 }
 
 export function register(app: Hono, ctx: Ctx): void {
-  app.get("/api/health", async (c) => c.json({ ok: true, demoFork: ctx.demoFork, block: Number(await ctx.pub.getBlockNumber()) }));
+  app.get("/api/health", async (c) => c.json({ ok: true, demoFork: ctx.demoFork, chainNote: chainNote(ctx.demoFork), block: Number(await ctx.pub.getBlockNumber()) }));
 
   app.get("/api/desk", async (c) => {
     const d = { address: ctx.deskAddress, abi: parseAbi(FEE_DESK_ABI) } as const;
@@ -347,7 +367,7 @@ export function register(app: Hono, ctx: Ctx): void {
       ctx.pub.readContract({ ...d, functionName: "treasury" }),
     ]);
     const info: DeskInfo = {
-      chainId: CHAIN_ID_BASE, demoFork: ctx.demoFork, desk: ctx.deskAddress, agentWallet: keeper, treasury,
+      chainId: CHAIN_ID_BASE, demoFork: ctx.demoFork, chainNote: chainNote(ctx.demoFork), desk: ctx.deskAddress, agentWallet: keeper, treasury,
       personas: PERSONAS.map((p, i) => (i === 0 ? { ...p, wallet: keeper } : p)), publicUrl: ctx.publicUrl,
     };
     return c.json(info);
@@ -389,20 +409,18 @@ export function register(app: Hono, ctx: Ctx): void {
     const loans = db.listLoans(ctx.db, { borrower: b ? addr(b, "borrower") : undefined });
     // chain is the source of truth: re-sync open loans (one status() read each) before filtering
     const synced = await Promise.all(loans.map((l) => (l.vault && OPEN.includes(l.status) ? syncStatus(ctx, l).catch(() => l) : l)));
-    return c.json(status ? synced.filter((l) => l.status === status) : synced);
+    return c.json((status ? synced.filter((l) => l.status === status) : synced).map((l) => forkSafe(ctx, l)));
   });
 
-  const idParam = (s: string) => {
-    const n = Number(s);
-    if (!Number.isInteger(n) || n < 1) throw bad("loan id must be a positive integer");
-    return n;
-  };
+  const idParam = (s: string) => posInt(s, "loan id");
   app.get("/api/loans/:id", async (c) => c.json(await detail(ctx, idParam(c.req.param("id")))));
 
   app.get("/api/loans/:id/pledge-tx", async (c) => {
     const loan = db.getLoan(ctx.db, idParam(c.req.param("id")));
     if (!loan) throw bad("loan not found", 404);
-    return c.json(await pledgeTx(ctx, loan));
+    // defense in depth: apply already refuses non-web loans on a fork
+    if (ctx.demoFork && loan.via !== "web") throw bad(FORK_REFUSAL, 409);
+    return c.json(forkSafe(ctx, await pledgeTx(ctx, loan)));
   });
 
   app.post("/api/loans/:id/pledge", async (c) =>

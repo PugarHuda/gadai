@@ -36,5 +36,9 @@ for (const dir of dirs) {
   for (const h of ["When to use", "Required inputs and access", "Sequence of work", "How to validate the result", "What to return", "What requires approval"])
     assert.ok(md.includes(`. ${h}`), `${dir}: missing section "${h}"`);
   assert.match(md, /^FD=https:\/\/\S+$/m, `${dir}: FD host not set`);
+  assert.equal(md.match(/^FD=/gm).length, 1, `${dir}: FD= must be defined exactly once`);
+  // demo-fork guard: check demoFork via /api/health or /api/desk and forbid writes on a fork
+  assert.match(md, /\$FD\/api\/(health|desk)"/, `${dir}: missing demo-fork check (curl $FD/api/health)`);
+  assert.ok(md.includes("demoFork") && md.includes("DEMO fork of Base") && /not[*]* build, sign or submit/i.test(md), `${dir}: demo-fork guard must say DEMO fork of Base and not build, sign or submit`);
   ok(`skills/${dir}/SKILL.md valid (${desc.length}-char description)`);
 }

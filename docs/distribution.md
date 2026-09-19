@@ -31,7 +31,7 @@ grok/
 
 What the skills call (all live, checked today):
 - `GET $FD/api/quote?token=&borrower=` returns eligibility, terms and `formula`. It is free.
-- `GET $FD/api/board` is the Credit Line Board (104 agents, 14 eligible, $755.62 total at 15:10 UTC). It is free.
+- `GET $FD/api/board` is the Credit Line Board (105 Base agents, 14 eligible, $756.69 total at 15:44 UTC). It is free.
 - `GET $FD/api/loans/:id`, `/api/loans/:id/auction` and `/api/desk` are free.
 - `https://x402.bankr.bot/0x0455408228f460722ecbe80789bcf1628b479e98/gadai-credit?token=` costs $0.02 USDC through `npx -y @bankr/cli@latest x402 call`. It answers `402` without payment. The Bot asks the user before every call.
 - `$FD` = `https://aqua-economic-moss-modes.trycloudflare.com`. **This is a quick tunnel and its hostname changes when the tunnel restarts.** If it changes, update the `FD=` line in both SKILL.md files (and in `skill/gadai/`).
@@ -54,7 +54,7 @@ Grok Bot is **not free-standing**. It needs one of the following:
 - The Grok Bot desktop app (macOS, Windows or Linux from https://x.ai/bot) or the mobile app. Routines can only be edited and test-run from desktop.
 - The Cursor account must not use Legacy Privacy Mode, because Grok Bot needs cloud data storage.
 
-Prerequisite on our side: **push `grok/` to `github.com/PugarHuda/gadai` (main)** so the raw URLs below resolve. This agent does not commit.
+`grok/` is on `github.com/PugarHuda/gadai` (main); the raw SKILL.md URLs below return 200 (checked 2026-09-19).
 
 ### Install (the documented path: ask the Bot)
 
@@ -70,7 +70,7 @@ Prerequisite on our side: **push `grok/` to `github.com/PugarHuda/gadai` (main)*
 6. Routine: send the Bot this message, then use **Test run**:
    > Every day at 9:00 AM, run the gadai-loan-watch skill for Gadai loan <ID> and post the summary in this conversation. Read-only: never repay, release, sign or contact anyone. If the Gadai desk is unreachable, report the failure instead of using old data. Pause the routine once the loan is RELEASED or CANCELLED.
 
-   There are no loans yet on the current demo desk (`GET /api/loans` returns `[]`). Create one first (fork demo, docs/RUNBOOK.md), or the routine will report `404 loan N not found`.
+   The demo desk has loan `1` (GITLAWB, RELEASED, on the fork), so `<ID>` = 1 works for a test run, though the routine would pause at once because the loan is already released. For a live one, create a loan first (fork demo, docs/RUNBOOK.md).
 7. Share: go to **Share → Create template → Public link → Copy link**. That link is the submission artifact for the Grok Bot track. Check the template has no secrets in it first. Secrets are not part of the Bot description, but check anyway.
 
 ### Alternative: Cursor team marketplace (Cursor Teams plan only, untested for Grok Bot)
@@ -114,7 +114,7 @@ Re-check: `npx -y @bankr/cli@latest agent profile --json`.
 
 ## 3. Flynet (Blackbird)
 
-**Update from the lead:** the Maker app is **approved**. The production key works with header `x-api-key`. The app scopes are read-only: `read:profile read:wallets read:user_checkins read:checkins read:app read:balance read:restaurant_specials read:restaurant_challenges`. There are **no payment or rewards scopes**. A separate agent is rebuilding the integration.
+**Status:** the Maker app **"hackathon 2" is approved on production**. The production key works with header `x-api-key`. Scopes: `read:profile read:wallets read:user_checkins read:checkins read:app read:balance read:restaurant_specials read:restaurant_challenges write:save_to_list read:memberships read:tags`. **Payments and rewards are pending Blackbird review.** The integration was rebuilt on 2026-09-19 as a dining concierge (live venues, hours, specials, challenges) plus a member passport; the FLY dining draws were removed.
 
 ### Endpoints usable without a Maker key (checked today)
 
@@ -125,8 +125,4 @@ Re-check: `npx -y @bankr/cli@latest agent profile --json`.
 
 ### Discord message for Runtime #blackbird
 
-> Hi Blackbird team! We're building **Gadai** for Runtime (USDC credit for Bankr agents against their token's creator fees, with a "dine on your fees" line through Flynet). Our Flynet Make app **"hackathon"** (client_id `f6b4e775-dc14-4eff-a8cf-44e2fdb2cba4`, Maker account hudapugar@gmail.com) is approved, and read-only discovery + member OAuth work. Two asks:
-> 1. Could we get **partner access for Payment Intents and `write:rewards` (`POST /issue_reward`)** on that app, staging or production, whichever you allow for hackathon projects? Our current scopes are read-only, so the draw (issue FLY to the borrower) and settle (payment intent back to our merchant) steps can't run.
-> 2. What is the correct **OAuth `audience` value** for `/oauth/authorize` + `/oauth/token`? `FlynetOAuth` requires it, but the docs don't state it.
->
-> Also, is there a way to fund the app wallet with FLY for testing? Thanks!
+> Hi Blackbird team! We're building **Gadai** for Runtime (USDC credit for Bankr agents against their token's creator fees, with a dining concierge on Flynet). Thanks for approving our production app **"hackathon 2"** (Maker account hudapugar@gmail.com): live discovery and member OAuth are in use. One ask: the **payments and rewards** review (Payment Intents and `write:rewards` / `POST /issue_reward`) for that app. With those, a member could spend part of their loan's dining budget in FLY instead of paying separately in the Blackbird app. Is there anything you need from us for the review? Thanks!

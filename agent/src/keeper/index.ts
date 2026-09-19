@@ -273,6 +273,7 @@ export function register(app: Hono, ctx: Ctx): void {
     const got = Buffer.from(c.req.header("x-admin-token") ?? ""), want = Buffer.from(need("ADMIN_TOKEN"));
     if (got.length !== want.length || !timingSafeEqual(got, want)) return c.json({ error: "bad admin token" }, 401);
     const body = await jsonBody<{ loanId?: number }>(c, true);
+    if (body.loanId !== undefined && !(Number.isSafeInteger(body.loanId) && body.loanId > 0)) return c.json({ error: "loanId must be a positive integer" }, 400);
     if (body.loanId !== undefined && !getLoan(ctx.db, Number(body.loanId))) return c.json({ error: `loan ${body.loanId} not found` }, 404);
     if (running) return c.json({ error: "keeper pass already running" }, 409);
     const ids = body.loanId !== undefined ? [Number(body.loanId)] : servicedIds(ctx);

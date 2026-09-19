@@ -25,14 +25,30 @@ Gadai API base URL. Every call below uses `$FD`, so set it first:
 ```bash
 FD=https://aqua-economic-moss-modes.trycloudflare.com
 ```
+This is the only place the host is set. It is a Cloudflare quick tunnel to the Gadai agent and changes when the tunnel restarts. To point the skill at a new host, edit this one `FD=` line (and `demo.code` in `catalog.json`); nothing else in this file hard-codes it. If `$FD` stops answering, the website https://gadai-six.vercel.app shows the current state.
 Writes (sign a message, submit a transaction) use your own wallet. **Inside Bankr**, use your built-in tools for signing a message and submitting an arbitrary transaction. **Outside Bankr** (any other agent with the Bankr CLI or Wallet API), use `bankr wallet sign` / `bankr wallet submit`, or `https://api.bankr.bot/wallet/sign` / `/wallet/submit` with your Bankr API key in `X-API-Key`.
 
 All Gadai amounts ending in `Raw` are USDC base units with **6 decimals** (`"25000000"` = 25 USDC). All transactions are on Base, `chainId 8453`.
 
 ---
 
+## 0. Safety check: is this desk a demo fork? (run first, every session)
+
+```bash
+curl -s "$FD/api/health"
+# → { "ok": true, "demoFork": false, "block": 12345678 }   (GET $FD/api/desk also returns "demoFork")
+```
+
+If `demoFork` is `true`, this desk runs on a **DEMO fork of Base** (a local Anvil copy), not Base mainnet. Tell the user exactly that, then:
+- **Do NOT build, sign or submit any transaction**: no apply signature, no claim-first, no pledge, no repay transfer, no release, no LLM-credit top-up from loan funds. A pledge signed from a real Bankr wallet would move the user's **real** fee rights on mainnet to a vault that only exists on the fork, and they could not be released.
+- Quotes, loan status, the board, signals and the paid x402 credit report (2a) are fine: they are read-only.
+- For proof of the real flow, link the mainnet evidence page: https://gadai-six.vercel.app/evidence.
+
+If the call fails or does not return `demoFork`, treat the desk as unavailable for writes and stay read-only. Only continue past step 2 when `demoFork` is `false`.
+
 ## Hard rules (read before doing anything)
 
+0. **Never write anything on a demo fork.** If step 0 found `demoFork: true` (or could not tell), stay read-only.
 1. **Never submit a transaction without the user's explicit "yes"** to a summary that shows the exact amounts. The pledge moves **all** of the user's fee share on that token, not part of it.
 2. Before you submit `pledgeTx`, check:
    - `pledgeTx.chainId == 8453`
@@ -202,7 +218,8 @@ Check that `to` equals the loan's `vault`. After the user confirms, submit it as
 
 - **Desk info / who the agents are:** `GET $FD/api/desk` returns the desk contract, the Dynamic agent wallet, and the personas with their models.
 - **Follow the Desk:** `GET $FD/api/signals?limit=20` (every credit decision, scored) and `GET $FD/api/leaderboard` (personas ranked by realized repayment and follower PnL). Following a persona and mirroring its picks as Definitive Flash bracket or DCA orders needs a wallet signature in the web app: `https://gadai-six.vercel.app/desk`.
-- **Dine on your fees:** an `ACTIVE` loan with a `drawLimitRaw` can draw a small FLY dining line through Blackbird. This needs a Blackbird OAuth login in the browser, at `https://gadai-six.vercel.app/dine/<ID>`.
+- **Dining concierge (Blackbird):** a loan's `drawLimitRaw` is its dining budget. The concierge ranks restaurants from live Flynet (Blackbird) data: `POST $FD/api/loans/<ID>/dine/plan` with `{"request":"<what they want>","partySize":2,"time":"19:30"}` (`partySize` 1-20, `time` optional, `HH:MM` or ISO). It returns a plan with a `ranker` label. `GET $FD/api/loans/<ID>/dine` shows the budget. The member passport and save-to-list need a Blackbird login in the web app: `https://gadai-six.vercel.app/dine/<ID>`. **Payments are not enabled**: nothing is charged or drawn, and no debt is added. Don't offer to pay for a meal.
+- **Proof it runs on mainnet:** https://gadai-six.vercel.app/evidence is the mainnet evidence page (real Base transactions).
 
 ## Errors
 

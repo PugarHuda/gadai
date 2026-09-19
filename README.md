@@ -2,11 +2,53 @@
 
 **Gadai lends USDC to Bankr agents and creators against their token's creator-fee stream, and holds that stream as an on-chain lien the desk can't keep.**
 
+Bankr agents earn a share of every trade of their token, yet they still run out of LLM credits and API budget, and today their only options are to top up by hand, sell the token or stop working. Gadai turns the fee stream into collateral: the borrower points its Doppler fee share at a per-loan FeeVault with `updateBeneficiary`, the loan is sold to lenders as a FeeNote in a Uniswap Continuous Clearing Auction, a Dynamic agent wallet pays out the USDC, and the fees repay the notes until anyone can call `release()` to hand the fee rights back. It has to be on-chain because the collateral is itself an on-chain right: only a contract can hold a fee share so that the desk cannot keep it and the borrower does not have to trust the desk to get it back.
+
 Built for Runtime Agent Week (Bankr x Propaganda). Chain: Base (8453).
+
+### Judges: verify in 5 minutes
+
+1. **Site:** https://gadai-six.vercel.app (live data from the Gadai agent, which runs in `DEMO_FORK` on an Anvil fork of Base; every page shows a DEMO_FORK banner).
+2. **Video (3:08, narrated):** https://gadai-six.vercel.app/demo
+3. **Mainnet evidence:** https://gadai-six.vercel.app/evidence, or [docs/EVIDENCE.md](docs/EVIDENCE.md) if that page is not deployed yet. Five Base mainnet txs signed by the Dynamic agent wallet: a Uniswap Trading API swap, the FeeDesk deploy, the ERC-8004 registration, an x402 payment and a Definitive Flash TWAP.
+4. **Agent health:** `curl https://aqua-economic-moss-modes.trycloudflare.com/api/health` → `{"ok":true,"demoFork":true,"block":…}` (plus `chainNote` once the agent runs current code). This is a Cloudflare quick tunnel, so the hostname changes if the tunnel restarts; the site always has the current one.
+5. **Paid API:** `curl -i "https://x402.bankr.bot/0x0455408228f460722ecbe80789bcf1628b479e98/gadai-credit?token=0x5F980Dcfc4c0fa3911554cf5ab288ed0eb13DBa3"` → `HTTP/1.1 402 Payment Required` with x402 v2 requirements ($0.02 USDC on Base).
+6. **Credit Line Board:** https://gadai-six.vercel.app/board. Every Bankr agent profile priced by the underwriting engine. At 15:44 UTC on 2026-09-19: 105 Base agents, 14 eligible, $756.69 of pre-approved credit, 593 WETH of lifetime fees, 18.6B LLM tokens in 30 days (`/api/board` `totals`).
+7. **A full loan:** https://gadai-six.vercel.app/loans/1. GITLAWB, 237.38 USDC lead-approved, pledge → CCA → 239.75 USDC disbursed → 0.166 WETH collected → Uniswap swap to 289.71 USDC → repaid → `release()` → ERC-8004 feedback. All on the fork, every tx in the timeline.
+
+### Live vs simulated
+
+| Part | Where it ran | Proof |
+|---|---|---|
+| Bankr fee APIs, agent profiles, LLM-usage reads | Live, Bankr production API | `/api/board`, every quote's `formula` |
+| Credit memos | Deterministic persona rules. Our Bankr LLM credits are $0, so memos are labelled `rules (Bankr LLM unavailable)` / "no LLM review". The LLM path is built and fails closed | memo cards on `/loans/1` |
+| FeeDesk contract | **Base mainnet**, [`0xa4f21ace…476b4f`](https://basescan.org/address/0xa4f21ace41923bccfdebf1c6ab49659d80476b4f) | EVIDENCE #2 |
+| Loan lifecycle (createLoan, pledge, CCA, disburse, collect, swap, repay, release, ERC-8004 feedback) | Anvil fork of Base against the real GITLAWB pool; fork txs are not on Basescan | `/loans/1`, video 1:08–2:24 |
+| Uniswap Trading API swap | **Mainnet** (desk wallet) and on the fork (mainnet-quoted calldata run by the vault) | EVIDENCE #1, `/loans/1` `swapped` |
+| Dynamic agent wallet paying over x402 | **Mainnet**, $0.05 USDC honeypot verdict, settled by the Bankr facilitator | EVIDENCE #4 |
+| Definitive Flash TWAP | **Mainnet**, order `fb3b2572…`: the desk mirrors its own approved signal (0.25 USDC → GITLAWB, 2 slices); first slice filled. The vault-funded keeper TWAP (EIP-1271) and follower bracket/DCA mirrors are built and quote-tested, not filled | EVIDENCE #5 |
+| ERC-8004 desk identity | **Mainnet**, agent #94699 | EVIDENCE #3 |
+| Paid credit report | Live on Bankr x402 Cloud | `curl -i` above |
+| Bankr Skill (borrow by chat) | Code and skill are public. While the desk runs on the fork, `POST /api/loans` from the skill is refused with 409 so nobody pledges real fee rights to a fork vault; quotes and status reads work | [skill/gadai/SKILL.md](skill/gadai/SKILL.md) |
+| Credit Line Board, incl. 17 Robinhood Chain agents (4 with tokenized-stock fees: SPY, TSLA, MSTR, AMZN) | Live reads; the Robinhood rows are indicative lines only, since the desk contracts are deployed on Base only | `/board` |
+| Blackbird Flynet dining concierge | Live Flynet production data (app approved). No FLY moves: payments and rewards scopes are pending Blackbird review | `/dine/1` |
+
+### Per-track map
+
+| Track | Requirement | Where it is satisfied | Evidence |
+|---|---|---|---|
+| **Bankr** | Build on Bankr | Fee APIs drive underwriting; `build-transfer-beneficiary` is the pledge; LLM Gateway memo path; Bankr Skill; x402 Cloud credit report; agent profile `gadai` (pending Bankr review) | [Bankr section](#bankr-grand-prize), [skill/gadai/SKILL.md](skill/gadai/SKILL.md), x402 402 above |
+| **Dynamic** | An agent makes a decision, then carries out a wallet/payment action | The Dynamic agent wallet (MPC, agent signing token) signs `createLoan`, the anchor bid and `disburse()` after the lead memo approves, and pays for a risk verdict over x402 before approving | [Dynamic section](#dynamic-an-agent-that-decides-then-pays), EVIDENCE #2–#5 |
+| **Uniswap** | Use the Uniswap API / CCA; new assets, new agents; FEEDBACK.md | FeeNote ERC-20 sold in a CCA v2.1.0, agents price it; keeper swaps through the Trading API with the vault as swapper | [Uniswap section](#uniswap-new-assets-new-agents), [FEEDBACK.md](FEEDBACK.md), EVIDENCE #1 |
+| **Definitive Flash** | Social trading build with a Flash advanced order; tag @DefinitiveFi | TWAP for the token leg, Follow the Desk leaderboard, bracket (TP/SL) and DCA mirrors, shareable signal cards | [Flash section](#definitive-flash-best-social-trading-build-definitivefi), EVIDENCE #5 |
+| **Blackbird** | Build on Flynet | Dining concierge on live Flynet data (venues, hours, specials, challenges), member passport via OAuth, loan dining budget; the app also holds `write:save_to_list` | [Blackbird section](#blackbird-flynet-dine-on-your-fees), `/dine/1` |
+| **Grok Bot** | A Grok Bot built from our skills | [`grok/`](grok/): two Agent Skills (`gadai-credit`, `gadai-loan-watch`), validated by `node grok/check.mjs`. The track needs a public template link, which only exists once the user creates it in Grok Bot | [docs/distribution.md](docs/distribution.md) |
+
+### How it works
 
 A Bankr token launched through Doppler pays its creator a share of every trade. Many agents need cash now (LLM credits, x402 APIs, inventory) and have steady fees coming in later. Bankr's guidance for an agent whose fees don't cover its compute is to cut operations or top up by hand. Before Gadai, nothing on Bankr let a creator borrow against those future fees. Gadai does, using a primitive Doppler already ships: `updateBeneficiary(poolId, newBeneficiary)`.
 
-1. **Underwrite.** The desk's agent reads the token's real fee history from the Bankr API. A deterministic engine sets the maximum it can lend. Three underwriter personas, each on a different model through the **Bankr LLM Gateway**, write credit memos. The lead persona's decision is binding. An LLM can only decline a loan or lower the amount, never raise it.
+1. **Underwrite.** The desk's agent reads the token's real fee history from the Bankr API. A deterministic engine sets the maximum it can lend. Three underwriter personas, each on a different model through the **Bankr LLM Gateway**, write credit memos (while our Bankr LLM credits are $0, each persona runs its deterministic rule set and the memo says so). The lead persona's decision is binding. An LLM can only decline a loan or lower the amount, never raise it.
 2. **Pledge.** The borrower moves its fee beneficiary share to a per-loan **FeeVault** contract. It can do this from a Dynamic embedded wallet in the web app, through Bankr chat, or with its own Bankr agent via our **Bankr Skill**.
 3. **Fund.** The loan becomes a new ERC-20, the **FeeNote**, whose face value is the debt. FeeNotes are sold for USDC in a **Uniswap Continuous Clearing Auction**. The desk's **Dynamic agent wallet** places an anchor bid at its own underwriter's price, and lenders bid alongside it. When the auction graduates, the same agent wallet sends the USDC to the borrower. The borrower can turn it straight into LLM credits with `bankr llm credits add`.
 4. **Service.** The keeper collects fees into the vault. WETH is swapped to USDC through the **Uniswap Trading API**, with the vault itself as the swapper. The creator-token leg is sold via a **Definitive Flash TWAP**, with the vault as an EIP-1271 funder, so the borrower's own token isn't dumped. USDC building up in the vault is the repayment, and noteholders redeem 1:1.
@@ -14,9 +56,9 @@ A Bankr token launched through Doppler pays its creator a share of every trade. 
 
 Two more things run on the same loan:
 - **Follow the Desk.** Every credit decision is a public, scored signal. Underwriter personas are ranked on a leaderboard by realized repayment and follower PnL. Followers can mirror approved borrowers' tokens as a Flash market entry with an attached **Bracket** (take-profit and stop-loss), or as a DCA built from a long Flash TWAP.
-- **Dine on your fees.** Every loan carries a dining budget (its `drawLimit`). A concierge plans a meal inside it from live **Blackbird Flynet** data: venues, hours, specials and challenges, plus the member's own check-ins after a Blackbird login. Our Flynet app is read-only, so Gadai moves no money for dining: the member pays in the Blackbird app.
+- **Dine on your fees.** Every loan carries a dining budget (its `drawLimit`). A concierge plans a meal inside it from live **Blackbird Flynet** data: venues, hours, specials and challenges, plus the member's own check-ins after a Blackbird login. Our Flynet app is approved on production, but its payment and rewards scopes are still pending Blackbird review, so Gadai moves no money for dining: the member pays in the Blackbird app.
 
-> Nothing in this repo is mocked. A missing key makes the process throw `Missing env X (see .env.example)`. The one demo mode, `DEMO_FORK=1`, runs on an Anvil fork of Base and every web page labels it.
+> Nothing in this repo is mocked. The mainnet parts are listed in [docs/EVIDENCE.md](docs/EVIDENCE.md). A missing key makes the process throw `Missing env X (see .env.example)`. The one demo mode, `DEMO_FORK=1`, runs on an Anvil fork of Base and every web page labels it.
 
 ---
 
@@ -115,8 +157,8 @@ Bankr is the product's foundation, not a plug-in. The collateral, the underwriti
 - [`engine.ts#L121-L141`](agent/src/underwriter/engine.ts#L121-L141): `parseMemo` fails closed. If the model tries to exceed the cap or returns a bad price, the result is a parse failure, which returns 502 and creates no loan.
 
 **The pledge is Bankr's own primitive.**
-- [`agent/src/server/index.ts#L110-L187`](agent/src/server/index.ts#L110-L187): `apply` accepts only a borrower-signed `applyMessage` (EIP-191, single-use nonce), then builds `pledgeTx` via `build-transfer-beneficiary` with `newBeneficiary = FeeVault` and checks it byte-for-byte.
-- [`#L229-L288`](agent/src/server/index.ts#L229-L288): verifies the pledge on-chain with `getShares` (authoritative) and cross-checks Bankr's `claimable-fees` for the vault.
+- [`agent/src/server/index.ts#L125-L205`](agent/src/server/index.ts#L125-L205): `apply` accepts only a borrower-signed `applyMessage` (EIP-191, single-use nonce), then builds `pledgeTx` via `build-transfer-beneficiary` with `newBeneficiary = FeeVault` and checks it byte-for-byte.
+- [`#L247-L308`](agent/src/server/index.ts#L247-L308): verifies the pledge on-chain with `getShares` (authoritative) and cross-checks Bankr's `claimable-fees` for the vault.
 
 **Enforceable lien.**
 - [`contracts/src/FeeVault.sol#L248-L256`](contracts/src/FeeVault.sol#L248-L256): `confirmPledge`.
@@ -135,7 +177,7 @@ The dining concierge asks the Bankr LLM to order its verified Flynet shortlist (
 
 **Agent wallet** (Node SDK, agent signing token pattern):
 - [`agent/src/wallet/index.ts#L42-L89`](agent/src/wallet/index.ts#L42-L89): SIWE sign-in with the agent signing token, then `authenticateJwt` and the `DynamicEvmWalletClient` MPC wallet.
-- [`#L202-L248`](agent/src/wallet/index.ts#L202-L248): `getAgentWallet`, the viem client that every desk transaction goes through.
+- [`#L210-L256`](agent/src/wallet/index.ts#L210-L256): `getAgentWallet`, the viem client that every desk transaction goes through.
 - [`agent/src/wallet/bootstrap.ts`](agent/src/wallet/bootstrap.ts): the one-time identity and key-share bootstrap.
 
 **Decision → payment.** Right after the lead memo approves, the same wallet signs:
@@ -149,7 +191,7 @@ After that, it signs every keeper transaction ([`keeper/index.ts#L102-L237`](age
 
 **Embedded wallets** (React SDK):
 - [`web/lib/wallet.tsx#L11-L80`](web/lib/wallet.tsx#L11-L80): `DynamicContextProvider` + `EthereumWalletConnectors`, and `useSigner`, which sends the transactions.
-- Borrowers sign the pledge in [`web/components/pledge.tsx#L12-L88`](web/components/pledge.tsx#L12-L88).
+- Borrowers sign the pledge in [`web/components/pledge.tsx#L12-L93`](web/components/pledge.tsx#L12-L93).
 - Lenders sign Permit2 approvals and `submitBid` in [`web/components/auction.tsx#L10-L149`](web/components/auction.tsx#L10-L149).
 
 **Delegated access** (auto-mirroring for Follow the Desk):
@@ -207,7 +249,7 @@ A dining concierge for borrowers and their agents. Ask "somewhere in NYC for fou
 - [`#L495-L509`](agent/src/flynet/index.ts#L495-L509): the Bankr LLM orders the shortlist and writes one sentence per pick using only the given facts. With no credits the plan is labelled `deterministic`.
 - [`#L274-L363`](agent/src/flynet/index.ts#L274-L363): member context through OAuth 2.0 + PKCE. The borrower signs `flynetLinkMessage` to bind the login to the loan. The server exchanges the code with `client_secret` and refreshes single-use tokens (one refresh per loan at a time). Then it reads the profile, status tier, wallets/FLY balance and check-ins. That "passport" shows places visited and gaps nearby (venues in the member's neighborhoods they have not tried), and it personalizes the plan. It is gated on `FLYNET_CLIENT_SECRET`: without it the UI says "member login needs the app secret".
 - [`#L527-L591`](agent/src/flynet/index.ts#L527-L591): routes. `GET /api/flynet/status`, `GET /api/flynet/restaurants?query&region&cuisine&price&page&loanId`, `GET /api/flynet/restaurants/:id`, `GET /api/loans/:id/dine`, `POST /api/loans/:id/dine/plan {request, partySize, time?, near?}`, `GET /api/loans/:id/dine/passport` and `DELETE /api/loans/:id/dine/member` (member session header), `GET /api/flynet/connect` and `/callback`. Bad input returns 400.
-- **Payments are off, on purpose.** Our production app "hackathon" has `read:*` scopes only: no `write:rewards` and no payment intents. So the old FLY draw (`vault.addDraw` + `issue_reward`) and settle are removed. Booking on-chain debt with nothing disbursed would not be truthful. `FeeVault.addDraw` stays in the contract, unused. The UI shows "payment requires Blackbird partner access", and the member pays at the table in the Blackbird app.
+- **Payments are off, on purpose.** Our production app "hackathon 2" is approved with `read:profile read:wallets read:user_checkins read:checkins read:app read:balance read:restaurant_specials read:restaurant_challenges write:save_to_list read:memberships read:tags`. Payments and rewards (`write:rewards`, payment intents) are pending Blackbird review. So the old FLY draw (`vault.addDraw` + `issue_reward`) and settle were removed on 2026-09-19. Booking on-chain debt with nothing disbursed would not be truthful. `FeeVault.addDraw` stays in the contract, unused. The UI shows "payment requires Blackbird partner access", and the member pays at the table in the Blackbird app.
 - Tests use real production responses captured on 2026-09-19 (`agent/src/flynet/fixtures/`).
 
 ### Credit Line Board
@@ -236,7 +278,7 @@ A dining concierge for borrowers and their agents. Ask "somewhere in NYC for fou
 Before the desk approves a loan, its Dynamic agent wallet **pays a third-party API, retries the request and uses the response**: it buys a honeypot/rug verdict for the collateral token from a service on Bankr x402 Cloud, `POST https://x402.bankr.bot/0xf31f59e7b8b58555f7871f71973a394c8f1bffe5/honeypot-check` with `{"token":"0x…"}`, for **$0.05 USDC on Base**.
 - **Flow.** The unpaid request gets `402` with an x402 v2 `PAYMENT-REQUIRED` header: `exact`, `eip155:8453`, USDC `0x8335…2913`, `amount 50000`, `payTo 0x8AEE…01a0`, EIP-712 domain `USD Coin` / `2`, facilitator `https://api.bankr.bot/facilitator`. The agent signs an EIP-3009 `transferWithAuthorization` with the Dynamic MPC wallet's `signTypedData` (no gas; the facilitator settles), retries with `PAYMENT-SIGNATURE`, reads the verdict, and takes the settlement tx from the `PAYMENT-RESPONSE` header.
 - **Code.** [`agent/src/risk/index.ts`](agent/src/risk/index.ts) uses the documented x402 v2 client (`@x402/fetch` `wrapFetchWithPaymentFromConfig` + `@x402/evm` `ExactEvmScheme`, v2.26.0, as in Dynamic's x402 recipe). The signer is the desk `AgentWallet`, so the signature goes through the same serial queue and Dynamic re-auth as every desk transaction. A payment policy only signs `exact` / Base mainnet / native USDC with its mainnet domain / at most $0.05; anything else is refused before signing.
-- **This is the one mainnet action.** The payment is real USDC on Base mainnet, also in `DEMO_FORK` (where every other write hits the Anvil fork). The typed data carries chainId 8453, so the fork-bound wallet client signs it unchanged. The balance check reads mainnet (`BASE_RPC_URL`), and the loan page links the settlement to basescan.org.
+- **It pays on mainnet, also in `DEMO_FORK`.** The payment is real USDC on Base mainnet even when every loan write hits the Anvil fork ([EVIDENCE #4](docs/EVIDENCE.md)). The typed data carries chainId 8453, so the fork-bound wallet client signs it unchanged. The balance check reads mainnet (`BASE_RPC_URL`), and the loan page links the settlement to basescan.org.
 - **Effect on the loan (may only lower).** `HONEYPOT` declines every memo with the verdict as the reason; `SUSPICIOUS` halves each approved principal; `SAFE` changes nothing ([`agent/src/underwriter/index.ts`](agent/src/underwriter/index.ts), `riskFactor` + `lowerRun`). The verdict and payment evidence go into the quote formula, the lead memo rationale when it lowers, and a `risk_check` loan event; the loan page shows a "Paid risk check" card (verdict, $0.05, payer = desk Dynamic wallet, settlement tx).
 - **Never faked.** Verdicts are cached per token for 24 h (db `kv`). `RISK_CHECK=off` disables the purchase. With less than $0.05 USDC on Base mainnet in the wallet, the check is skipped with `not purchased: insufficient USDC`, and the same goes for a spent daily budget (`RISK_MAX_USDC_PER_DAY`, default 1) or a service error: the loan is then underwritten without a verdict, and the event says why.
 - **API.** `GET /api/risk/:token` returns the cached verdict and never spends. `POST /api/admin/risk/:token` (`x-admin-token`) forces a paid purchase, still under the budget.
@@ -258,7 +300,7 @@ Before the desk approves a loan, its Dynamic agent wallet **pays a third-party A
 - **Bankr skill:** [`skill/gadai/`](skill/gadai/SKILL.md). Install it in Bankr from `https://github.com/PugarHuda/gadai/tree/main/skill/gadai`.
 - **Grok Bot:** [`grok/`](grok/) is an Agent Plugins 1.1.0 package with two Agent Skills. `gadai-credit` quotes a line, explains the pledge flow, reads the Credit Line Board and buys the $0.02 x402 report after asking the user. `gadai-loan-watch` is a read-only loan summary meant to run as a daily routine. Validate with `node grok/check.mjs`. Install steps and plan requirements (a paid Cursor plan or a linked SuperGrok / X Premium+ subscription) are in [docs/distribution.md](docs/distribution.md).
 - **Bankr Agent Profile:** slug `gadai` (id `6aaea6368ff44a9e89792e32`), created with one project update. It is waiting for Bankr admin approval, so it is not public yet.
-- **Flynet:** the Maker app is approved for production with read-only scopes, and `/dine` runs on live production data. The Discord ask for payment and rewards access is in [docs/distribution.md](docs/distribution.md).
+- **Flynet:** the Maker app "hackathon 2" is approved for production (read scopes plus `write:save_to_list`; payments and rewards pending Blackbird review), and `/dine` runs on live production data. The Discord ask for payment and rewards access is in [docs/distribution.md](docs/distribution.md).
 
 ## Run it
 
@@ -287,9 +329,9 @@ pnpm web                                 # web on :3000
 What still runs live in fork mode:
 - The Bankr fee APIs and the LLM Gateway.
 - Uniswap `/swap` calldata, which is quoted on mainnet and executed on the fork.
-- Flynet, on its staging environment.
+- Flynet, on production (read-only use).
 
-Flash doesn't run in fork mode, because it settles only on mainnet. The UI shows "Flash: mainnet only".
+Flash doesn't run in fork mode, because it settles only on mainnet. The UI shows "Flash: mainnet only". A real Flash TWAP was placed on mainnet from the desk's Dynamic wallet (`agent/src/demo/desk-mirror.ts`, [EVIDENCE #5](docs/EVIDENCE.md)).
 
 **Bankr agent:** `install the gadai skill from https://github.com/PugarHuda/gadai/tree/main/skill/gadai`.
 

@@ -11,11 +11,13 @@ metadata:
 
 Gadai lends USDC on Base (chain 8453) against the creator-fee share of a Bankr (Doppler) token. This skill quotes lines, explains the flow and reads the public board. It never moves funds.
 
-Set the API base first. It is the public tunnel to the Gadai agent, and it can change between demo sessions. If it stops answering, say so and use the website https://gadai-six.vercel.app instead:
+Set the API base first. It is the public tunnel to the Gadai agent (a Cloudflare quick tunnel), and it can change between demo sessions. If it stops answering, say so and use the website https://gadai-six.vercel.app instead:
 
 ```bash
 FD=https://aqua-economic-moss-modes.trycloudflare.com
 ```
+
+This `FD=` line is the only place the host is set. When the tunnel restarts, edit this one line in the saved skill; every call below reads `$FD`.
 
 ## 1. When to use
 
@@ -35,6 +37,15 @@ For status checks on an existing loan, use the `gadai-loan-watch` skill.
 - For the paid report (3c) only: a Bot secret named `BANKR_API_KEY` (Bot → Secrets → Add secret) holding a Bankr API key whose wallet has at least $0.02 USDC on Base. The Bankr CLI reads that variable. Never ask for the key in chat.
 
 ## 3. Sequence of work
+
+### 3.0 Safety check: demo fork? (always first)
+
+```bash
+curl -s "$FD/api/health"
+# → { "ok": true, "demoFork": false, "block": 12345678 }   (GET $FD/api/desk also returns "demoFork")
+```
+
+If `demoFork` is `true`, tell the user: "This Gadai desk is a **DEMO fork of Base**, not mainnet. Quotes and reports only: do not build, sign or submit any pledge, repay or other transaction against it." Continue with quotes (3a), the board (3d) and the paid report (3c) only, and point to the mainnet evidence page https://gadai-six.vercel.app/evidence for the real on-chain flow. Do not send the user to apply or pledge (3b's last paragraph) while `demoFork` is true. If the call fails or has no `demoFork`, treat it the same way.
 
 ### 3a. Quote (free, read-only)
 
@@ -61,7 +72,7 @@ When asked how borrowing works, explain these steps in plain words:
 
 Unfilled or never-pledged loans are `CANCELLED`, and anything the vault held goes back to the borrower in the same transaction.
 
-**This skill does not apply or pledge.** Those steps need the borrower's own wallet. Send the user to the Bankr skill (install `https://github.com/PugarHuda/gadai/tree/main/skill/gadai` in Bankr) or to https://gadai-six.vercel.app.
+**This skill does not apply or pledge.** Those steps need the borrower's own wallet. Only when 3.0 showed `demoFork: false`, send the user to the Bankr skill (install `https://github.com/PugarHuda/gadai/tree/main/skill/gadai` in Bankr) or to https://gadai-six.vercel.app.
 
 ### 3c. Paid credit report over x402 ($0.02 USDC, needs approval)
 
@@ -71,7 +82,7 @@ Use this when the user wants a report on a token they don't own, or when `$FD` i
 npx -y @bankr/cli@latest x402 call "https://x402.bankr.bot/0x0455408228f460722ecbe80789bcf1628b479e98/gadai-credit?token=$TOKEN" --max-payment 0.02 --yes --raw
 ```
 
-`--yes` skips the CLI's own prompt, so the user's yes in chat is the only confirmation. Add `&borrower=$BORROWER` to the URL if you have it. The response has `eligible`, `reasons[]`, `history` (r7/r30/rLife in WETH/day, slope30d, cv30d), `terms` (`maxPrincipalUsdc`, `feeRatePct`, `floorPrice`, `termDays`, `drawLimitUsdc`) and `formula`. A `400` means a bad address, and no payment was taken. The report is a pre-approval without on-chain checks. To borrow, the user still applies through Bankr or the website.
+`--yes` skips the CLI's own prompt, so the user's yes in chat is the only confirmation. Add `&borrower=$BORROWER` to the URL if you have it. The response has `eligible`, `reasons[]`, `history` (r7/r30/rLife in WETH/day, slope30d, cv30d), `terms` (`maxPrincipalUsdc`, `feeRatePct`, `floorPrice`, `termDays`, `drawLimitUsdc`) and `formula`. A `400` means a bad address, and no payment was taken. The report is a pre-approval without on-chain checks, computed by the same engine as the desk quote, and it works even when `$FD` is down. To borrow, the user still applies through Bankr or the website.
 
 ### 3d. Credit Line Board (free, read-only)
 
@@ -91,7 +102,7 @@ Returns `generatedAt`, `ethUsd`, `totals` (`agents`, `eligible`, `totalCreditUsd
 
 ## 5. What to return
 
-A short answer with the numbers the user asked for, the `formula` string for quotes, and links: the website https://gadai-six.vercel.app, the board at /board, and the source at https://github.com/PugarHuda/gadai. Keep the source of each number clear: the free desk quote or the paid x402 report.
+A short answer with the numbers the user asked for, the `formula` string for quotes, and links: the website https://gadai-six.vercel.app, the board at /board, the mainnet evidence page at /evidence, and the source at https://github.com/PugarHuda/gadai. Keep the source of each number clear: the free desk quote or the paid x402 report.
 
 ## 6. What requires approval
 

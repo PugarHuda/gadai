@@ -53,12 +53,17 @@ cast send --unlocked --from ${loan.borrower} ${loan.pledgeTx?.to ?? loan.feesMan
           </div>
           {hash && <p className="mt-2 text-xs">sent <Tx h={hash} /></p>}
         </div>
-        <div className="box rounded-[3px] p-3">
-          <div className="font-semibold">Bankr agent or Bankr wallet</div>
-          <p className="mt-1 text-xs text-mute">Beneficiary is your Bankr wallet? Paste this into Bankr chat (or have your agent submit the pledgeTx via the Gadai skill):</p>
-          <pre className="mt-2 whitespace-pre-wrap break-all rounded-[3px] border border-rule bg-ground/60 p-2 font-mono text-[11px]">{loan.pledgeChatText}</pre>
-          <button className="link mt-1 text-xs" onClick={() => navigator.clipboard.writeText(loan.pledgeChatText ?? "").then(() => setCopied(true))}>{copied ? "Copied" : "Copy"}</button>
-        </div>
+        {(loan as { warning?: string }).warning && (
+          <p className="rounded-[3px] border border-amber-ink/50 p-3 text-xs font-semibold" role="alert">{(loan as { warning?: string }).warning}</p>
+        )}
+        {loan.pledgeChatText && (
+          <div className="box rounded-[3px] p-3">
+            <div className="font-semibold">Bankr agent or Bankr wallet</div>
+            <p className="mt-1 text-xs text-mute">Beneficiary is your Bankr wallet? Paste this into Bankr chat (or have your agent submit the pledgeTx via the Gadai skill):</p>
+            <pre className="mt-2 whitespace-pre-wrap break-all rounded-[3px] border border-rule bg-ground/60 p-2 font-mono text-[11px]">{loan.pledgeChatText}</pre>
+            <button className="link mt-1 text-xs" onClick={() => navigator.clipboard.writeText(loan.pledgeChatText ?? "").then(() => setCopied(true))}>{copied ? "Copied" : "Copy"}</button>
+          </div>
+        )}
         <div className={`rounded-[3px] border p-3 ${ENV.DEMO_FORK ? "border-dashed border-amber-ink/50" : "border-rule text-mute"}`}>
           <div className="font-semibold">Fork impersonation {ENV.DEMO_FORK ? "" : "(DEMO_FORK only)"}</div>
           {ENV.DEMO_FORK ? (

@@ -13,7 +13,7 @@ metadata:
 FD=https://aqua-economic-moss-modes.trycloudflare.com
 ```
 
-`$FD` is the public tunnel to the Gadai agent. It can change between demo sessions. If it does not answer, report that and stop. Never fall back to old data.
+`$FD` is the public tunnel to the Gadai agent (a Cloudflare quick tunnel). This `FD=` line is the only place the host is set: when the tunnel restarts, edit this one line (the saved skill or the routine's copy) and nothing else. If it does not answer, report that and stop. Never fall back to old data.
 
 ## 1. When to use
 
@@ -28,11 +28,11 @@ FD=https://aqua-economic-moss-modes.trycloudflare.com
 
 ## 3. Sequence of work
 
+0. **Safety check, first, once per run:** `curl -s -m 30 "$FD/api/health"` (`GET $FD/api/desk` also returns it). If it says `"demoFork": true`, the desk runs on a **DEMO fork of Base**: its transaction hashes will not show up on basescan, and the user must **not** build, sign or submit any pledge, repay or release against it. Put that first in the summary, and link the mainnet evidence page https://gadai-six.vercel.app/evidence.
 1. `curl -s -m 30 "$FD/api/loans/$LOAN_ID"`. This returns a `LoanDetail`: `id`, `status`, `symbol`, `token`, `borrower`, `vault`, `terms`, `debt`, `events[]` (each with `kind`, `txHash`, `createdAt`). The desk re-reads `debt` from the vault on every call.
 2. If `status` is `AUCTION`, also run `curl -s -m 30 "$FD/api/loans/$LOAN_ID/auction"` for `currencyRaisedRaw`, `requiredRaw`, `clearingPrice`, `endBlock` and `currentBlock`.
-3. Once per run, `curl -s -m 30 "$FD/api/desk"`. If it says `"demoFork": true`, the desk runs on a fork of Base, and its transaction hashes will not show up on basescan. Say so in the summary.
-4. Read the previous snapshot from `/workspace/gadai/loan-$LOAN_ID.json`, if it exists.
-5. Write the new snapshot (`status`, `debt`, the newest event `id`, and the time) to that file. Create `/workspace/gadai/` if needed.
+3. Read the previous snapshot from `/workspace/gadai/loan-$LOAN_ID.json`, if it exists.
+4. Write the new snapshot (`status`, `debt`, the newest event `id`, and the time) to that file. Create `/workspace/gadai/` if needed.
 
 ## 4. How to validate the result
 

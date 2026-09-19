@@ -36,7 +36,15 @@ printf(skill, "SKILL.md");
 printf(catalog.demo.code, "catalog.json");
 assert.match(skill, /^FD=https:\/\/\S+$/m, "SKILL.md must define FD=https://<host>");
 assert.match(catalog.demo.code, /^FD=https:\/\/\S+$/m, "catalog.json demo must define FD=https://<host>");
-ok("$FD defined in SKILL.md and catalog.json");
+assert.equal(skill.match(/^FD=/gm).length, 1, "SKILL.md must define FD= exactly once (single place to change the tunnel host)");
+ok("$FD defined once in SKILL.md, and in catalog.json");
+
+// 1b. demo-fork guard: step 0 must check demoFork and forbid any write on a fork
+const s0 = skill.match(/^## 0\.[\s\S]*?(?=^## )/m)?.[0] ?? "";
+assert.ok(skill.indexOf("## 0.") > 0 && skill.indexOf("## 0.") < skill.indexOf("## 1."), "SKILL.md: step 0 (demo-fork safety check) missing or not before step 1");
+assert.match(s0, /curl -s "\$FD\/api\/(health|desk)"/, "SKILL.md step 0 must curl $FD/api/health or /api/desk");
+assert.ok(s0.includes("demoFork") && s0.includes("DEMO fork") && /Do NOT build, sign or submit/.test(s0), "SKILL.md step 0 must say: demoFork true = DEMO fork, do NOT build, sign or submit");
+ok("step 0 demo-fork guard present");
 
 // 2. pledge-data rule vs live Bankr builder
 const vault = "0x000000000000000000000000000000000000dEaD";

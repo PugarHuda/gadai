@@ -19,12 +19,15 @@ const borrower = privateKeyToAccount(generatePrivateKey());
 const stranger = privateKeyToAccount(generatePrivateKey());
 const token = TEST_POOL.token as Address;
 let vaultStatus: (typeof VAULT_STATUS)[number] = "Created";
+let dustShares = 1n;
 
 const ctx = {
   db: db.openDb(":memory:"),
   pub: {
-    readContract: async ({ functionName }: { functionName: string }) => {
+    readContract: async ({ functionName, args }: { functionName: string; args?: unknown[] }) => {
       if (functionName === "status") return VAULT_STATUS.indexOf(vaultStatus);
+      if (functionName === "pledgeShares") return 1000n;
+      if (functionName === "getShares") return (args as [unknown, string])[1] === VAULT ? dustShares : 0n;
       throw new Error(`unexpected read ${functionName}`);
     },
     verifyMessage: async () => false, // no smart-wallet signers in these tests
@@ -202,4 +205,69 @@ test("/api/rpc: read-only allowlist + eth_sendRawTransaction; anvil/debug/evm/si
     assert.equal((await a.request("/api/rpc", { method: "POST", body: "{nope" })).status, 400);
     assert.equal(seen.length, n); // rejected requests never reach the RPC
   } finally { globalThis.fetch = realFetch; }
+});
+
+test("pledge pre-check: a dust pledge (getShares(vault) < pledgeShares) → 409 'not moved yet', never reaching confirmPledge", async () => {
+  const id = db.insertLoan(ctx.db, { borrower: borrower.address, token, symbol: "G", poolId: TEST_POOL.poolId, feesManager: TEST_POOL.feesManager, status: "APPROVED", vault: VAULT });
+  vaultStatus = "Created";
+  dustShares = 1n;
+  const r = await post(`/api/loans/${id}/pledge`, {});
+  assert.equal(r.status, 409);
+  assert.match((await r.json()).error, /fee rights not moved yet: getShares\(vault\)=1 \(needs >= pledgeShares 1000\)/);
+  db.updateLoan(ctx.db, id, { status: "CANCELLED" });
+});
+
+test("bad params → 400: loan ids, via", async () => {
+  for (const id of ["0", "-1", "abc", "1.5", "0x10", "1e3", "99999999999999999999"])
+    assert.equal((await app.request(`/api/loans/${id}`)).status, 400, id);
+  assert.equal((await post("/api/loans", { ...(await signedApply()), via: "telegram" })).status, 400);
+});
+
+test("DEMO_FORK: bankr-skill/unspecified applies refused 409; pledge payloads tagged fork+warning, no Bankr chat phrase", async () => {
+  const f = { ...ctx, demoFork: true } as Ctx;
+  const fa = createApp(f);
+  register(fa, f);
+  const fpost = (path: string, body: unknown) => fa.request(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  for (const via of ["bankr-skill", undefined]) {
+    const r = await fpost("/api/loans", { ...(await signedApply()), via });
+    assert.equal(r.status, 409, String(via));
+    assert.equal((await r.json()).error, "This desk runs on a DEMO fork of Base; do not pledge real fee rights. Use the mainnet desk once it opens.");
+  }
+  const pledgeTx = { to: TEST_POOL.feesManager as Address, chainId: 8453, data: encodeFunctionData({ abi: parseAbi(FEES_MANAGER_ABI), functionName: "updateBeneficiary", args: [TEST_POOL.poolId, VAULT] }) };
+  const id = db.insertLoan(ctx.db, { via: "web", borrower: borrower.address, token, symbol: "G", poolId: TEST_POOL.poolId, feesManager: TEST_POOL.feesManager, status: "APPROVED", vault: VAULT, pledgeTx });
+  vaultStatus = "Created";
+  let r = await fa.request(`/api/loans/${id}/pledge-tx`);
+  assert.equal(r.status, 200);
+  let j = await r.json();
+  assert.equal(j.data, pledgeTx.data);
+  assert.equal(j.fork, true);
+  assert.match(j.warning, /DEMO FORK.*unrecoverable/s);
+  j = await (await fa.request(`/api/loans/${id}`)).json();
+  assert.equal(j.fork, true);
+  assert.ok(j.pledgeTx && j.warning);
+  assert.equal(j.pledgeChatText, null); // Bankr executes the chat phrase on mainnet
+  const listed = (await (await fa.request(`/api/loans?borrower=${borrower.address}`)).json()).find((l: { id: number }) => l.id === id);
+  assert.equal(listed.fork, true);
+  assert.equal(listed.pledgeChatText, null);
+  // mainnet desk: untouched
+  j = await (await app.request(`/api/loans/${id}`)).json();
+  assert.equal(j.fork, undefined);
+  assert.ok(j.pledgeChatText);
+  // a bankr-skill loan on a fork (e.g. applied before the guard) never gets a pledge tx
+  const b = db.insertLoan(ctx.db, { via: "bankr-skill", borrower: stranger.address, token, symbol: "G", poolId: TEST_POOL.poolId, feesManager: TEST_POOL.feesManager, status: "APPROVED", vault: VAULT, pledgeTx });
+  assert.equal((await fa.request(`/api/loans/${b}/pledge-tx`)).status, 409);
+  db.updateLoan(ctx.db, id, { status: "CANCELLED" });
+  db.updateLoan(ctx.db, b, { status: "CANCELLED" });
+});
+
+test("GET /api/health + /api/desk expose demoFork + chainNote", async () => {
+  const f = { ...ctx, demoFork: true, pub: { ...(ctx.pub as object), getBlockNumber: async () => 7n, readContract: async () => "0x3333333333333333333333333333333333333333" } } as unknown as Ctx;
+  const fa = createApp(f);
+  register(fa, f);
+  const h = await (await fa.request("/api/health")).json();
+  assert.equal(h.demoFork, true);
+  assert.match(h.chainNote, /DEMO.*fork/);
+  const d = await (await fa.request("/api/desk")).json();
+  assert.equal(d.demoFork, true);
+  assert.match(d.chainNote, /do not pledge real fee rights/);
 });
