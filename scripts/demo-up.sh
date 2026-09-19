@@ -17,5 +17,6 @@ MSYS_NO_PATHCONV=1 wsl -d Ubuntu -- bash -c "
   export PATH=\$HOME/.node/bin:/usr/bin:/bin
   export FORK_RPC_URL=http://\$(ip route show default | cut -d' ' -f3):8545
   cd ~/feedesk && git pull -q '$REPO_WSL' main
-  cd agent && node --env-file=../.env src/wallet/bootstrap.ts --fund-fork 1000 | tail -1
+  cd agent && rm -f feedesk.db* feedesk-fork.db*   # fresh fork = fresh loan book
+  node --env-file=../.env src/wallet/bootstrap.ts --fund-fork 1000 | tail -1
   exec node --env-file=../.env src/index.ts"
