@@ -97,13 +97,21 @@ async function runPersona(p: Persona, q: Quote): Promise<MemoRun | null> {
     maxPrincipalUsdc: Number(r.terms.maxPrincipalRaw) / 1e6, floorPrice: r.terms.floorPrice, feeRatePct: r.terms.feeRatePct,
     faceUsdc: Number(r.terms.faceValueRaw) / 1e6, termDays: r.terms.termDays, formula: r.formula,
   };
-  const raw = await llmChat([{ role: "system", content: SYSTEM(p) }, { role: "user", content: JSON.stringify(facts) }], { model: p.model, maxTokens: 800 });
+  let model = p.model;
+  const raw = await llmChat([{ role: "system", content: SYSTEM(p) }, { role: "user", content: JSON.stringify(facts) }], { model: p.model, maxTokens: 800 })
+    .catch((e: Error) => {
+      // ponytail: no credits/key → engine-only memo, labeled in `model` so the UI never passes it off as LLM output
+      if (!e.message.startsWith("Bankr LLM credits/key")) throw e;
+      model = "engine-only (Bankr LLM unavailable)";
+      return JSON.stringify({ decision: "approve", principalUsdc: facts.maxPrincipalUsdc, maxNotePrice: r.terms.floorPrice, confidence: 0.5,
+        rationale: `Deterministic engine terms, no LLM review (${e.message.slice(0, 60)}). ${r.formula}`, risks: ["no LLM review"] });
+    });
   const m = parseMemo(raw, facts.maxPrincipalUsdc, r.terms.floorPrice);
   const terms = m.decision === "approve" ? (computeTerms(inp, p.advanceRatePct, capUsdc(), m.principalUsdc) as TermsResult).terms : r.terms;
   return {
     raw, terms,
     memo: {
-      personaId: p.id, model: p.model, decision: m.decision, principalRaw: m.decision === "approve" ? terms.principalRaw : "0",
+      personaId: p.id, model, decision: m.decision, principalRaw: m.decision === "approve" ? terms.principalRaw : "0",
       maxNotePrice: m.maxNotePrice, confidence: m.confidence, rationale: m.rationale, risks: m.risks,
     },
   };
