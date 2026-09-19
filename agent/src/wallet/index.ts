@@ -76,7 +76,7 @@ export function readWalletSecrets() {
   const shares = process.env.DYNAMIC_AGENT_KEY_SHARES;
   if (!meta) throw new Error(`Missing env DYNAMIC_AGENT_WALLET_METADATA ${hint}`);
   if (!shares) throw new Error(`Missing env DYNAMIC_AGENT_KEY_SHARES ${hint}`);
-  return { walletMetadata: JSON.parse(meta), externalServerKeyShares: JSON.parse(shares), password: need("DYNAMIC_WALLET_PASSWORD") };
+  return { walletMetadata: JSON.parse(meta), externalServerKeyShares: JSON.parse(shares), password: process.env.DYNAMIC_WALLET_PASSWORD || undefined }; // ponytail: unset when the wallet was created without a password/Dynamic backup
 }
 
 /** `exp` claim of a JWT in ms, or undefined if it has none. */
