@@ -198,6 +198,14 @@ export function txQueue(s: { ensureFresh(): Promise<void>; login(): Promise<void
   return { serial, authed };
 }
 
+/** Same EIP-712 digest, shape the Dynamic MPC signer accepts: Flash's typed data carries an explicit EIP712Domain type and a
+ *  string chainId, which made the relay drop the WebSocket (seen live on Base mainnet). viem derives EIP712Domain from `domain`. */
+export function forMpcSigner<T extends { types?: Record<string, unknown>; domain?: { chainId?: unknown } }>(td: T): T {
+  const { EIP712Domain: _d, ...types } = (td.types ?? {}) as Record<string, unknown>;
+  const domain = td.domain && td.domain.chainId !== undefined ? { ...td.domain, chainId: Number(td.domain.chainId) } : td.domain;
+  return { ...td, types, domain };
+}
+
 /** Build the desk's AgentWallet. Checks the address matches AGENT_WALLET_ADDRESS and FeeDesk.keeper(). */
 export async function getAgentWallet(ctx: Ctx): Promise<AgentWallet> {
   const s = await signInAgent();
@@ -240,7 +248,7 @@ export async function getAgentWallet(ctx: Ctx): Promise<AgentWallet> {
         return wait(hash);
       }),
     signTypedData: (json) =>
-      serial(() => authed(() => wc.signTypedData({ account: wc.account, ...(JSON.parse(json) as Parameters<typeof wc.signTypedData>[0]) }))),
+      serial(() => authed(() => wc.signTypedData({ account: wc.account, ...(forMpcSigner(JSON.parse(json)) as Parameters<typeof wc.signTypedData>[0]) }))),
     signMessage: (message) => serial(() => authed(() => wc.signMessage({ account: wc.account, message }))),
   };
   ctx.log("wallet", `Dynamic agent wallet ready ${address} on ${ctx.demoFork ? "DEMO_FORK " : ""}${ctx.rpcUrl}`);

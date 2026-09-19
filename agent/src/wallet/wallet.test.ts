@@ -81,3 +81,21 @@ test("siweGate: single-flight, backs off on 429 without hitting the network agai
   assert.equal(await siweGate(ok, now), "jwt");
   resetSiweGate();
 });
+
+import { forMpcSigner } from "./index.ts";
+import { hashTypedData } from "viem";
+test("forMpcSigner keeps the EIP-712 digest of Flash's typed data (explicit EIP712Domain, string chainId)", () => {
+  const flash = {
+    types: {
+      EIP712Domain: [{ name: "name", type: "string" }, { name: "version", type: "string" }, { name: "chainId", type: "uint256" }, { name: "verifyingContract", type: "address" }],
+      FlashOrder: [{ name: "swapper", type: "address" }, { name: "fromAmount", type: "uint256" }],
+    },
+    primaryType: "FlashOrder",
+    domain: { name: "DefinitiveFlashAllowance", version: "1", chainId: "8453", verifyingContract: "0x5d00000873b6BF41539e6f5365B0Ff7d3c368f78" },
+    message: { swapper: "0x81b73786BF2dE819e66BB57d08effADe0085305D", fromAmount: "250000" },
+  };
+  const n = forMpcSigner(flash);
+  assert.equal("EIP712Domain" in n.types, false);
+  assert.equal(n.domain.chainId, 8453);
+  assert.equal(hashTypedData(n as never), hashTypedData({ ...flash, domain: { ...flash.domain, chainId: 8453 } } as never));
+});
