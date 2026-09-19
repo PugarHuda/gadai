@@ -16,11 +16,8 @@ test.describe("agent offline", () => {
         await expect(page.getByRole("button", { name: "Get quote" })).toBeEnabled();
         return;
       }
-      if (r === "/dine") {
-        // Logged out: no agent call is made; the login empty state shows instead.
-        await expect(page.getByText("Log in to open your dining line")).toBeVisible();
-        return;
-      }
+      // /dine logged out: the loan list needs a login, but trending + venues still call the agent (offline box below).
+      if (r === "/dine") await expect(page.getByText("Log in to plan with your dining budget")).toBeVisible();
       const off = page.getByRole("status").filter({ hasText: "The Gadai agent is offline" }).first();
       await expect(off).toBeVisible();
       await expect(off.getByRole("button", { name: "Try again" })).toBeVisible();

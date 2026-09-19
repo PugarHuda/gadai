@@ -12,3 +12,4 @@ broadcast/
 .vercel
 .env*
 .dynamic-session.json
+tests/e2e/*.log

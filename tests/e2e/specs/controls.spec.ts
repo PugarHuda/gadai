@@ -220,15 +220,46 @@ test.describe("/dine and /dine/1", () => {
     await authOpened(page);
   });
 
-  test("/dine/1 shows the line, draws and a back link", async ({ page }) => {
+  test("/dine shows trending venues and the Blackbird venue browser @smoke", async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.goto("/dine");
+    await expect(page.getByRole("heading", { name: /^Trending on Blackbird this week/ })).toBeVisible();
+    await expect(page.getByText(/Venues from the latest \d+ network check-ins|No recent check-ins here/)).toBeVisible({ timeout: 90_000 });
+    await expect(page.getByText(/\d+ venues · page 1 of \d+/)).toBeVisible({ timeout: 90_000 });
+    const venue = page.getByRole("link", { name: "Hours & offers" }).first();
+    await expect(venue).toHaveAttribute("href", /^\/dine\/r\/[0-9a-f-]{36}$/);
+    await expect(page.getByText("Gadai moves no money for dining", { exact: false })).toBeVisible();
+  });
+
+  test("/dine/1 shows the budget, the honest payment note and a back link", async ({ page }) => {
     await page.goto("/dine/1");
     await settled(page);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(/^Dine on \$\w+ fees$/);
-    await expect(page.getByText(/drawn of \$[\d.,]+/)).toBeVisible();
-    await expect(page.getByText("No draws yet.")).toBeVisible();
+    const budget = page.locator("section.card").filter({ hasText: "Dining budget" });
+    await expect(budget).toContainText(/\$[\d.,]+/);
+    await expect(budget).toContainText("Payment: not enabled.");
+    await expect(page.getByText(/No draws yet|drawn of/)).toHaveCount(0); // FLY draws were removed
     await expect(page.getByRole("link", { name: "Back to loan #1" })).toHaveAttribute("href", "/loans/1");
-    await page.getByRole("button", { name: "Log in first" }).click();
-    await expect(page.locator("p[role=alert]")).toContainText("Log in with Dynamic first");
+    await page.getByRole("button", { name: "Log in with Dynamic first" }).click();
+    await authOpened(page);
+  });
+
+  // One live concierge call; same body as the api.spec plan test, so the agent's 10-min plan cache serves both.
+  test("/dine/1 concierge: Find a table returns a shortlist with reasons (or an honest note)", async ({ page }) => {
+    test.setTimeout(180_000);
+    await page.goto("/dine/1");
+    await settled(page);
+    await page.getByRole("button", { name: "Find a table" }).click();
+    const list = page.locator("section.card").filter({ hasText: /Shortlist for/ });
+    await expect(list).toBeVisible({ timeout: 150_000 });
+    await expect(list).toContainText(/deterministic ranker|Bankr LLM/);
+    await expect(list).toContainText("plan until the loan is funded");
+    const picks = list.locator("ul.list-disc");
+    if (await picks.count()) {
+      for (const ul of await picks.all()) await expect(ul.locator("li").first()).not.toBeEmpty();
+    } else {
+      await expect(list.locator("p.text-amber-ink").first()).toBeVisible(); // e.g. Flynet 429: the note says why
+    }
   });
 });
 
@@ -314,6 +345,17 @@ test.describe("funded loan page /loans/:id", () => {
 });
 
 test.describe("/board (credit lines)", () => {
+  test("equities section lists Robinhood Chain agents with totals @smoke", async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.goto("/board");
+    const eq = page.locator("section#equities");
+    await expect(eq.getByRole("heading", { name: "Onchain equities · Robinhood Chain" })).toBeVisible({ timeout: 90_000 });
+    for (const k of ["Equity-fee agents", "Equity fees, lifetime", "Indicative equity credit", "All Robinhood lines"]) await expect(eq.getByText(k, { exact: true })).toBeVisible();
+    await expect(eq.getByText(/^\d+ agents$/)).toBeVisible();
+    // The intro links to the section.
+    await expect(page.locator('a[href="#equities"]').first()).toBeVisible();
+  });
+
   test("totals, filter, sort and Apply deep link", async ({ page }) => {
     test.setTimeout(120_000);
     await page.goto("/board");

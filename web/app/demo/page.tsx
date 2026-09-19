@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = { title: "Demo video" };
 
-// ponytail: duration is ffprobe of public/gadai-demo.mp4 (187.7 s); re-probe if the MP4 is replaced.
+// ponytail: duration is ffprobe of public/gadai-demo.mp4 (228.8 s = 3:49); re-probe if the MP4 is replaced.
 const CHECK = [
   ["/evidence", "Evidence", "the Base mainnet transactions (FeeDesk, ERC-8004 #94699, x402 payment, Flash TWAP) and what is fork-only"],
   ["/board", "Credit lines", "the Credit Line Board, per-persona limits from the agent"],

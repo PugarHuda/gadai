@@ -19,7 +19,7 @@ for (const r of ROUTES) {
 test("keyboard: Tab reaches the brand link and main nav first, with a visible focus ring", async ({ page }) => {
   await page.goto("/");
   const seen: string[] = [];
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 14; i++) {
     await page.keyboard.press("Tab");
     const f = await page.evaluate(() => {
       let el = document.activeElement as HTMLElement | null;
@@ -33,8 +33,10 @@ test("keyboard: Tab reaches the brand link and main nav first, with a visible fo
     seen.push(f.label);
     expect(f.ring, `no visible focus indicator on "${f.label}"`).toBeTruthy();
   }
-  // the skip link comes first (tested below), then the brand link
-  expect(seen.filter((s) => !/^Skip to content$/.test(s))[0]).toMatch(/Gadai/);
+  // the skip link comes first (tested below), then the DEMO_FORK banner's link, then the brand link before the nav
+  const brand = seen.findIndex((s) => /Gadai/.test(s));
+  expect(brand, seen.join(" | ")).toBeGreaterThanOrEqual(0);
+  expect(brand).toBeLessThan(seen.indexOf(NAV[0]!));
   for (const l of NAV) expect(seen).toContain(l);
 });
 

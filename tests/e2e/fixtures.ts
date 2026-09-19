@@ -28,7 +28,7 @@ export const NOBODY = "0x1111111111111111111111111111111111111111"; // no Bankr 
 
 export const ROUTES = ["/", "/apply", "/board", "/notes", "/desk", "/dine", "/dine/1", "/loans/1"] as const;
 /** Main nav labels, in order. */
-export const NAV = ["Loan book", "Borrow", "Credit lines", "Lend", "Follow the Desk", "Dine"];
+export const NAV = ["Loan book", "Borrow", "Credit lines", "Lend", "Follow the Desk", "Dine", "Demo", "Evidence"];
 /** Headline per route, so a route test knows the page really rendered. */
 export const H1: Record<string, RegExp> = {
   "/": /Borrow USDC against your token/,
@@ -58,7 +58,7 @@ export async function settled(page: Page) {
   await expect(page.locator("div[aria-busy=true]")).toHaveCount(0, { timeout: 30_000 });
 }
 
-type Fx = { allowConsoleErrors: boolean; consoleErrors: string[] };
+type Fx = { allowConsoleErrors: boolean; consoleErrors: string[]; webUpstream: void };
 
 /**
  * Every test fails on console errors / uncaught page errors unless it opts out with
@@ -69,10 +69,33 @@ export const test = base.extend<Fx>({
   consoleErrors: [
     async ({ page, allowConsoleErrors }, use) => {
       const errs: string[] = [];
-      page.on("console", (m) => m.type() === "error" && errs.push(`console: ${m.text().slice(0, 300)}`));
+      // Dynamic's SDK API rate-limits nonce prefetches (429 without CORS headers) during long runs: third-party noise, not ours.
+      const dynamicNoise = (m: import("@playwright/test").ConsoleMessage) =>
+        /dynamicauth\.com/.test(m.location().url + m.text()) || /Failed to prefetch nonces/.test(m.text());
+      page.on("console", (m) => m.type() === "error" && !dynamicNoise(m) && errs.push(`console: ${m.text().slice(0, 300)}`));
       page.on("pageerror", (e) => errs.push(`pageerror: ${e.message.slice(0, 300)}`));
       await use(errs);
       if (!allowConsoleErrors) expect(errs, "console errors on the page").toEqual([]);
+    },
+    { auto: true },
+  ],
+  // WEB_UPSTREAM=http://localhost:3001: the browser still sees baseURL (so the agent's CORS allowlist matches) while
+  // every document/asset is served by the upstream build. For when :3000 is taken by a server you must not stop.
+  webUpstream: [
+    async ({ page, baseURL }, use) => {
+      const up = process.env.WEB_UPSTREAM?.replace(/\/$/, "");
+      const origin = baseURL?.replace(/\/$/, "");
+      if (up && origin)
+        await page.route(`${origin}/**`, async (r) => {
+          const res = await r.fetch({ url: up + r.request().url().slice(origin.length), maxRedirects: 0 }).catch(() => null);
+          if (!res) return r.abort().catch(() => {}); // page closed mid-fetch
+          const loc = res.headers()["location"];
+          // A fulfilled 3xx is followed without re-entering this handler, so the target would come from `origin` itself.
+          if (loc && r.request().isNavigationRequest())
+            return r.fulfill({ contentType: "text/html", body: `<script>location.replace(${JSON.stringify(loc)})</script>` }).catch(() => {});
+          await r.fulfill({ response: res }).catch(() => {}); // "response disposed" when the page navigated away
+        });
+      await use();
     },
     { auto: true },
   ],
@@ -87,3 +110,6 @@ export async function fundedLoanId(): Promise<number | null> {
   return l?.id ?? null;
 }
 export const NO_FUNDED = "no funded loan (vault + auction) on this fork: run the fork flow (E2E_FORK_FLOW=1) or set LOAN_ID";
+
+/** Absolute URL of a web path for the `request` fixture (which page.route does not see): the upstream build when set. */
+export const webUrl = (baseURL: string | undefined, path: string) => (process.env.WEB_UPSTREAM ?? baseURL ?? "").replace(/\/$/, "") + path;

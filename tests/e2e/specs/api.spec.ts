@@ -167,6 +167,7 @@ test.describe("agent API: core", () => {
     test.skip(!adminToken(), "ADMIN_TOKEN not available");
     const h = { "x-admin-token": adminToken() };
     await expectError(await request.post(`${AGENT}/api/admin/keeper/run`, { headers: h, data: { loanId: 999999 } }), 404);
+    for (const loanId of ["abc", "1", 0, -1, 1.5]) await expectError(await request.post(`${AGENT}/api/admin/keeper/run`, { headers: h, data: { loanId } }), 400, /positive integer/);
     const r = await request.post(`${AGENT}/api/admin/keeper/run`, { headers: h, data: {}, timeout: 120_000 });
     expect([200, 409]).toContain(r.status()); // 409 = a pass is already running
     if (r.ok()) expect(Array.isArray((await r.json()).ran)).toBeTruthy();
@@ -289,13 +290,28 @@ test.describe("agent API: social (Follow the Desk)", () => {
   });
 });
 
-test.describe("agent API: Flynet (dine)", () => {
-  test("GET /api/loans/1/dine is DineState", async ({ request }) => {
+test.describe("agent API: Flynet (dine concierge)", () => {
+  test("GET /api/flynet/status: read-only app, payments disabled with a reason", async ({ request }) => {
+    const r = await request.get(`${AGENT}/api/flynet/status`);
+    expect(r.status()).toBe(200);
+    const s = await r.json();
+    expect(Array.isArray(s.allowedScopes)).toBeTruthy();
+    expect(s.payments.enabled).toBe(false);
+    expect(s.payments.reason).toMatch(/FLY/);
+    expect(typeof s.memberLogin.available).toBe("boolean");
+  });
+
+  test("GET /api/loans/1/dine is DineState: budget, no draws, honest payment + save-to-list notes", async ({ request }) => {
     const d = await (await request.get(`${AGENT}/api/loans/1/dine`)).json();
     expect(d.loanId).toBe(1);
+    expect(d.budgetRaw).toMatch(/^\d+$/);
     expect(typeof d.linked).toBe("boolean");
-    expect(d.drawLimitRaw).toMatch(/^\d+$/);
-    expect(Array.isArray(d.draws)).toBeTruthy();
+    expect(d.payments.enabled).toBe(false);
+    expect(d.payments.reason).toMatch(/moves no FLY or USDC/);
+    expect(d.saveToList.available).toBe(false);
+    expect(d.saveToList.reason).toMatch(/nothing was saved/);
+    expect(d).not.toHaveProperty("draws");
+    expect(d).not.toHaveProperty("drawLimitRaw");
   });
 
   test("dine: unknown loan 404, malformed id 400 (not 'loan NaN')", async ({ request }) => {
@@ -305,32 +321,141 @@ test.describe("agent API: Flynet (dine)", () => {
     expect((await r.json()).error).not.toContain("NaN");
   });
 
+  test("FLY dining draws are gone: dine/draw and dine/settle are 404", async ({ request }) => {
+    await expectError(await request.post(`${AGENT}/api/loans/1/dine/draw`, { data: { amountUsdCents: 100 } }), 404, /no route/);
+    await expectError(await request.post(`${AGENT}/api/loans/1/dine/settle`, { data: {} }), 404, /no route/);
+  });
+
+  test("GET /api/flynet/restaurants + trending validate their query", async ({ request }) => {
+    await expectError(await request.get(`${AGENT}/api/flynet/restaurants?price=9`), 400, /price must be 1..4/);
+    await expectError(await request.get(`${AGENT}/api/flynet/restaurants?page=-1`), 400, /page/);
+    await expectError(await request.get(`${AGENT}/api/flynet/restaurants?query=${"x".repeat(201)}`), 400, /query too long/);
+    await expectError(await request.get(`${AGENT}/api/flynet/restaurants?loanId=999999`), 404, /not found/);
+    await expectError(await request.get(`${AGENT}/api/flynet/restaurants?loanId=abc`), 400);
+    await expectError(await request.get(`${AGENT}/api/flynet/restaurants/nope`), 400, /UUID/);
+    await expectError(await request.get(`${AGENT}/api/flynet/trending?region=${"x".repeat(81)}`), 400, /region too long/);
+  });
+
+  test("GET /api/flynet/restaurants + trending return live venues (or a stale copy)", async ({ request }) => {
+    test.setTimeout(120_000);
+    const r = await request.get(`${AGENT}/api/flynet/restaurants?page=0`, { timeout: 90_000 });
+    expect(r.status(), await r.text()).toBe(200);
+    const l = await r.json();
+    expect(l.total).toBeGreaterThan(0);
+    expect(l.places.length).toBeGreaterThan(0);
+    expect(l.places[0].id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(typeof l.source.fetchedAt).toBe("string");
+    const t = await request.get(`${AGENT}/api/flynet/trending`, { timeout: 90_000 });
+    expect(t.status(), await t.text()).toBe(200);
+    const tj = await t.json();
+    expect(Array.isArray(tj.places)).toBeTruthy();
+    expect(tj.sample.size).toBeGreaterThanOrEqual(0);
+  });
+
+  test("POST dine/plan validates the body", async ({ request }) => {
+    const plan = (data: unknown) => request.post(`${AGENT}/api/loans/1/dine/plan`, { data });
+    await expectError(await plan({}), 400, /request must be 1..500/);
+    await expectError(await plan({ request: "x".repeat(501) }), 400, /request must be 1..500/);
+    await expectError(await plan({ request: "burgers", partySize: 0 }), 400, /partySize/);
+    await expectError(await plan({ request: "burgers", partySize: 21 }), 400, /partySize/);
+    await expectError(await plan({ request: "burgers", time: "25:00" }), 400, /time must be/);
+    await expectError(await plan({ request: "burgers", near: { lat: 200, lng: 0 } }), 400, /near/);
+    await expectError(await request.post(`${AGENT}/api/loans/1/dine/plan`, { headers: json, data: Buffer.from("{bad") }), 400, /JSON/);
+    await expectError(await request.post(`${AGENT}/api/loans/999999/dine/plan`, { data: { request: "burgers" } }), 404);
+    await expectError(await request.post(`${AGENT}/api/loans/abc/dine/plan`, { data: { request: "burgers" } }), 400);
+  });
+
+  // One live concierge call (the agent caches a plan for 10 min; the /dine/1 UI test sends the same body).
+  test("POST dine/plan returns ranked picks, each with reasons", async ({ request }) => {
+    test.setTimeout(180_000);
+    const r = await request.post(`${AGENT}/api/loans/1/dine/plan`, { data: { request: "somewhere in NYC for four, open late, burgers", partySize: 4 }, timeout: 150_000 });
+    expect(r.status(), await r.text()).toBe(200);
+    const p = await r.json();
+    expect(p.loanId).toBe(1);
+    expect(["deterministic", "bankr-llm"]).toContain(p.ranker);
+    expect(Array.isArray(p.notes)).toBeTruthy();
+    if (p.picks.length === 0) {
+      // Flynet rate limit (429) / outage: the plan must say why instead of an empty shrug.
+      expect(p.notes.length).toBeGreaterThan(0);
+      return;
+    }
+    for (const x of p.picks) {
+      expect(x.place.id).toMatch(/^[0-9a-f-]{36}$/);
+      expect(x.reasons.length, x.place.name).toBeGreaterThan(0);
+    }
+    // Loan 1 is not ACTIVE, so the plan must say the budget is a plan only.
+    expect(p.notes.join(" ")).toMatch(/plan until the loan is funded/);
+  });
+
+  test("member routes need a Blackbird session (401); save-to-list is never faked", async ({ request }) => {
+    await expectError(await request.get(`${AGENT}/api/loans/1/dine/passport`), 401, /session required/);
+    await expectError(await request.post(`${AGENT}/api/loans/1/dine/save`, { data: { restaurantId: "00000000-0000-0000-0000-000000000000" } }), 401, /session required/);
+    await expectError(await request.post(`${AGENT}/api/loans/1/dine/save`, { data: { session: "forged" } }), 401);
+    await expectError(await request.delete(`${AGENT}/api/loans/1/dine/member`), 401);
+    await expectError(await request.get(`${AGENT}/api/loans/999999/dine/passport`), 404);
+  });
+
   test("GET /api/flynet/connect: missing params is 400, bad signature is 401", async ({ request }) => {
     const r = await request.get(`${AGENT}/api/flynet/connect`, { maxRedirects: 0 });
     expect(r.status()).toBe(400);
     expect((await r.json()).error).not.toContain("NaN");
-    await expectError(await request.get(`${AGENT}/api/flynet/connect?loanId=1&nonce=x&sig=0x00`, { maxRedirects: 0 }), 401, /signature/);
+    await expectError(await request.get(`${AGENT}/api/flynet/connect?loanId=1&nonce=abcdefgh&sig=0x00`, { maxRedirects: 0 }), 401, /signature/);
   });
 
   test("GET /api/flynet/callback with a forged state is 400", async ({ request }) => {
     await expectError(await request.get(`${AGENT}/api/flynet/callback?code=x&state=y`, { maxRedirects: 0 }), 400, /state/);
   });
+});
 
-  test("GET /api/flynet/restaurants: missing loanId 400; unconfigured Flynet names the env var", async ({ request }) => {
-    const miss = await request.get(`${AGENT}/api/flynet/restaurants`);
-    expect(miss.status()).toBe(400);
-    const r = await request.get(`${AGENT}/api/flynet/restaurants?loanId=1`, { timeout: 60_000 });
-    if (r.status() === 503) expect((await r.json()).error).toMatch(/Missing env FLYNET_/);
-    else expect([200, 409]).toContain(r.status());
+test.describe("agent API: DEMO_FORK safety", () => {
+  const app = { token: POOL.token, borrower: POOL.beneficiary, nonce: "12345678", signature: "0x00" };
+
+  test("POST /api/loans via bankr-skill (or no via) is refused 409 on the fork", async ({ request }) => {
+    await expectError(await request.post(`${AGENT}/api/loans`, { data: { ...app, via: "bankr-skill" } }), 409, /DEMO fork/);
+    await expectError(await request.post(`${AGENT}/api/loans`, { data: app }), 409, /DEMO fork/);
+    await expectError(await request.post(`${AGENT}/api/loans`, { data: { ...app, via: "telegram" } }), 400, /via must be/);
   });
 
-  test("POST dine/draw + settle validate their bodies", async ({ request }) => {
-    await expectError(await request.post(`${AGENT}/api/loans/1/dine/draw`, { data: {} }), 400, /amountUsdCents/);
-    await expectError(await request.post(`${AGENT}/api/loans/1/dine/settle`, { data: {} }), 400, /signature/);
+  test("loan payloads are tagged fork:true + warning and never carry the Bankr chat pledge phrase", async ({ request }) => {
+    const list = await (await request.get(`${AGENT}/api/loans`)).json();
+    for (const l of list) {
+      expect(l.fork, `loan ${l.id}`).toBe(true);
+      expect(l.warning).toMatch(/DEMO FORK.*ONLY to the fork/);
+      expect(l.pledgeChatText ?? null).toBeNull();
+    }
+    const d = await (await request.get(`${AGENT}/api/loans/${list[0].id}`)).json();
+    expect(d.fork).toBe(true);
+    expect(d.warning).toMatch(/unrecoverable/);
+    expect(d.pledgeChatText ?? null).toBeNull();
+  });
+});
+
+test.describe("agent API: risk (x402 verdicts)", () => {
+  test("GET /api/risk/:token is a read-only cached verdict; bad token 400", async ({ request }) => {
+    const r = await request.get(`${AGENT}/api/risk/${POOL.token}`);
+    expect(r.status()).toBe(200);
+    const v = await r.json();
+    expect(v.token.toLowerCase()).toBe(POOL.token.toLowerCase());
+    if (v.verdict === null) {
+      expect(v.note).toMatch(/no verdict/);
+      expect(v.spentTodayRaw).toMatch(/^\d+$/);
+    }
+    await expectError(await request.get(`${AGENT}/api/risk/0xabc`), 400, /0x address/);
   });
 
-  test("POST dine/draw + settle with malformed JSON is 400, not 500", async ({ request }) => {
-    await expectError(await request.post(`${AGENT}/api/loans/1/dine/draw`, { headers: json, data: Buffer.from("{bad") }), 400);
-    await expectError(await request.post(`${AGENT}/api/loans/1/dine/settle`, { headers: json, data: Buffer.from("{bad") }), 400);
+  test("POST /api/admin/risk/:token (a paid purchase) is admin-gated", async ({ request }) => {
+    await expectError(await request.post(`${AGENT}/api/admin/risk/${POOL.token}`), 401);
+    await expectError(await request.post(`${AGENT}/api/admin/risk/${POOL.token}`, { headers: { "x-admin-token": "wrong" } }), 401);
+  });
+});
+
+test.describe("agent API: signal cards", () => {
+  test("GET /api/signals/1 is a SignalCard; bad id 400, unknown 404", async ({ request }) => {
+    const c = await (await request.get(`${AGENT}/api/signals/1`)).json();
+    expect(c.id).toBe(1);
+    expect(["approve", "decline"]).toContain(c.decision);
+    expect(typeof c.personaName).toBe("string");
+    await expectError(await request.get(`${AGENT}/api/signals/abc`), 400, /positive integer/);
+    await expectError(await request.get(`${AGENT}/api/signals/999999`), 404, /not found/);
   });
 });

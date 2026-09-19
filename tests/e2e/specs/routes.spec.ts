@@ -1,6 +1,6 @@
 // Every route renders its real content against the live DEMO_FORK agent, with no console errors,
 // the DEMO_FORK banner, well-formed outbound links, and no horizontal overflow (desktop + 390x844).
-import { test, expect, ROUTES, H1, NAV, noHorizontalOverflow, settled } from "../fixtures";
+import { test, expect, ROUTES, H1, NAV, noHorizontalOverflow, settled, webUrl } from "../fixtures";
 
 const BASESCAN = /^https:\/\/basescan\.org\/(address\/0x[0-9a-fA-F]{40}|tx\/0x[0-9a-fA-F]{64})$/;
 
@@ -58,9 +58,9 @@ test("redirect /loan/1 → /loans/1 @smoke", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toContainText("loan #1");
 });
 
-test("redirects are temporary (307), not cached 308s", async ({ request }) => {
+test("redirects are temporary (307), not cached 308s", async ({ request, baseURL }) => {
   for (const [from, to] of [["/leaderboard", "/desk"], ["/loan/7", "/loans/7"]]) {
-    const r = await request.get(from, { maxRedirects: 0 });
+    const r = await request.get(webUrl(baseURL, from), { maxRedirects: 0 });
     expect(r.status()).toBe(307);
     expect(r.headers()["location"]).toBe(to);
   }
@@ -86,9 +86,9 @@ test("document title and meta description are set @smoke", async ({ page }) => {
 
 test("pages have distinct titles", async ({ page }) => {
   const titles = new Set<string>();
-  for (const r of ["/", "/apply", "/board", "/notes", "/desk"]) {
+  for (const r of ["/", "/apply", "/board", "/notes", "/desk", "/demo", "/evidence"]) {
     await page.goto(r);
     titles.add(await page.title());
   }
-  expect(titles.size, `titles: ${[...titles].join(" | ")}`).toBe(5);
+  expect(titles.size, `titles: ${[...titles].join(" | ")}`).toBe(7);
 });
