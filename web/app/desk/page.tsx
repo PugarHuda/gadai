@@ -19,7 +19,7 @@ import {
 import { api } from "@/lib/api";
 import { ENV } from "@/lib/env";
 import { useSigner } from "@/lib/wallet";
-import { Addr, Btn, Card, Loading, Pill, ago, pct, usd, usdcRaw, useLoad } from "@/components/ui";
+import { Addr, Btn, Card, Empty, Loading, Pill, ago, pct, usd, usdcRaw, useLoad } from "@/components/ui";
 
 export default function Desk() {
   const s = useSigner();
@@ -34,29 +34,32 @@ export default function Desk() {
   return (
     <div className="space-y-8">
       <header>
-        <p className="label">Social trading · Definitive Flash</p>
-        <h1 className="h1 mt-1">Follow the Desk</h1>
-        <p className="mt-3 max-w-2xl text-sm">
+        <h1 className="h1">Follow the Desk</h1>
+        <p className="mt-4 max-w-[68ch] text-ink/85">
           Every credit decision is a public, scored signal. Underwriter agents are ranked by what actually happened on-chain: how much of the debt they approved got repaid, and how their
           followers&apos; mirrored trades did. Follow one and mirror its approvals as a Flash market buy with an attached <b>bracket</b> (take-profit / stop-loss), or as a <b>DCA</b> built from
           a long Flash TWAP. @DefinitiveFi
         </p>
-        {ENV.DEMO_FORK && <p className="mt-2 text-xs text-stamp">Flash: mainnet only. This is a DEMO_FORK build, so one-click mirror signing is disabled here (approvals would land on the fork while Flash settles on mainnet). Follows and signals still work.</p>}
+        {ENV.DEMO_FORK && <p className="mt-3 max-w-[68ch] rounded-[3px] border border-dashed border-amber-ink/50 px-3 py-2 text-sm text-amber-ink">Flash: mainnet only. This is a DEMO_FORK build, so one-click mirror signing is disabled here (approvals would land on the fork while Flash settles on mainnet). Follows and signals still work.</p>}
       </header>
 
       <Card title="Leaderboard" right={<span>score = 60·repaid + 40·follower PnL</span>}>
-        <Loading l={lb.loading} e={lb.error}>
+        <Loading l={lb.loading} e={lb.error} retry={lb.reload} what="the underwriter leaderboard">
+          {lb.data?.length === 0 ? (
+            <Empty title="No underwriters ranked yet">Underwriters appear here after they write their first credit memo.</Empty>
+          ) : (
+          <div className="-mx-4 overflow-x-auto px-4 sm:-mx-5 sm:px-5">
           <table className="tbl">
             <thead>
               <tr><th>#</th><th>underwriter</th><th className="text-right">score</th><th className="text-right">approve / decline</th><th className="text-right">funded</th><th className="text-right">repaid</th><th className="text-right">days to repay</th><th className="text-right">follower PnL</th><th className="text-right">followers</th><th /></tr>
             </thead>
             <tbody>
               {lb.data?.map((r, i) => (
-                <tr key={r.personaId} className={persona === r.personaId ? "bg-amber/20" : ""}>
+                <tr key={r.personaId} className={persona === r.personaId ? "bg-violet-tint" : ""}>
                   <td className="num">{i + 1}</td>
                   <td>
-                    <button className="text-left" onClick={() => setPersona(persona === r.personaId ? null : r.personaId)}>
-                      <div className="font-serif text-xl leading-none">{r.name}</div>
+                    <button className="text-left" aria-pressed={persona === r.personaId} title="Filter signals by this underwriter" onClick={() => setPersona(persona === r.personaId ? null : r.personaId)}>
+                      <div className="font-display text-lg leading-tight">{r.name}</div>
                       <div className="label mt-0.5">{r.model}</div>
                     </button>
                   </td>
@@ -72,16 +75,18 @@ export default function Desk() {
               ))}
             </tbody>
           </table>
+          </div>
+          )}
         </Loading>
       </Card>
 
       <div className="grid gap-6 md:grid-cols-[1fr_1.1fr]">
         <FollowForm personas={(lb.data ?? []).map((r) => ({ id: r.personaId, name: r.name }))} initial={persona} onDone={() => (follows.reload(), lb.reload())} />
         <Card title={persona ? `Signals · ${name(persona)}` : "Signal feed"} right={persona && <button className="link" onClick={() => setPersona(null)}>all</button>}>
-          <Loading l={sig.loading} e={sig.error}>
+          <Loading l={sig.loading} e={sig.error} retry={sig.reload} what="underwriter signals">
             <ul className="max-h-[560px] space-y-3 overflow-y-auto pr-2">
               {sig.data?.map((g) => (
-                <li key={g.id} className="border-b border-ink/15 pb-3">
+                <li key={g.id} className="border-b border-rule pb-3">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-sm"><b>{name(g.personaId)}</b> on <Addr a={g.token} label={`$${g.symbol}`} /> · <Link className="link" href={`/loans/${g.loanId}`}>loan #{g.loanId}</Link></span>
                     <span className="flex items-center gap-2"><Pill s={g.decision} /><span className="num w-8 text-right text-lg">{Math.round(g.score)}</span></span>
@@ -90,7 +95,7 @@ export default function Desk() {
                   <p className="mt-1 text-[11px] text-mute num">principal {usdcRaw(g.principalRaw)} · note px {g.maxNotePrice.toFixed(2)} · {ago(g.createdAt)}</p>
                 </li>
               ))}
-              {sig.data?.length === 0 && <li className="text-sm text-mute">No signals yet.</li>}
+              {sig.data?.length === 0 && <li><Empty title="No signals yet">Each credit memo becomes a public signal here: approve or decline, a score, and the rationale.</Empty></li>}
             </ul>
           </Loading>
         </Card>
@@ -99,11 +104,11 @@ export default function Desk() {
       {s.connected && (
         <div className="grid gap-6 md:grid-cols-[1fr_1.4fr]">
           <Card title="You follow">
-            <Loading l={follows.loading} e={follows.error}>
-              {follows.data?.length === 0 && <p className="text-sm text-mute">Nobody yet.</p>}
+            <Loading l={follows.loading} e={follows.error} retry={follows.reload} what="your follows">
+              {follows.data?.length === 0 && <Empty title="You follow no underwriters">Pick one in the form above; its future approvals become mirror orders.</Empty>}
               <ul className="space-y-2">
                 {follows.data?.map((f) => (
-                  <li key={f.id} className="flex items-center justify-between gap-2 border-b border-ink/15 pb-2 text-sm">
+                  <li key={f.id} className="flex items-center justify-between gap-2 border-b border-rule pb-2 text-sm">
                     <span>
                       <b>{name(f.personaId)}</b> · {usd(f.sizeUsdc)} / signal ·{" "}
                       {f.mode === "bracket" ? `bracket TP +${f.tpPct}% / SL −${f.slPct}%` : `DCA ${f.dcaDays}d`} {f.auto && <span className="tag">auto · delegated</span>}
@@ -126,8 +131,8 @@ export default function Desk() {
             </Loading>
           </Card>
           <Card title="Your mirror orders" right={<button className="link" onClick={() => mirrors.reload()}>refresh</button>}>
-            <Loading l={mirrors.loading} e={mirrors.error}>
-              {mirrors.data?.length === 0 && <p className="text-sm text-mute">When an underwriter you follow approves a loan, a mirror order appears here.</p>}
+            <Loading l={mirrors.loading} e={mirrors.error} retry={mirrors.reload} what="your mirror orders">
+              {mirrors.data?.length === 0 && <Empty title="No mirror orders yet">When an underwriter you follow approves a loan, a mirror order appears here.</Empty>}
               <ul className="space-y-3">
                 {mirrors.data?.map((m) => (
                   <MirrorRow key={m.id} m={m} auto={follows.data?.find((f) => f.id === m.followId)?.auto ?? false} onChange={mirrors.reload} />
@@ -188,18 +193,19 @@ function FollowForm({ personas, initial, onDone }: { personas: { id: string; nam
   };
 
   return (
-    <Card title="Follow an underwriter" className="scroll-mt-4" >
-      <div id="follow" className="space-y-3 text-sm">
+    <Card title="Follow an underwriter" id="follow" className="scroll-mt-20">
+      <div className="space-y-3 text-sm">
         <label className="block"><span className="label">underwriter</span>
           <select className="input mt-1" value={personaId} onChange={(e) => setPid(e.target.value)}>
+            {personas.length === 0 && <option value="">Underwriters load from the agent</option>}
             {personas.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </label>
         <div className="grid grid-cols-2 gap-2">
           {(["bracket", "dca"] as const).map((m) => (
-            <button key={m} onClick={() => setMode(m)} className={`border-[1.5px] border-ink px-3 py-2 text-left ${mode === m ? "bg-ink text-paper" : ""}`}>
-              <div className="font-mono text-xs uppercase tracking-widest">{m === "bracket" ? "Bracket" : "DCA"}</div>
-              <div className="text-[11px] opacity-70">{m === "bracket" ? "Flash market buy + attached TP/SL" : "Flash TWAP, 1 slice/day"}</div>
+            <button key={m} onClick={() => setMode(m)} className={`rounded-[3px] border px-3 py-2 text-left transition-colors ${mode === m ? "border-violet bg-violet-tint ring-1 ring-violet" : "border-rule bg-paper hover:border-mute"}`}>
+              <div className="text-sm font-bold">{m === "bracket" ? "Bracket" : "DCA"}</div>
+              <div className="text-xs text-mute">{m === "bracket" ? "Flash market buy + attached TP/SL" : "Flash TWAP, 1 slice/day"}</div>
             </button>
           ))}
         </div>
@@ -213,17 +219,17 @@ function FollowForm({ personas, initial, onDone }: { personas: { id: string; nam
           <label className="block"><span className="label">DCA days</span><input className="input mt-1" value={days} onChange={(e) => setDays(e.target.value)} /></label>
         )}
         <label className="flex items-start gap-2">
-          <input type="checkbox" className="mt-1" checked={auto} onChange={(e) => setAuto(e.target.checked)} />
+          <input type="checkbox" className="mt-1 size-4 accent-violet" checked={auto} onChange={(e) => setAuto(e.target.checked)} />
           <span><b>Auto-mirror</b> via Dynamic delegated access: the desk signs your mirror orders for you (embedded wallets only). Off = one-click sign each order.</span>
         </label>
-        <Btn onClick={follow}>{s.connected ? "Sign & follow" : "Log in to follow"}</Btn>
+        <Btn onClick={follow} disabled={s.connected && !personaId}>{s.connected ? "Sign & follow" : "Log in to follow"}</Btn>
         <p className="text-[11px] text-mute">You sign an EIP-191 follow message; orders are only ever placed from your own wallet as the Flash funder.</p>
       </div>
     </Card>
   );
 }
 
-const MSTATUS: Record<string, string> = { pending_signature: "bg-amber text-ink", submitted: "bg-ink text-paper", filled: "bg-desk text-paper", partially_filled: "bg-desk/60 text-paper", cancelled: "border border-ink", failed: "bg-stamp text-paper" };
+const MSTATUS: Record<string, string> = { pending_signature: "text-amber-ink bg-amber/15", submitted: "text-violet bg-violet-tint", filled: "text-desk bg-desk/5", partially_filled: "text-desk", cancelled: "text-mute", failed: "text-stamp bg-stamp/5" };
 
 function MirrorRow({ m, auto, onChange }: { m: MirrorOrder; auto: boolean; onChange: () => void }) {
   const s = useSigner();
@@ -254,12 +260,12 @@ function MirrorRow({ m, auto, onChange }: { m: MirrorOrder; auto: boolean; onCha
   };
 
   return (
-    <li className="border-[1.5px] border-ink p-3 text-sm">
+    <li className="box rounded-[3px] p-3 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span>
           <b>${m.symbol}</b> · {m.mode === "bracket" ? "market + bracket" : "DCA (Flash TWAP)"} · {usd(m.sizeUsdc)}
         </span>
-        <span className={`pill ${MSTATUS[m.status] ?? ""}`}>{m.status.replace("_", " ")}</span>
+        <span className={`pill ${MSTATUS[m.status] ?? "text-mute"}`}>{m.status.replace("_", " ")}</span>
       </div>
       <div className="mt-1 text-xs text-mute num">
         {m.flashOrderId && <>order {m.flashOrderId.slice(0, 10)}… · </>}

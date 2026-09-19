@@ -1,40 +1,85 @@
 @import "tailwindcss";
 
+/* Gadai: a public registry of pledged fee rights. Grey desk, white form sheets, hairline boxes, one violet stamp ink. */
 @theme {
-  --color-paper: #f3efe6;
-  --color-card: #fbf9f4;
-  --color-ink: #14120f;
-  --color-mute: #6f6a60;
-  --color-desk: #0b6b43;
-  --color-stamp: #c2361f;
-  --color-amber: #e9a825;
-  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
-  --font-serif: var(--font-serif-display), Georgia, serif;
-  --font-sans: var(--font-plex-sans), system-ui, sans-serif;
+  --color-ground: #e5e8e3;
+  --color-paper: #fcfcfa;
+  --color-card: #fcfcfa;
+  --color-ink: #16181d;
+  --color-mute: #545a64;
+  --color-rule: #c4c9cf;
+  --color-violet: #5a2bb3;
+  --color-violet-deep: #45208c;
+  --color-violet-tint: #efe9fa;
+  --color-desk: #16683b; /* repaid / positive */
+  --color-stamp: #b42318; /* declined / error / fork warning */
+  --color-amber: #e3a32b; /* in progress: auction, pledge, pending */
+  --color-amber-ink: #7a4b00;
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-chivo-mono), ui-monospace, "SFMono-Regular", monospace;
 }
 
+@utility font-display {
+  font-family: var(--font-sans);
+  font-weight: 750;
+  font-stretch: 118%;
+  letter-spacing: -0.015em;
+}
+
+html {
+  color-scheme: light;
+  scrollbar-color: var(--color-rule) var(--color-ground);
+}
 body {
-  background: var(--color-paper);
+  background: var(--color-ground);
   color: var(--color-ink);
   font-family: var(--font-sans);
-  /* faint ledger rules */
-  background-image: repeating-linear-gradient(0deg, transparent 0 31px, rgb(20 18 15 / 0.04) 31px 32px);
+  font-size: 15px;
+  line-height: 1.5;
+  caret-color: var(--color-violet);
+  font-variant-numeric: tabular-nums;
+}
+::selection {
+  background: var(--color-violet);
+  color: var(--color-paper);
+}
+:focus-visible {
+  outline: 2px solid var(--color-violet);
+  outline-offset: 2px;
+}
+h1, h2, h3 {
+  text-wrap: balance;
+}
+
+/* Signature moment: a status stamp strikes the form once when it renders or changes. */
+@keyframes strike {
+  from { transform: scale(1.18) rotate(-2deg); opacity: 0.55; }
+  to { transform: scale(1) rotate(-2deg); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
 @layer components {
-  .card { @apply border-[1.5px] border-ink bg-card shadow-[4px_4px_0_0_var(--color-ink)]; }
-  .label { @apply font-mono text-[11px] uppercase tracking-[0.14em] text-mute; }
+  /* A form sheet: the only element that carries depth. */
+  .card { @apply border border-rule bg-card shadow-[0_1px_2px_rgb(22_24_29/0.06),0_10px_28px_-16px_rgb(22_24_29/0.28)]; }
+  /* A ruled form box inside a sheet (no depth, never nested sheets). */
+  .box { @apply border border-rule bg-paper; }
+  .label { @apply font-sans text-[11px] font-semibold uppercase tracking-[0.07em] text-mute [font-stretch:88%]; }
   .num { @apply font-mono tabular-nums; }
-  .pill { @apply inline-block px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest; }
-  .tag { @apply inline-block border border-current px-1 font-mono text-[9px] uppercase tracking-widest; }
-  .link { @apply underline decoration-1 underline-offset-2 hover:text-desk; }
-  .btn { @apply inline-flex items-center justify-center gap-2 border-[1.5px] border-ink px-4 py-2 font-mono text-xs uppercase tracking-widest transition-transform active:translate-x-[2px] active:translate-y-[2px] disabled:cursor-not-allowed disabled:opacity-40; }
-  .btn-primary { @apply bg-ink text-paper hover:bg-desk hover:border-desk; }
-  .btn-ghost { @apply bg-transparent hover:bg-ink hover:text-paper; }
+  .pill { @apply inline-flex items-center rounded-[2px] border-[1.5px] border-current px-1.5 py-px font-sans text-[11px] font-bold uppercase leading-4 tracking-[0.08em] whitespace-nowrap [font-stretch:92%]; }
+  .stamp-mark { @apply inline-block rounded-[3px] border-2 border-current px-2.5 py-1 font-sans text-sm font-extrabold uppercase tracking-[0.12em] [font-stretch:112%] shadow-[inset_0_0_0_2px_var(--color-paper),inset_0_0_0_3px_currentColor]; animation: strike 260ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .tag { @apply inline-block rounded-[2px] border border-current px-1 font-sans text-[11px] font-semibold uppercase leading-4 tracking-[0.08em]; }
+  .link { @apply text-violet underline decoration-violet/35 decoration-1 underline-offset-[3px] transition-colors hover:decoration-violet; }
+  .btn { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-[3px] border px-4 py-2 font-sans text-sm font-semibold transition-[background-color,border-color,color,transform] duration-150 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-45; }
+  .btn-primary { @apply border-violet bg-violet text-paper hover:border-violet-deep hover:bg-violet-deep; }
+  .btn-ghost { @apply border-rule bg-paper text-ink hover:border-violet hover:bg-violet-tint; }
   .btn-danger { @apply border-stamp bg-stamp text-paper; }
-  .input { @apply w-full border-[1.5px] border-ink bg-paper px-3 py-2 font-mono text-sm outline-none focus:border-desk focus:bg-card; }
+  .input { @apply min-h-10 w-full rounded-[3px] border border-rule bg-white px-3 py-2 font-mono text-sm text-ink transition-colors outline-none placeholder:text-mute/80 hover:border-mute focus:border-violet focus:ring-2 focus:ring-violet/20; }
   .tbl { @apply w-full border-collapse text-sm; }
-  .tbl th { @apply font-mono text-[11px] uppercase tracking-[0.14em] text-mute border-b-[1.5px] border-ink px-2 py-2 text-left font-normal; }
-  .tbl td { @apply border-b border-ink/15 px-2 py-2 align-top; }
-  .h1 { @apply font-serif text-5xl leading-[0.95] tracking-tight md:text-6xl; }
+  .tbl th { @apply font-sans text-[11px] font-semibold uppercase tracking-[0.07em] text-mute [font-stretch:88%] border-b border-ink/70 px-2 py-2 text-left align-bottom whitespace-nowrap; }
+  .tbl td { @apply border-b border-rule px-2 py-2.5 align-top; }
+  .tbl tbody tr:last-child td { @apply border-b-0; }
+  .h1 { @apply font-display text-4xl leading-[1.02] md:text-5xl; }
+  .skeleton { @apply animate-pulse rounded-[2px] bg-rule/60; }
 }

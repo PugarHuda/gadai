@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { DeskInfo, Loan } from "@feedesk/shared";
 import { api } from "@/lib/api";
 import { publicClient, vaultAbi } from "@/lib/chain";
-import { Addr, Card, Loading, Pill, Stat, pct, usd, usdcRaw, useLoad, ago } from "@/components/ui";
+import { Addr, Card, Empty, Lifecycle, Loading, Pill, Stat, pct, usd, usdcRaw, useLoad, ago } from "@/components/ui";
 
 type Row = Loan & { repaidPct: number | null };
 
@@ -39,82 +39,112 @@ export default function Home() {
   const principal = live.reduce((s, l) => s + (l.terms ? Number(l.terms.principalRaw) / 1e6 : 0), 0);
   const face = live.reduce((s, l) => s + (l.terms ? Number(l.terms.faceValueRaw) / 1e6 : 0), 0);
 
+  const count = (st: string) => loans.filter((l) => l.status === st).length;
+
   return (
-    <div className="space-y-8">
-      <section className="grid gap-6 md:grid-cols-[1.4fr_1fr] md:items-end">
+    <div className="space-y-12">
+      <section className="grid gap-8 md:grid-cols-[1.35fr_1fr] md:items-start">
         <div>
-          <p className="label">Credit desk for Bankr agents · Base</p>
-          <h1 className="h1 mt-2">
-            Borrow against your <em className="text-desk">creator fees</em>.
-          </h1>
-          <p className="mt-4 max-w-xl text-[15px] leading-relaxed">
-            Pledge the fee rights of your Bankr-launched token to a per-loan FeeVault. Three LLM underwriters (Bankr Gateway) write the credit memo, lenders fund it in a
-            Uniswap CCA for a new asset — the <b>FeeNote</b> — and the desk&apos;s Dynamic agent wallet disburses USDC. Fees repay the notes; the lien releases itself.
+          <h1 className="h1 max-w-[16ch]">Borrow USDC against your token&apos;s creator fees.</h1>
+          <p className="mt-5 max-w-[60ch] text-base leading-relaxed text-ink/85">
+            Gadai is a registry of pledged fee rights on Base. A Bankr agent or creator pledges its Doppler fee stream to a FeeVault, lenders fund the loan by buying FeeNotes in a
+            Uniswap auction, and the fees repay the notes. When the debt is zero, anyone can release the lien and the rights go back.
           </p>
-          <div className="mt-5 flex gap-3">
+          <div className="mt-6 flex flex-wrap gap-3">
             <Link href="/apply" className="btn btn-primary">Apply for a loan</Link>
             <Link href="/notes" className="btn btn-ghost">Fund a FeeNote</Link>
           </div>
         </div>
-        <Card title="Desk">
-          <Loading l={desk.loading} e={desk.error}>
+        <Card title="Desk registration" right={desk.data?.demoFork ? <span className="pill text-amber-ink">fork</span> : undefined}>
+          <Loading l={desk.loading} e={desk.error} retry={desk.reload} what="the desk's addresses and underwriters">
             {desk.data && (
-              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-                <dt className="label">chain</dt><dd className="num">{desk.data.chainId}{desk.data.demoFork && <span className="tag ml-2 text-stamp">fork</span>}</dd>
+              <dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-4 gap-y-2 text-sm">
+                <dt className="label">Chain</dt><dd className="num">{desk.data.chainId}</dd>
                 <dt className="label">FeeDesk</dt><dd><Addr a={desk.data.desk} /></dd>
-                <dt className="label">agent wallet</dt><dd><Addr a={desk.data.agentWallet} /> <span className="tag">Dynamic</span></dd>
-                <dt className="label">treasury</dt><dd><Addr a={desk.data.treasury} /></dd>
-                <dt className="label">underwriters</dt><dd className="text-xs">{desk.data.personas.map((p) => `${p.name} (${p.model})`).join(" · ")}</dd>
+                <dt className="label">Agent wallet</dt><dd><Addr a={desk.data.agentWallet} /> <span className="tag text-mute">Dynamic</span></dd>
+                <dt className="label">Treasury</dt><dd><Addr a={desk.data.treasury} /></dd>
+                <dt className="label">Underwriters</dt>
+                <dd className="text-xs leading-relaxed">{desk.data.personas.map((p) => `${p.name} (${p.model})`).join(" · ")}</dd>
               </dl>
             )}
           </Loading>
         </Card>
       </section>
 
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat k="loans written" v={live.length} sub={`${loans.filter((l) => l.status === "DECLINED").length} declined by the lead underwriter`} />
-        <Stat k="active" v={loans.filter((l) => l.status === "ACTIVE").length} sub={`${loans.filter((l) => l.status === "AUCTION").length} in auction`} />
-        <Stat k="principal" v={usd(principal, 0)} sub={`face ${usd(face, 0)}`} />
-        <Stat k="released" v={loans.filter((l) => l.status === "RELEASED").length} sub="liens returned to borrowers" />
+      <section aria-labelledby="how">
+        <h2 id="how" className="mb-3 text-lg font-bold [font-stretch:108%]">How a loan moves</h2>
+        <Lifecycle detail />
       </section>
 
-      <Card title="Loan book" right={<button className="link" onClick={() => book.reload()}>refresh</button>}>
-        <Loading l={book.loading} e={book.error}>
-          {loans.length === 0 ? (
-            <p className="text-sm text-mute">No loans yet. <Link className="link" href="/apply">Be the first.</Link></p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="tbl">
-                <thead>
-                  <tr><th>#</th><th>status</th><th>token</th><th>borrower</th><th className="text-right">principal / face</th><th>repaid</th><th>vault · note</th><th>via</th><th>opened</th></tr>
-                </thead>
-                <tbody>
+      <section aria-labelledby="book" className="space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <h2 id="book" className="text-lg font-bold [font-stretch:108%]">Loan book</h2>
+          <button className="link text-sm" onClick={() => book.reload()}>Refresh</button>
+        </div>
+        {book.data && (
+          <div className="card grid grid-cols-2 gap-px overflow-hidden bg-rule md:grid-cols-4">
+            <Stat k="Loans written" v={live.length} sub={`${count("DECLINED")} declined by the lead underwriter`} />
+            <Stat k="Active" v={count("ACTIVE")} sub={`${count("AUCTION")} in auction`} />
+            <Stat k="Principal" v={usd(principal, 0)} sub={`face ${usd(face, 0)}`} />
+            <Stat k="Released" v={count("RELEASED")} sub="liens returned to borrowers" />
+          </div>
+        )}
+        <div className="card p-4 sm:p-5">
+          <Loading l={book.loading} e={book.error} retry={book.reload} what="the loan book">
+            {loans.length === 0 ? (
+              <Empty title="No loans on the book yet">
+                The first approved application will appear here with its FeeVault, FeeNote and repayment progress. <Link className="link" href="/apply">Apply for a loan</Link>.
+              </Empty>
+            ) : (
+              <>
+                <ul className="divide-y divide-rule md:hidden">
                   {loans.map((l) => (
-                    <tr key={l.id} className="hover:bg-ink/5">
-                      <td><Link className="link num" href={`/loans/${l.id}`}>{l.id}</Link></td>
-                      <td><Pill s={l.status} /></td>
-                      <td><Addr a={l.token} label={`$${l.symbol}`} /></td>
-                      <td><Addr a={l.borrower} /></td>
-                      <td className="num text-right">{usdcRaw(l.terms?.principalRaw)} <span className="text-mute">/ {usdcRaw(l.terms?.faceValueRaw)}</span></td>
-                      <td className="min-w-28">
-                        {l.repaidPct == null ? <span className="text-mute">—</span> : (
-                          <div>
-                            <div className="h-1.5 bg-ink/10"><div className="h-full bg-desk" style={{ width: `${l.repaidPct}%` }} /></div>
-                            <span className="num text-xs">{pct(l.repaidPct)}</span>
-                          </div>
-                        )}
-                      </td>
-                      <td className="text-xs"><Addr a={l.vault} /> · <Addr a={l.note} /></td>
-                      <td className="text-xs">{l.via}</td>
-                      <td className="text-xs text-mute" title={l.createdAt}>{ago(l.createdAt)}</td>
-                    </tr>
+                    <li key={l.id} className="py-3 first:pt-0 last:pb-0">
+                      <Link href={`/loans/${l.id}`} className="flex items-center justify-between gap-3">
+                        <span className="font-semibold">${l.symbol} <span className="num text-sm font-normal text-mute">#{l.id}</span></span>
+                        <Pill s={l.status} />
+                      </Link>
+                      <div className="num mt-1 flex justify-between text-sm">
+                        <span>{usdcRaw(l.terms?.principalRaw)} <span className="text-mute">/ {usdcRaw(l.terms?.faceValueRaw)}</span></span>
+                        <span className="text-mute">{l.repaidPct == null ? ago(l.createdAt) : `${pct(l.repaidPct)} repaid`}</span>
+                      </div>
+                    </li>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Loading>
-      </Card>
+                </ul>
+                <div className="hidden overflow-x-auto md:block">
+                  <table className="tbl">
+                    <thead>
+                      <tr><th>#</th><th>Status</th><th>Token</th><th>Borrower</th><th className="text-right">Principal / face</th><th>Repaid</th><th>Vault · note</th><th>Via</th><th>Opened</th></tr>
+                    </thead>
+                    <tbody>
+                      {loans.map((l) => (
+                        <tr key={l.id} className="transition-colors hover:bg-violet-tint/50">
+                          <td><Link className="link num" href={`/loans/${l.id}`}>{l.id}</Link></td>
+                          <td><Pill s={l.status} /></td>
+                          <td><Addr a={l.token} label={`$${l.symbol}`} /></td>
+                          <td><Addr a={l.borrower} /></td>
+                          <td className="num text-right whitespace-nowrap">{usdcRaw(l.terms?.principalRaw)} <span className="text-mute">/ {usdcRaw(l.terms?.faceValueRaw)}</span></td>
+                          <td className="min-w-28">
+                            {l.repaidPct == null ? <span className="text-mute">—</span> : (
+                              <div>
+                                <div className="h-1.5 bg-rule/60"><div className="h-full bg-desk" style={{ width: `${l.repaidPct}%` }} /></div>
+                                <span className="num text-xs">{pct(l.repaidPct)}</span>
+                              </div>
+                            )}
+                          </td>
+                          <td className="text-xs whitespace-nowrap"><Addr a={l.vault} /> · <Addr a={l.note} /></td>
+                          <td className="text-xs">{l.via}</td>
+                          <td className="text-xs whitespace-nowrap text-mute" title={l.createdAt}>{ago(l.createdAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </Loading>
+        </div>
+      </section>
     </div>
   );
 }

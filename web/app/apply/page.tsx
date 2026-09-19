@@ -53,18 +53,17 @@ export default function Apply() {
   return (
     <div className="space-y-8">
       <header>
-        <p className="label">Step 1 · underwrite</p>
-        <h1 className="h1 mt-1">Apply for credit</h1>
-        <p className="mt-3 max-w-2xl text-sm">
+        <h1 className="h1">Apply for credit</h1>
+        <p className="mt-4 max-w-[68ch] text-ink/85">
           Terms come from your token&apos;s real Doppler fee history (Bankr fee API), priced with a Uniswap Trading API quote. Then three underwriter agents on the Bankr LLM Gateway
           write memos. They can only lower the amount, never raise it.
         </p>
       </header>
 
-      <Card title="Borrower & token">
+      <Card title="1. Borrower and token">
         <div className="grid gap-4 md:grid-cols-2">
           <label className="block">
-            <span className="label">fee beneficiary wallet</span>
+            <span className="label">Fee beneficiary wallet</span>
             <input className="input mt-1" placeholder="0x… (your EOA or Bankr wallet)" value={borrower} onChange={(e) => setBorrower(e.target.value.trim())} />
             {!s.connected && (
               <button className="link mt-1 text-xs" onClick={s.login}>
@@ -73,7 +72,7 @@ export default function Apply() {
             )}
           </label>
           <label className="block">
-            <span className="label">token (Base, Doppler)</span>
+            <span className="label">Token (Base, Doppler)</span>
             <input className="input mt-1" placeholder="0x…" value={token} onChange={(e) => setToken(e.target.value.trim())} />
             {ENV.DEMO_FORK && (
               <button className="link mt-1 text-xs" onClick={() => (setBorrower(TEST_POOL.beneficiary), setToken(TEST_POOL.token))}>
@@ -84,13 +83,13 @@ export default function Apply() {
         </div>
         {tokens && tokens.length > 0 && (
           <div className="mt-4">
-            <div className="label">your Base tokens (Bankr creator-fees via agent)</div>
+            <div className="label">Your Base tokens (Bankr creator fees, via the agent)</div>
             <div className="mt-2 flex flex-wrap gap-2">
               {tokens.map((x) => (
                 <button
                   key={x.token}
                   onClick={() => setToken(x.token)}
-                  className={`border-[1.5px] px-3 py-1.5 text-left text-xs ${token.toLowerCase() === x.token.toLowerCase() ? "border-desk bg-desk text-paper" : "border-ink hover:bg-ink/5"}`}
+                  className={`rounded-[3px] border px-3 py-1.5 text-left text-xs transition-colors ${token.toLowerCase() === x.token.toLowerCase() ? "border-violet bg-violet-tint ring-1 ring-violet" : "border-rule bg-paper hover:border-mute"}`}
                 >
                   <b>${x.symbol}</b> · share {x.sharePct}% · claimable {x.claimableWeth.toFixed(4)} WETH
                 </button>
@@ -106,9 +105,9 @@ export default function Apply() {
       </Card>
 
       {quote && (
-        <Card title="Quote" right={quote.eligible ? <Pill s="approve" /> : <Pill s="decline" />}>
+        <Card title="2. Quote" right={quote.eligible ? <Pill s="approve" /> : <Pill s="decline" />}>
           {!quote.eligible && (
-            <ul className="mb-3 list-disc pl-5 text-sm text-stamp">
+            <ul className="mb-4 list-disc rounded-[3px] border border-stamp/40 bg-stamp/5 py-2 pr-3 pl-8 text-sm text-stamp">
               {quote.reasons.map((r) => (
                 <li key={r}>{r}</li>
               ))}
@@ -117,8 +116,8 @@ export default function Apply() {
           {inp && (
             <div className="grid gap-6 md:grid-cols-[1.3fr_1fr]">
               <div>
-                <div className="flex items-baseline justify-between">
-                  <h3 className="font-serif text-3xl">${inp.symbol}</h3>
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <h3 className="font-display text-2xl">${inp.symbol}</h3>
                   <span className="label">
                     share {inp.sharePct}% · {inp.lifetimeDays}d live · ETH {usd(inp.ethUsd, 0)}
                   </span>
@@ -126,7 +125,7 @@ export default function Apply() {
                 <div className="mt-3">
                   <FeeChart days={inp.dailyWeth} claimable={Number(inp.claimableWethRaw) / 1e18} />
                 </div>
-                <dl className="mt-3 grid grid-cols-3 gap-2 text-sm">
+                <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
                   <div>
                     <dt className="label">30d fees</dt>
                     <dd className="num">{inp.weth30d.toFixed(4)} WETH</dd>
@@ -143,9 +142,9 @@ export default function Apply() {
               </div>
               {t && (
                 <dl className="grid grid-cols-2 content-start gap-3">
-                  <div className="col-span-2 border-[1.5px] border-ink bg-ink p-3 text-paper">
-                    <dt className="label !text-paper/60">max principal</dt>
-                    <dd className="num text-4xl">{usdcRaw(t.maxPrincipalRaw)}</dd>
+                  <div className="col-span-2 rounded-[3px] border border-violet bg-violet-tint p-3">
+                    <dt className="label !text-violet">max principal</dt>
+                    <dd className="num text-3xl text-violet-deep sm:text-4xl">{usdcRaw(t.maxPrincipalRaw)}</dd>
                   </div>
                   <div>
                     <dt className="label">note face</dt>
@@ -176,8 +175,8 @@ export default function Apply() {
             </div>
           )}
           <details className="mt-4">
-            <summary className="label cursor-pointer">formula</summary>
-            <pre className="mt-2 whitespace-pre-wrap bg-ink/5 p-3 font-mono text-xs">{quote.formula}</pre>
+            <summary className="cursor-pointer text-sm font-semibold text-violet">How this quote was priced</summary>
+            <pre className="mt-2 whitespace-pre-wrap bg-ground/60 p-3 font-mono text-xs">{quote.formula}</pre>
           </details>
           {quote.eligible && !loan && (
             <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -192,7 +191,7 @@ export default function Apply() {
 
       {loan && (
         <>
-          <Card title={`Loan #${loan.id} · credit memos`} right={<Pill s={loan.status} />}>
+          <Card title={`3. Loan #${loan.id}: credit memos`} right={<Pill s={loan.status} />}>
             <Memos memos={loan.memos} personas={desk.data?.personas} />
           </Card>
           {loan.status === "APPROVED" && loan.vault && <PledgePanel loan={loan} onDone={setLoan} />}
@@ -200,12 +199,12 @@ export default function Apply() {
             <p className="text-sm">
               Pledge confirmed.{" "}
               <Link className="link" href={`/loans/${loan.id}`}>
-                Follow the FeeNote auction on the loan page →
+                Follow the FeeNote auction on the loan page
               </Link>
             </p>
           )}
           {loan.status === "DECLINED" && (
-            <p className="text-sm text-stamp">
+            <p className="rounded-[3px] border border-stamp/40 bg-stamp/5 px-3 py-2 text-sm text-stamp">
               The lead underwriter declined. The memo and signal are public on{" "}
               <Link className="link" href="/desk">
                 Follow the Desk

@@ -6,7 +6,7 @@ import { CHAIN_ID_BASE, flashTypedData, type TxRequest } from "@feedesk/shared";
 import { ENV } from "./env";
 import { publicClient } from "./chain";
 
-const cssOverrides = `.dynamic-widget-inline-controls{border-radius:0!important;box-shadow:none!important;border:1.5px solid #14120f!important}`;
+const cssOverrides = `.dynamic-widget-inline-controls{box-shadow:none!important;border:1px solid #c4c9cf!important}`;
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (

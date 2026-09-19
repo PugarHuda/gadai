@@ -6,7 +6,7 @@ import { DynamicWidget } from "@dynamic-labs/sdk-react-core";
 const LINKS = [
   ["/", "Loan book"],
   ["/apply", "Borrow"],
-  ["/notes", "Lend · FeeNotes"],
+  ["/notes", "Lend"],
   ["/desk", "Follow the Desk"],
   ["/dine", "Dine"],
 ] as const;
@@ -14,23 +14,33 @@ const LINKS = [
 export function Nav() {
   const p = usePathname();
   return (
-    <nav className="border-b-[1.5px] border-ink bg-paper/90 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-        <Link href="/" className="font-serif text-3xl leading-none">
-          Fee<span className="text-desk">/</span>Desk
+    <header className="border-b border-rule bg-paper">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-8 gap-y-2 px-4 pt-3 md:flex-nowrap md:py-0">
+        <Link href="/" className="flex items-baseline gap-2 md:py-3" aria-label="Gadai, loan book">
+          <span className="font-display text-2xl leading-none">Gadai</span>
+          <span className="hidden text-xs text-mute lg:inline">registry of pledged fee rights</span>
         </Link>
-        <div className="flex flex-1 flex-wrap gap-x-4 gap-y-1">
-          {LINKS.map(([h, l]) => {
-            const on = h === "/" ? p === "/" : p.startsWith(h);
-            return (
-              <Link key={h} href={h} className={`font-mono text-xs uppercase tracking-widest ${on ? "text-ink underline decoration-2 underline-offset-4" : "text-mute hover:text-ink"}`}>
-                {l}
-              </Link>
-            );
-          })}
+        <div className="order-last -mx-4 w-[calc(100%+2rem)] overflow-x-auto md:order-none md:mx-0 md:w-auto md:flex-1">
+          <nav aria-label="Main" className="flex gap-1 px-4 md:px-0">
+            {LINKS.map(([h, l]) => {
+              const on = h === "/" ? p === "/" : p.startsWith(h);
+              return (
+                <Link
+                  key={h}
+                  href={h}
+                  aria-current={on ? "page" : undefined}
+                  className={`whitespace-nowrap border-b-2 px-2.5 py-3 text-sm font-semibold transition-colors md:py-4 ${on ? "border-violet text-ink" : "border-transparent text-mute hover:text-ink"}`}
+                >
+                  {l}
+                </Link>
+              );
+            })}
+          </nav>
         </div>
-        <DynamicWidget />
+        <div className="ml-auto md:ml-0">
+          <DynamicWidget />
+        </div>
       </div>
-    </nav>
+    </header>
   );
 }

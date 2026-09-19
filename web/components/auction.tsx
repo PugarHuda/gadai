@@ -46,7 +46,7 @@ export function AuctionPanel({ loan, personas, onChange }: { loan: LoanDetail; p
 
   return (
     <Card title="FeeNote auction · Uniswap CCA" right={a && <span className="font-mono">{phase}</span>}>
-      <Loading l={st.loading} e={st.error}>
+      <Loading l={st.loading} e={st.error} retry={st.reload} what="the live auction state">
         {a && (
           <div className="grid gap-6 md:grid-cols-[1.2fr_1fr]">
             <div>
@@ -60,7 +60,7 @@ export function AuctionPanel({ loan, personas, onChange }: { loan: LoanDetail; p
                   <div className="num text-3xl">{a.clearingPrice.toFixed(4)}</div>
                 </div>
               </div>
-              <div className="mt-2 h-3 border-[1.5px] border-ink bg-paper">
+              <div className="mt-2 h-2.5 bg-rule/60">
                 <div className={`h-full ${a.graduated ? "bg-desk" : "bg-amber"}`} style={{ width: `${Math.min(100, (raised / need) * 100)}%` }} />
               </div>
               <div className="mt-1 flex justify-between text-[11px] text-mute num">
@@ -92,15 +92,15 @@ export function AuctionPanel({ loan, personas, onChange }: { loan: LoanDetail; p
             </div>
 
             <div className="space-y-4">
-              {phase === "not started" && <p className="border-[1.5px] border-ink p-3 text-sm">Bidding opens at block {a.startBlock} (now {a.currentBlock}).</p>}
+              {phase === "not started" && <p className="box rounded-[3px] p-3 text-sm">Bidding opens at block {a.startBlock} (now {a.currentBlock}).</p>}
               {phase === "live" && (
-                <div className="border-[1.5px] border-ink p-3">
+                <div className="box rounded-[3px] p-3">
                   <div className="label">place a bid</div>
                   <p className="mt-1 text-xs text-mute">You pay ≤ your max price per note; each note repays 1 USDC from the fee stream. Signs USDC→Permit2 approvals and submitBid.</p>
                   {approving.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
                       {approving.map((m) => (
-                        <button key={m.personaId} className="border border-ink px-2 py-0.5 font-mono text-[11px] hover:bg-ink hover:text-paper" onClick={() => setPrice(String(m.maxNotePrice))}>
+                        <button key={m.personaId} className="rounded-[3px] border border-rule bg-paper px-2 py-1 text-xs hover:border-violet hover:bg-violet-tint" onClick={() => setPrice(String(m.maxNotePrice))}>
                           copy {personas?.find((p) => p.id === m.personaId)?.name ?? m.personaId} @ {m.maxNotePrice.toFixed(2)}
                         </button>
                       ))}
@@ -117,7 +117,7 @@ export function AuctionPanel({ loan, personas, onChange }: { loan: LoanDetail; p
                 </div>
               )}
               {mine.length > 0 && (
-                <div className="border-[1.5px] border-ink p-3">
+                <div className="box rounded-[3px] p-3">
                   <div className="label">your bids</div>
                   {mine.map((b) => (
                     <div key={b.bidId} className="mt-2 flex items-center justify-between gap-2 text-sm">
@@ -129,15 +129,15 @@ export function AuctionPanel({ loan, personas, onChange }: { loan: LoanDetail; p
                 </div>
               )}
               <ForkOnly>
-                <div className="border-[1.5px] border-stamp p-3">
-                  <div className="label !text-stamp">fork: advance blocks</div>
+                <div className="rounded-[3px] border border-dashed border-amber-ink/50 p-3">
+                  <div className="label !text-amber-ink">Fork only: advance blocks</div>
                   <div className="mt-2 flex gap-2">
                     <Btn kind="ghost" onClick={async () => (await mineBlocks(10), st.reload())}>+10</Btn>
                     <Btn kind="ghost" onClick={async () => (await mineBlocks(Math.max(1, a.endBlock - a.currentBlock)), st.reload())}>to end</Btn>
                   </div>
                 </div>
               </ForkOnly>
-              {log.length > 0 && <pre className="whitespace-pre-wrap break-all bg-ink/5 p-2 font-mono text-[10px]">{log.join("\n")}</pre>}
+              {log.length > 0 && <pre className="whitespace-pre-wrap break-all bg-ground/60 p-2 font-mono text-[11px]">{log.join("\n")}</pre>}
             </div>
           </div>
         )}

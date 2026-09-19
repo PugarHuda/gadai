@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-19T12:30:00Z",
+  "title": "Design System: Gadai",
+  "extensions": {
+    "colorMeta": {
+      "stamp-violet": { "role": "primary", "displayName": "Stamp Violet", "canonical": "#5a2bb3", "tonalRamp": ["#1d0e3b", "#2e1660", "#45208c", "#5a2bb3", "#7a55c7", "#a58ddb", "#cfc2ee", "#efe9fa"] },
+      "desk-ground": { "role": "neutral", "displayName": "Desk Ground", "canonical": "#e5e8e3", "tonalRamp": ["#262824", "#3d403b", "#5a5e57", "#7c8078", "#a2a69e", "#c6cac2", "#e5e8e3", "#f4f5f2"] },
+      "form-sheet": { "role": "neutral", "displayName": "Form Sheet", "canonical": "#fcfcfa" },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#16181d" },
+      "rule": { "role": "neutral", "displayName": "Hairline Rule", "canonical": "#c4c9cf" },
+      "repaid-green": { "role": "success", "displayName": "Repaid Green", "canonical": "#16683b" },
+      "declined-red": { "role": "error", "displayName": "Declined Red", "canonical": "#b42318" },
+      "pending-amber": { "role": "warning", "displayName": "Pending Amber", "canonical": "#e3a32b" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Page titles; Archivo at 118% width." },
+      "caption": { "displayName": "Box caption", "purpose": "Field and box labels; never an eyebrow over a heading." },
+      "data": { "displayName": "Typed entry", "purpose": "Amounts, addresses, hashes, inputs (Chivo Mono)." }
+    },
+    "shadows": [
+      { "name": "sheet", "value": "0 1px 2px rgb(22 24 29 / 0.06), 0 10px 28px -16px rgb(22 24 29 / 0.28)", "purpose": "Form sheets only; nothing inside a sheet has depth." }
+    ],
+    "motion": [
+      { "name": "strike", "value": "260ms cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Filing stamp strikes in when a loan status renders or changes." },
+      { "name": "state", "value": "150ms", "purpose": "Hover and selection color transitions." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    { "name": "Primary Button", "kind": "button", "refersTo": "button-primary", "description": "The one primary action per region.", "html": "<button class=\"ds-btn-primary\">Apply for a loan</button>", "css": ".ds-btn-primary{background:#5a2bb3;color:#fcfcfa;border:1px solid #5a2bb3;border-radius:3px;min-height:40px;padding:8px 16px;font:600 14px Archivo,system-ui,sans-serif;transition:background-color .15s}.ds-btn-primary:hover{background:#45208c;border-color:#45208c}.ds-btn-primary:focus-visible{outline:2px solid #5a2bb3;outline-offset:2px}" },
+    { "name": "Ghost Button", "kind": "button", "refersTo": "button-ghost", "description": "Secondary actions.", "html": "<button class=\"ds-btn-ghost\">Fund a FeeNote</button>", "css": ".ds-btn-ghost{background:#fcfcfa;color:#16181d;border:1px solid #c4c9cf;border-radius:3px;min-height:40px;padding:8px 16px;font:600 14px Archivo,system-ui,sans-serif;transition:background-color .15s,border-color .15s}.ds-btn-ghost:hover{background:#efe9fa;border-color:#5a2bb3}.ds-btn-ghost:focus-visible{outline:2px solid #5a2bb3;outline-offset:2px}" },
+    { "name": "Typed Input", "kind": "input", "refersTo": "input", "description": "Addresses and amounts, typed in mono.", "html": "<input class=\"ds-input\" placeholder=\"0x…\">", "css": ".ds-input{background:#fff;color:#16181d;border:1px solid #c4c9cf;border-radius:3px;min-height:40px;padding:8px 12px;font:400 14px 'Chivo Mono',ui-monospace,monospace}.ds-input:hover{border-color:#545a64}.ds-input:focus{outline:none;border-color:#5a2bb3;box-shadow:0 0 0 2px rgb(90 43 179/.2)}" },
+    { "name": "Status Pill", "kind": "chip", "refersTo": "status-pill", "description": "Loan and signal status with its word.", "html": "<span class=\"ds-pill\">ACTIVE</span>", "css": ".ds-pill{display:inline-flex;border:1.5px solid currentColor;border-radius:2px;padding:1px 6px;color:#16683b;background:rgb(22 104 59/.05);font:700 10.5px/16px Archivo,sans-serif;letter-spacing:.08em;text-transform:uppercase}" },
+    { "name": "Filing Stamp", "kind": "custom", "description": "Signature status mark on the loan page.", "html": "<span class=\"ds-stamp\">AUCTION</span>", "css": ".ds-stamp{display:inline-block;color:#5a2bb3;border:2px solid currentColor;border-radius:3px;padding:4px 10px;font:800 14px Archivo,sans-serif;letter-spacing:.12em;text-transform:uppercase;transform:rotate(-2deg);box-shadow:inset 0 0 0 2px #fcfcfa,inset 0 0 0 3px currentColor}" },
+    { "name": "Form Sheet", "kind": "card", "refersTo": "sheet", "description": "The only element with depth.", "html": "<section class=\"ds-sheet\"><header class=\"ds-sheet-h\">Loan book</header><div class=\"ds-sheet-b\">…</div></section>", "css": ".ds-sheet{background:#fcfcfa;border:1px solid #c4c9cf;box-shadow:0 1px 2px rgb(22 24 29/.06),0 10px 28px -16px rgb(22 24 29/.28)}.ds-sheet-h{padding:10px 20px;border-bottom:1px solid #c4c9cf;font:700 14px Archivo,sans-serif}.ds-sheet-b{padding:20px}" }
+  ],
+  "narrative": {
+    "northStar": "The Lien Registry",
+    "overview": "Every loan is a filed instrument in a public registry of pledged fee rights: white form sheets on a grey desk, ruled boxes with captions, typed entries, and a violet stamp for state.",
+    "keyCharacteristics": ["Grey desk, white sheets", "Hairline shared-edge boxes", "Archivo width axis for hierarchy", "Mono for data only", "One violet stamp ink"],
+    "rules": [
+      { "name": "The Stamp Law", "body": "Violet marks registry state and the primary action only.", "section": "colors" },
+      { "name": "Sheets Only", "body": "Only sheets carry depth; nothing nests a sheet.", "section": "elevation" }
+    ],
+    "dos": ["Do state where each number was read", "Do keep the DEMO_FORK notice literal and sticky"],
+    "donts": ["Don't use hard offset shadows or side-stripe borders", "Don't put captions above page titles", "Don't use glyphs as icons"]
+  }
+}

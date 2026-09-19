@@ -7,3 +7,4 @@ cache/
 *.db
 broadcast/
 *.tsbuildinfo
+.claude/

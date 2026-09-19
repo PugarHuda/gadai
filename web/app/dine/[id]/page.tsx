@@ -46,15 +46,15 @@ export default function Dine({ params }: { params: Promise<{ id: string }> }) {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="label">Blackbird Flynet · loan #{loanId}</p>
-          <h1 className="h1 mt-1">Dine on {loan.data ? `$${loan.data.symbol}` : "your"} fees</h1>
+          <h1 className="h1">Dine on {loan.data ? `$${loan.data.symbol}` : "your"} fees</h1>
+          <p className="mt-2 text-sm text-mute">Blackbird Flynet dining line on loan #{loanId}</p>
         </div>
         <Link href={`/loans/${loanId}`} className="link text-sm">
-          ← loan
+          Back to loan #{loanId}
         </Link>
       </header>
 
-      <Loading l={st.loading} e={st.error}>
+      <Loading l={st.loading} e={st.error} retry={st.reload} what="this dining line">
         {d && (
           <div className="grid gap-6 md:grid-cols-[1fr_1.5fr]">
             <div className="space-y-6">
@@ -70,7 +70,7 @@ export default function Dine({ params }: { params: Promise<{ id: string }> }) {
                   <dl className="grid grid-cols-2 gap-3 text-sm">
                     <div className="col-span-2">
                       <dt className="label">member</dt>
-                      <dd className="font-serif text-2xl">{d.member?.name ?? "Blackbird member"}</dd>
+                      <dd className="font-display text-2xl">{d.member?.name ?? "Blackbird member"}</dd>
                     </div>
                     <div>
                       <dt className="label">FLY balance</dt>
@@ -89,7 +89,7 @@ export default function Dine({ params }: { params: Promise<{ id: string }> }) {
               </Card>
 
               <Card title="Dining line">
-                <div className="flex h-4 border-[1.5px] border-ink">
+                <div className="flex h-2.5 bg-rule/60">
                   <div className="bg-amber" style={{ width: `${limit ? Math.min(100, (drawn / limit) * 100) : 0}%` }} />
                 </div>
                 <p className="num mt-1 text-xs">
@@ -106,7 +106,7 @@ export default function Dine({ params }: { params: Promise<{ id: string }> }) {
                     <p className="text-[11px] text-mute">
                       Issues FLY to your Blackbird wallet (Flynet issue_reward) and records the debt on-chain (FeeVault.addDraw). Pay in the Blackbird app.
                     </p>
-                    <div className="border-t border-ink/20 pt-3">
+                    <div className="border-t border-rule pt-3">
                       <Btn kind="ghost" onClick={settle}>
                         Return unused FLY
                       </Btn>
@@ -122,19 +122,20 @@ export default function Dine({ params }: { params: Promise<{ id: string }> }) {
                 {!linked ? (
                   <p className="text-sm text-mute">Link Blackbird to get picks based on your check-ins and memberships.</p>
                 ) : (
-                  <Loading l={recs.loading} e={recs.error}>
+                  <Loading l={recs.loading} e={recs.error} retry={recs.reload} what="restaurant picks">
                     <ul className="space-y-3">
                       {recs.data?.map((r, i) => (
                         <li key={r.locationId}>
                           <div
                             role="button"
+                            aria-pressed={pick === r.locationId}
                             tabIndex={0}
                             onClick={() => setPick(pick === r.locationId ? null : r.locationId)}
                             onKeyDown={(e) => e.key === "Enter" && setPick(pick === r.locationId ? null : r.locationId)}
-                            className={`w-full cursor-pointer border-[1.5px] p-3 text-left ${pick === r.locationId ? "border-desk bg-desk/10" : "border-ink hover:bg-ink/5"}`}
+                            className={`w-full cursor-pointer rounded-[3px] border p-3 text-left transition-colors ${pick === r.locationId ? "border-violet bg-violet-tint ring-1 ring-violet" : "border-rule bg-paper hover:border-mute"}`}
                           >
                             <div className="flex items-baseline justify-between gap-2">
-                              <span className="font-serif text-2xl leading-none">
+                              <span className="font-display text-lg leading-tight">
                                 <span className="num mr-2 text-base text-mute">{i + 1}</span>
                                 {r.name}
                               </span>
@@ -145,7 +146,7 @@ export default function Dine({ params }: { params: Promise<{ id: string }> }) {
                             {r.specials.length > 0 && <p className="mt-1 text-xs">specials: {r.specials.join(" · ")}</p>}
                             {r.reservationUrl && (
                               <a className="link mt-1 inline-block text-xs" href={r.reservationUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
-                                reserve ↗
+                                Reserve
                               </a>
                             )}
                           </div>

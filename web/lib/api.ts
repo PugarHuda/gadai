@@ -1,5 +1,8 @@
 import { ENV } from "./env";
 
+/** The agent API did not answer at all (network error), as opposed to answering with an error. Pages render a designed offline state for it. */
+export class AgentOffline extends Error {}
+
 /** Call the Gadai agent REST API. Throws the agent's `{error}` message on non-2xx. */
 export async function api<T>(path: string, init?: { method?: string; body?: unknown; headers?: Record<string, string> }): Promise<T> {
   if (!ENV.AGENT_URL) throw new Error("Missing env NEXT_PUBLIC_AGENT_URL (see .env.example)");
@@ -9,7 +12,7 @@ export async function api<T>(path: string, init?: { method?: string; body?: unkn
     body: init?.body === undefined ? undefined : JSON.stringify(init.body),
     cache: "no-store",
   }).catch((e) => {
-    throw new Error(`Agent unreachable at ${ENV.AGENT_URL} (${(e as Error).message})`);
+    throw new AgentOffline(`Agent unreachable at ${ENV.AGENT_URL} (${(e as Error).message})`);
   });
   const text = await r.text();
   let j: unknown = null;
@@ -18,6 +21,7 @@ export async function api<T>(path: string, init?: { method?: string; body?: unkn
   } catch {
     /* non-JSON body */
   }
+  if (!r.ok && [502, 503, 504].includes(r.status)) throw new AgentOffline(`Agent at ${ENV.AGENT_URL} is not answering (HTTP ${r.status})`);
   if (!r.ok) throw new Error((j as { error?: string } | null)?.error ?? `${r.status} ${text.slice(0, 200)}`);
   return j as T;
 }

@@ -6,7 +6,7 @@ import { CHAIN_ID_BASE, type DeskInfo, type LoanDetail, type TxRequest } from "@
 import { api } from "@/lib/api";
 import { noteAbi, publicClient, vaultAbi } from "@/lib/chain";
 import { useSigner } from "@/lib/wallet";
-import { Addr, Btn, Card, Loading, Pill, Tx, ago, pct, usdcRaw, useLoad } from "@/components/ui";
+import { Addr, Btn, Card, Lifecycle, Loading, Pill, Tx, ago, pct, usdcRaw, useLoad } from "@/components/ui";
 import { Memos } from "@/components/memo";
 import { PledgePanel } from "@/components/pledge";
 import { AuctionPanel } from "@/components/auction";
@@ -31,6 +31,22 @@ const KIND_LABEL: Record<string, string> = {
   cancelled: "cancelled",
   error: "error",
 };
+const STAMP: Record<string, string> = { APPROVED: "text-violet", PLEDGED: "text-amber-ink", AUCTION: "text-amber-ink", ACTIVE: "text-desk", RELEASED: "text-violet", DECLINED: "text-stamp", CANCELLED: "text-stamp" };
+
+/** One line that says what happens next for this loan (and who can do it). */
+function nextStep(l: LoanDetail): string {
+  if (l.debt?.canRelease && l.status !== "RELEASED") return "Debt is zero. Anyone can release the lien below; the fee rights go back to the borrower.";
+  switch (l.status) {
+    case "APPROVED": return "The borrower pledges the token's fee rights to this loan's FeeVault (below).";
+    case "PLEDGED": return "Pledge verified on-chain. The FeeNote auction is launching.";
+    case "AUCTION": return "Anyone can fund this loan by bidding for FeeNotes in the auction below.";
+    case "ACTIVE": return "USDC is disbursed. Fees collected into the vault repay the FeeNotes; noteholders redeem 1:1 as they arrive.";
+    case "RELEASED": return "Repaid and released. The fee rights are back with the borrower.";
+    case "DECLINED": return "The lead underwriter declined this application. The memos below explain why.";
+    case "CANCELLED": return "The auction did not fund the loan, so cancel() returned the fee rights to the borrower.";
+    default: return l.status;
+  }
+}
 const KEEPER = new Set(["collected", "swapped", "flash_twap", "token_leg_sent", "desk_paid", "repaid"]);
 
 export default function LoanPage({ params }: { params: Promise<{ id: string }> }) {
@@ -47,27 +63,49 @@ export default function LoanPage({ params }: { params: Promise<{ id: string }> }
   const [redeemAmt, setRedeemAmt] = useState("");
 
   return (
-    <Loading l={q.loading} e={q.error}>
+    <Loading l={q.loading} e={q.error} retry={q.reload} what="loan details">
       {loan && (
         <div className="space-y-6">
-          <header className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="label">loan #{loan.id} · via {loan.via}</p>
-              <h1 className="h1 mt-1">${loan.symbol}</h1>
-              <p className="mt-2 text-sm">
-                borrower <Addr a={loan.borrower} /> · controller <Addr a={loan.controller} /> · token <Addr a={loan.token} /> · pool <span className="font-mono text-xs">{loan.poolId.slice(0, 10)}…</span>
-              </p>
+          <header className="card overflow-hidden">
+            <div className="flex flex-wrap items-start justify-between gap-4 p-4 sm:p-6">
+              <div className="min-w-0">
+                <h1 className="h1">
+                  ${loan.symbol} <span className="num align-middle text-xl font-normal text-mute">loan #{loan.id}</span>
+                </h1>
+                <p className="mt-3 text-sm text-mute">Filed via {loan.via}</p>
+              </div>
+              <span key={loan.status} className={`stamp-mark ${STAMP[loan.status] ?? "text-mute"}`} aria-label={`Status: ${loan.status}`}>
+                {loan.status}
+              </span>
             </div>
-            <div className="text-right">
-              <Pill s={loan.status} />
-              <p className="mt-2 text-xs">
-                vault <Addr a={loan.vault} /> · note <Addr a={loan.note} /> · fees mgr <Addr a={loan.feesManager} />
-              </p>
-            </div>
+            <dl className="grid grid-cols-1 gap-px border-t border-rule bg-rule text-sm sm:grid-cols-2 lg:grid-cols-4">
+              {(
+                [
+                  ["Borrower", <Addr key="b" a={loan.borrower} />],
+                  ["Controller", <Addr key="c" a={loan.controller} />],
+                  ["Token", <Addr key="t" a={loan.token} />],
+                  ["Pool", <span key="p" className="font-mono text-xs" title={loan.poolId}>{loan.poolId.slice(0, 10)}…</span>],
+                  ["FeeVault", <Addr key="v" a={loan.vault} />],
+                  ["FeeNote", <Addr key="n" a={loan.note} />],
+                  ["Fees manager", <Addr key="f" a={loan.feesManager} />],
+                ] as const
+              ).map(([k, v]) => (
+                <div key={k} className="bg-card px-4 py-2.5 sm:px-6">
+                  <dt className="label">{k}</dt>
+                  <dd className="mt-0.5">{v}</dd>
+                </div>
+              ))}
+            </dl>
           </header>
 
+          {loan.status === "DECLINED" || loan.status === "CANCELLED" ? null : <Lifecycle status={loan.status} />}
+          <p role="status" className="flex flex-wrap items-baseline gap-x-2 rounded-[3px] border border-violet/30 bg-violet-tint px-4 py-3 text-sm">
+            <span className="font-bold text-violet-deep">Next</span>
+            <span>{nextStep(loan)}</span>
+          </p>
+
           {loan.terms && (
-            <section className="grid grid-cols-2 gap-3 md:grid-cols-6">
+            <section aria-label="Terms" className="card grid grid-cols-2 gap-px overflow-hidden bg-rule md:grid-cols-6">
               {[
                 ["principal", usdcRaw(loan.terms.principalRaw)],
                 ["note face", usdcRaw(loan.terms.faceValueRaw)],
@@ -76,9 +114,9 @@ export default function LoanPage({ params }: { params: Promise<{ id: string }> }
                 ["term", `${loan.terms.termDays.toFixed(1)}d`],
                 ["dining line", usdcRaw(loan.terms.drawLimitRaw)],
               ].map(([k, v]) => (
-                <div key={k} className="border-[1.5px] border-ink bg-card px-3 py-2">
+                <div key={k} className="bg-card px-4 py-3">
                   <div className="label">{k}</div>
-                  <div className="num text-lg">{v}</div>
+                  <div className="num mt-0.5 text-lg">{v}</div>
                 </div>
               ))}
             </section>
@@ -91,7 +129,7 @@ export default function LoanPage({ params }: { params: Promise<{ id: string }> }
           )}
 
           {loan.debt && (
-            <Card title="Debt · read on-chain from the FeeVault" right={loan.debt.canRelease && <span className="pill bg-desk text-paper">repaid · releasable</span>}>
+            <Card title="Debt · read on-chain from the FeeVault" right={loan.debt.canRelease && <span className="pill text-desk">repaid, releasable</span>}>
               <DebtBar loan={loan} />
               <div className="mt-4 flex flex-wrap items-start gap-6">
                 {loan.debt.canRelease && (
@@ -102,16 +140,16 @@ export default function LoanPage({ params }: { params: Promise<{ id: string }> }
                         q.reload();
                       }}
                     >
-                      Release lien → borrower
+                      Release lien to borrower
                     </Btn>
                     <p className="mt-1 max-w-xs text-xs text-mute">Anyone can call release(). Fee rights, leftover WETH/tokens and surplus USDC return to the borrower.</p>
                   </div>
                 )}
                 {loan.note && (loan.status === "ACTIVE" || loan.status === "RELEASED") && (
                   <div>
-                    <div className="label">your FeeNotes: <span className="num text-ink">{usdcRaw(String(notes.data ?? 0n))}</span> face</div>
+                    <div className="label">Your FeeNotes: <span className="num normal-case text-ink">{usdcRaw(String(notes.data ?? 0n))}</span> face</div>
                     <div className="mt-1 flex gap-2">
-                      <input className="input w-32" placeholder="notes" value={redeemAmt} onChange={(e) => setRedeemAmt(e.target.value)} />
+                      <input className="input w-32" inputMode="decimal" aria-label="Notes to redeem" placeholder="notes" value={redeemAmt} onChange={(e) => setRedeemAmt(e.target.value)} />
                       <Btn
                         kind="ghost"
                         disabled={!notes.data}
@@ -130,7 +168,7 @@ export default function LoanPage({ params }: { params: Promise<{ id: string }> }
                   </div>
                 )}
                 {(loan.status === "ACTIVE" || loan.status === "RELEASED") && (
-                  <Link href={`/dine/${loan.id}`} className="btn btn-ghost self-start">Dine on these fees →</Link>
+                  <Link href={`/dine/${loan.id}`} className="btn btn-ghost self-start">Dine on these fees</Link>
                 )}
               </div>
             </Card>
@@ -142,12 +180,12 @@ export default function LoanPage({ params }: { params: Promise<{ id: string }> }
 
           <div className="grid gap-6 md:grid-cols-[1.4fr_1fr]">
             <Card title="Timeline" right={<button className="link" onClick={() => q.reload()}>refresh</button>}>
-              <ol className="relative border-l-[1.5px] border-ink pl-5">
+              <ol className="relative ml-1.5 border-l border-rule pl-5">
                 {loan.events.map((e) => (
                   <li key={e.id} className="mb-4">
-                    <span className={`absolute -left-[6px] mt-1.5 h-[11px] w-[11px] border-[1.5px] border-ink ${e.kind === "error" ? "bg-stamp" : KEEPER.has(e.kind) ? "bg-amber" : e.txHash ? "bg-desk" : "bg-paper"}`} />
+                    <span className={`absolute -left-[6px] mt-1.5 size-[11px] rounded-full border border-card ring-1 ${e.kind === "error" ? "bg-stamp ring-stamp" : KEEPER.has(e.kind) ? "bg-amber ring-amber-ink/40" : e.txHash ? "bg-desk ring-desk" : "bg-paper ring-rule"}`} />
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <span className="font-medium">{KIND_LABEL[e.kind] ?? e.kind}</span>
+                      <span className="font-semibold">{KIND_LABEL[e.kind] ?? e.kind}</span>
                       <span className="text-xs text-mute" title={e.createdAt}>{ago(e.createdAt)}</span>
                     </div>
                     <div className="text-xs">
@@ -156,16 +194,16 @@ export default function LoanPage({ params }: { params: Promise<{ id: string }> }
                     </div>
                   </li>
                 ))}
-                {loan.events.length === 0 && <li className="text-sm text-mute">No events.</li>}
+                {loan.events.length === 0 && <li className="text-sm text-mute">No events recorded yet.</li>}
               </ol>
             </Card>
             <Card title="Signals from this loan">
               {loan.signals.length === 0 ? (
-                <p className="text-sm text-mute">No signals.</p>
+                <p className="text-sm text-mute">No underwriter signals on this loan yet.</p>
               ) : (
                 <ul className="space-y-3">
                   {loan.signals.map((sg) => (
-                    <li key={sg.id} className="border-b border-ink/15 pb-2 text-sm">
+                    <li key={sg.id} className="border-b border-rule pb-2 text-sm">
                       <div className="flex items-center justify-between">
                         <b>{desk.data?.personas.find((p) => p.id === sg.personaId)?.name ?? sg.personaId}</b>
                         <span><Pill s={sg.decision} /> <span className="num ml-1">{Math.round(sg.score)}</span></span>
@@ -175,7 +213,7 @@ export default function LoanPage({ params }: { params: Promise<{ id: string }> }
                   ))}
                 </ul>
               )}
-              <Link href="/desk" className="link mt-3 inline-block text-xs">follow these underwriters →</Link>
+              <Link href="/desk" className="link mt-3 inline-block text-xs">Follow these underwriters</Link>
             </Card>
           </div>
         </div>
@@ -190,7 +228,7 @@ function DebtBar({ loan }: { loan: LoanDetail }) {
   const total = Math.max(1, notes + draws);
   return (
     <div>
-      <div className="flex h-6 border-[1.5px] border-ink bg-paper">
+      <div className="flex h-3 bg-rule/60">
         <div className="bg-desk" style={{ width: `${Math.min(100, (cash / total) * 100)}%` }} title="USDC in vault" />
       </div>
       <div className="mt-2 grid grid-cols-2 gap-3 text-sm md:grid-cols-6">
