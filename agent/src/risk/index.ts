@@ -10,8 +10,9 @@ import { createPublicClient, getAddress, http, isAddress, parseAbi } from "viem"
 import { base } from "viem/chains";
 import { wrapFetchWithPaymentFromConfig, decodePaymentResponseHeader, x402Client, x402HTTPClient, type PaymentRequired, type PaymentRequirements } from "@x402/fetch";
 import { ExactEvmScheme, type ClientEvmSigner } from "@x402/evm";
-import { ADDR, ERC20_ABI, type Address, type Hex, type RiskCheck, type RiskVerdict } from "@feedesk/shared";
+import { ADDR, API, ERC20_ABI, type Address, type Hex, type RiskCheck, type RiskVerdict } from "@feedesk/shared";
 import { opt, type AgentWallet, type Ctx } from "../ctx.ts";
+import { headers as uniHeaders } from "../uniswap/index.ts";
 
 export const RISK_URL = "https://x402.bankr.bot/0xf31f59e7b8b58555f7871f71973a394c8f1bffe5/honeypot-check";
 export const NETWORK = "eip155:8453" as const;
@@ -94,7 +95,55 @@ const mainnet = () => createPublicClient({ chain: base, transport: http(opt("BAS
 /** USDC the desk wallet holds on Base MAINNET (never the fork: the payment settles on mainnet). */
 export const mainnetUsdc = (a: Address) => mainnet().readContract({ address: USDC, abi: parseAbi(ERC20_ABI), functionName: "balanceOf", args: [a] }) as Promise<bigint>;
 
-export type RiskDeps = { signer: ClientEvmSigner; fetchImpl?: typeof fetch; balance?: (a: Address) => Promise<bigint> };
+// ─── x402 just-in-time top-up (RISK_AUTO_TOPUP=1): swap the minimum ETH → USDC on Base mainnet before paying ───
+export const TOPUP_FLOOR_RAW = 100_000n; // never buy less than $0.10
+/** USDC to buy: service price + 20% buffer, floor $0.10. */
+export const topUpTarget = (price = PRICE_RAW) => { const w = (price * 12n) / 10n; return w > TOPUP_FLOOR_RAW ? w : TOPUP_FLOOR_RAW; };
+const topupKey = (d = new Date()) => `risk.topupRaw.${d.toISOString().slice(0, 10)}`; // UTC day, USDC bought
+export const toppedUpToday = (ctx: Ctx) => BigInt(kvGet(ctx, topupKey()) ?? "0");
+export const topupBudgetRaw = () => BigInt(Math.round(Number(opt("RISK_TOPUP_MAX_USDC_PER_DAY", "0.5")) * 1e6));
+export const topupMaxEthWei = () => BigInt(Math.round(Number(opt("RISK_TOPUP_MAX_ETH", "0.0001")) * 1e18));
+export type TopUp = { usdcRaw: string; ethInMaxWei: string; txHash: Hex; requestId?: string; at: string };
+export const lastTopUp = (ctx: Ctx): TopUp | null => { const s = kvGet(ctx, "risk.topup.last"); return s ? JSON.parse(s) : null; };
+
+/** EXACT_OUTPUT quote → /swap → send, native ETH in (no approval). Same request shape as mainnet-deploy.ts --swap-eth.
+ *  Throws on anything unexpected; the caller turns that into a "not purchased" note. */
+export async function topUpUsdc(ctx: Ctx, payer: Address, deps: Pick<RiskDeps, "send" | "uniFetch">): Promise<TopUp> {
+  const want = topUpTarget(), bought = toppedUpToday(ctx), cap = topupBudgetRaw();
+  if (bought + want > cap) throw new Error(`top-up budget RISK_TOPUP_MAX_USDC_PER_DAY=$${Number(cap) / 1e6} reached ($${Number(bought) / 1e6} bought today)`);
+  const key = process.env.UNISWAP_API_KEY;
+  if (!key) throw new Error("UNISWAP_API_KEY unset");
+  const post = async (path: string, body: unknown) => {
+    const r = await (deps.uniFetch ?? fetch)(API.UNISWAP_TRADE + path, { method: "POST", headers: uniHeaders(key, opt("UNISWAP_UR_VERSION", "2.0")), body: JSON.stringify(body) });
+    const t = await r.text();
+    if (!r.ok) throw new Error(`uniswap ${path} ${r.status}: ${t.slice(0, 200)}`);
+    return JSON.parse(t);
+  };
+  const q = await post("/quote", {
+    type: "EXACT_OUTPUT", amount: want.toString(), tokenIn: "0x0000000000000000000000000000000000000000", tokenOut: USDC,
+    tokenInChainId: 8453, tokenOutChainId: 8453, swapper: payer, slippageTolerance: 0.5, routingPreference: "BEST_PRICE", protocols: ["V2", "V3", "V4"],
+  });
+  if (q.routing !== "CLASSIC") throw new Error(`uniswap routing ${q.routing}, expected CLASSIC`);
+  const { swap, requestId } = await post("/swap", { quote: q.quote, simulateTransaction: false, deadline: Math.floor(Date.now() / 1000) + 300 });
+  const value = BigInt(swap?.value ?? 0), maxEth = topupMaxEthWei();
+  if (Number(swap?.chainId) !== 8453 || !swap?.data || swap.data === "0x" || ![ADDR.UNIVERSAL_ROUTER_2_0, ADDR.UNI_SWAP_PROXY].some((a) => a.toLowerCase() === String(swap.to).toLowerCase()))
+    throw new Error(`unexpected uniswap /swap tx to ${swap?.to} chain ${swap?.chainId}`);
+  if (value === 0n || value > maxEth) throw new Error(`top-up would spend ${value} wei ETH (cap RISK_TOPUP_MAX_ETH=${Number(maxEth) / 1e18})`);
+  if (!deps.send) throw new Error("no Base mainnet sender");
+  const { hash } = await deps.send({ to: getAddress(swap.to), data: swap.data, value });
+  const t: TopUp = { usdcRaw: want.toString(), ethInMaxWei: value.toString(), txHash: hash, requestId, at: new Date().toISOString() };
+  kvSet(ctx, topupKey(), (toppedUpToday(ctx) + want).toString());
+  kvSet(ctx, "risk.topup.last", JSON.stringify(t));
+  ctx.log("risk", `x402 top-up: swapped ≤${Number(value) / 1e18} ETH → $${Number(want) / 1e6} USDC on Base mainnet`, { tx: hash, basescan: `https://basescan.org/tx/${hash}` });
+  return t;
+}
+
+export type RiskDeps = {
+  signer: ClientEvmSigner; fetchImpl?: typeof fetch; balance?: (a: Address) => Promise<bigint>;
+  /** Base MAINNET raw-tx sender for the auto top-up (default: the desk wallet, never on DEMO_FORK). */
+  send?: (tx: { to: Address; data: Hex; value: bigint }) => Promise<{ hash: Hex }>;
+  uniFetch?: typeof fetch; // Trading API fetch (tests)
+};
 
 let lock: Promise<unknown> = Promise.resolve(); // ponytail: global lock so two applies can't both pass the budget check
 
@@ -117,12 +166,28 @@ async function buyLocked(ctx: Ctx, token: Address, o: { force?: boolean; deps?: 
 
   let deps = o.deps;
   if (!deps) {
-    try { deps = { signer: dynamicSigner(await ctx.wallet()) }; } catch (e) { return skip(`not purchased: desk wallet unavailable (${(e as Error).message.split("\n")[0]})`); }
+    try {
+      const w = await ctx.wallet();
+      // w.send() targets ctx.pub: Base mainnet only outside DEMO_FORK (on the fork it would swap fork ETH, not fund the payment).
+      deps = { signer: dynamicSigner(w), send: ctx.demoFork ? undefined : (tx) => w.send(tx) };
+    } catch (e) { return skip(`not purchased: desk wallet unavailable (${(e as Error).message.split("\n")[0]})`); }
   }
   const payer = getAddress(deps.signer.address);
-  const bal = await (deps.balance ?? mainnetUsdc)(payer).catch(() => null);
+  const readBal = () => (deps.balance ?? mainnetUsdc)(payer).catch(() => null);
+  let bal = await readBal();
   if (bal === null) return skip("not purchased: could not read the desk wallet's Base mainnet USDC balance");
-  if (bal < PRICE_RAW) return skip(`not purchased: insufficient USDC (desk wallet ${payer} holds $${Number(bal) / 1e6} on Base mainnet, needs $${Number(PRICE_RAW) / 1e6})`);
+  let topNote = "";
+  if (bal < PRICE_RAW && opt("RISK_AUTO_TOPUP", "0") === "1") {
+    try {
+      const t = await topUpUsdc(ctx, payer, deps);
+      topNote = `; auto top-up bought $${Number(t.usdcRaw) / 1e6} USDC for ≤${Number(t.ethInMaxWei) / 1e18} ETH via Uniswap (https://basescan.org/tx/${t.txHash})`;
+      bal = (await readBal()) ?? bal;
+    } catch (e) {
+      ctx.log("risk", "x402 top-up skipped", { error: (e as Error).message });
+      topNote = `; auto top-up failed: ${(e as Error).message.slice(0, 160)}`;
+    }
+  }
+  if (bal < PRICE_RAW) return skip(`not purchased: insufficient USDC (desk wallet ${payer} holds $${Number(bal) / 1e6} on Base mainnet, needs $${Number(PRICE_RAW) / 1e6})${topNote}`);
 
   ctx.log("risk", `buying honeypot-check for ${token} via x402 ($${Number(PRICE_RAW) / 1e6} USDC, Base MAINNET) from ${payer}`);
   let res: Response, picked: PaymentRequirements | undefined;
@@ -141,7 +206,7 @@ async function buyLocked(ctx: Ctx, token: Address, o: { force?: boolean; deps?: 
     return skip(`paid but unusable response: ${(e as Error).message}${settlement?.transaction ? `; settlement ${settlement.transaction}` : ""}`);
   }
   const r: RiskCheck = {
-    token, verdict, raw, note: `bought from ${RISK_URL}`, checkedAt: new Date().toISOString(), cached: false,
+    token, verdict, raw, note: `bought from ${RISK_URL}${topNote}`, checkedAt: new Date().toISOString(), cached: false,
     paid: {
       service: RISK_URL, amountRaw: picked?.amount ?? PRICE_RAW.toString(), amountUsd: Number(picked?.amount ?? PRICE_RAW) / 1e6, asset: USDC, network: NETWORK,
       payTo: getAddress(picked?.payTo ?? "0x8AEE621035D93Deb3C0C1177fac252dC2dd501a0") as Address, payer: (settlement?.payer ? getAddress(settlement.payer) : payer) as Address,

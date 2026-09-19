@@ -9,7 +9,7 @@ import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { ADDR, type Address, type FeeInputs, type Quote } from "@feedesk/shared";
 import type { Ctx } from "../ctx.ts";
 import { openDb } from "../db/index.ts";
-import { buyRiskVerdict, dynamicSigner, parse402, payingFetch, riskFactor, RISK_URL, spentToday } from "./index.ts";
+import { buyRiskVerdict, dynamicSigner, lastTopUp, parse402, payingFetch, riskFactor, RISK_URL, spentToday, toppedUpToday, topUpTarget } from "./index.ts";
 import { PERSONAS, lowerRun, runPersona } from "../underwriter/index.ts";
 
 const HDR = "eyJ4NDAyVmVyc2lvbiI6MiwiZXJyb3IiOiJQYXltZW50IFJlcXVpcmVkIiwiYWNjZXB0cyI6W3sic2NoZW1lIjoiZXhhY3QiLCJuZXR3b3JrIjoiZWlwMTU1Ojg0NTMiLCJtYXhBbW91bnRSZXF1aXJlZCI6IjUwMDAwIiwiYW1vdW50IjoiNTAwMDAiLCJyZXNvdXJjZSI6Imh0dHBzOi8veDQwMi5iYW5rci5ib3QvMHhmMzFmNTllN2I4YjU4NTU1Zjc4NzFmNzE5NzNhMzk0YzhmMWJmZmU1L2hvbmV5cG90LWNoZWNrIiwiZGVzY3JpcHRpb24iOiJEZXRlY3QgaG9uZXlwb3Qgb3IgcnVnIHB1bGwgdG9rZW4gY29udHJhY3RzIGJlZm9yZSBidXlpbmcg4oCUIFNBRkUgLyBTVVNQSUNJT1VTIC8gSE9ORVlQT1QgdmVyZGljdCIsIm1pbWVUeXBlIjoiIiwicGF5VG8iOiIweDhBRUU2MjEwMzVEOTNEZWIzQzBDMTE3N2ZhYzI1MmRDMmRkNTAxYTAiLCJtYXhUaW1lb3V0U2Vjb25kcyI6NjAsImFzc2V0IjoiMHg4MzM1ODlmQ0Q2ZURiNkUwOGY0YzdDMzJENGY3MWI1NGJkQTAyOTEzIiwiZXh0cmEiOnsibmFtZSI6IlVTRCBDb2luIiwidmVyc2lvbiI6IjIifX1dLCJmYWNpbGl0YXRvciI6Imh0dHBzOi8vYXBpLmJhbmtyLmJvdC9mYWNpbGl0YXRvciJ9";
@@ -42,7 +42,7 @@ function fakeService(verdict = "SAFE", hdr = HDR) {
 const mkCtx = (): Ctx => ({ db: openDb(":memory:"), log: () => {}, wallet: () => { throw new Error("no Dynamic wallet in unit tests"); } }) as unknown as Ctx;
 
 const realEnv = { ...process.env };
-afterEach(() => { for (const k of ["RISK_CHECK", "RISK_MAX_USDC_PER_DAY", "UNDERWRITER_ENGINE_ONLY"]) { if (realEnv[k] === undefined) delete process.env[k]; else process.env[k] = realEnv[k]; } });
+afterEach(() => { for (const k of ["RISK_CHECK", "RISK_MAX_USDC_PER_DAY", "UNDERWRITER_ENGINE_ONLY", "RISK_AUTO_TOPUP", "RISK_TOPUP_MAX_USDC_PER_DAY", "RISK_TOPUP_MAX_ETH", "UNISWAP_API_KEY"]) { if (realEnv[k] === undefined) delete process.env[k]; else process.env[k] = realEnv[k]; } });
 
 test("parse402: live Bankr 402 → x402 v2, exact, Base mainnet USDC $0.05, mainnet EIP-712 domain", async () => {
   const pr = await parse402(res402());
@@ -133,6 +133,70 @@ test("buyRiskVerdict: a response without a SAFE/SUSPICIOUS/HONEYPOT verdict is n
   assert.equal(r.verdict, null);
   assert.match(r.note, /paid but unusable/);
   assert.equal(spentToday(ctx), 50_000n, "settled payment still counts against the budget");
+});
+
+// ─── x402 just-in-time top-up (RISK_AUTO_TOPUP=1) ───
+const UR = ADDR.UNIVERSAL_ROUTER_2_0;
+/** Fake Trading API (/quote + /swap) and a fake mainnet sender that credits `onSend` USDC to the fake balance. */
+function fakeTopUp(o: { to?: string; value?: string } = {}) {
+  const calls: { path: string; body: any; headers: Headers }[] = [];
+  const sent: { to: Address; data: Hex; value: bigint }[] = [];
+  let usdc = 0n;
+  const uniFetch = (async (url: RequestInfo | URL, init?: RequestInit) => {
+    const path = new URL(String(url)).pathname.replace("/v1", ""), body = JSON.parse(String(init!.body));
+    calls.push({ path, body, headers: new Headers(init!.headers) });
+    if (path === "/quote") return Response.json({ routing: "CLASSIC", quote: { input: { amount: "37868391061115" }, output: { amount: body.amount } } });
+    return Response.json({ requestId: "r1", swap: { to: o.to ?? UR, from: body.quote.swapper, data: "0x3593564c00", value: o.value ?? "0x229d01a84b64", chainId: 8453 } });
+  }) as typeof fetch;
+  const send = async (tx: { to: Address; data: Hex; value: bigint }) => { sent.push(tx); usdc += 100_000n; return { hash: TX }; };
+  return { calls, sent, uniFetch, send, balance: async () => usdc };
+}
+
+test("topUpTarget: price + 20%, floor $0.10", () => {
+  assert.equal(topUpTarget(50_000n), 100_000n);
+  assert.equal(topUpTarget(1_000_000n), 1_200_000n);
+});
+
+test("auto top-up: unfunded desk swaps the minimum ETH → USDC via the Trading API, then pays; budget + ETH cap enforced", async () => {
+  const ctx = mkCtx();
+  const { w } = localWallet();
+  const svc = fakeService("SAFE");
+  process.env.UNISWAP_API_KEY = "k";
+  const t = fakeTopUp();
+  const deps = { signer: dynamicSigner(w), fetchImpl: svc.f, balance: t.balance, send: t.send, uniFetch: t.uniFetch };
+
+  delete process.env.RISK_AUTO_TOPUP; // off by default: no swap, honest skip
+  assert.match((await buyRiskVerdict(ctx, ADDR.WETH, { deps })).note, /insufficient USDC/);
+  assert.equal(t.calls.length + t.sent.length + svc.seen.length, 0);
+
+  process.env.RISK_AUTO_TOPUP = "1";
+  process.env.RISK_TOPUP_MAX_USDC_PER_DAY = "0.15"; // one $0.10 top-up
+  const r = await buyRiskVerdict(ctx, ADDR.WETH, { deps });
+  assert.equal(r.verdict, "SAFE");
+  assert.match(r.note, /auto top-up bought \$0\.1 USDC .*basescan\.org\/tx\//);
+  assert.deepEqual(t.calls.map((c) => c.path), ["/quote", "/swap"]);
+  const q = t.calls[0]!.body;
+  assert.deepEqual([q.type, q.amount, q.tokenIn, q.tokenOut, q.tokenInChainId, q.swapper], ["EXACT_OUTPUT", "100000", "0x0000000000000000000000000000000000000000", ADDR.USDC, 8453, w.address]);
+  assert.equal(t.calls[0]!.headers.get("x-universal-router-version"), process.env.UNISWAP_UR_VERSION || "2.0");
+  assert.deepEqual(t.sent, [{ to: UR, data: "0x3593564c00", value: 0x229d01a84b64n }]);
+  assert.equal(toppedUpToday(ctx), 100_000n);
+  assert.equal(lastTopUp(ctx)?.txHash, TX);
+
+  // second top-up would exceed RISK_TOPUP_MAX_USDC_PER_DAY: nothing quoted or sent
+  const t2 = fakeTopUp();
+  const r2 = await buyRiskVerdict(ctx, ADDR.USDC, { deps: { ...deps, balance: t2.balance, send: t2.send, uniFetch: t2.uniFetch } });
+  assert.match(r2.note, /insufficient USDC.*top-up budget/);
+  assert.equal(t2.sent.length + t2.calls.length, 0);
+
+  // ETH cap and router allowlist: quoted, never sent
+  process.env.RISK_TOPUP_MAX_USDC_PER_DAY = "10";
+  for (const bad of [{ value: "1000000000000000" }, { to: "0x000000000000000000000000000000000000dEaD" }]) {
+    const t3 = fakeTopUp(bad);
+    const r3 = await buyRiskVerdict(ctx, ADDR.USDC, { deps: { ...deps, balance: t3.balance, send: t3.send, uniFetch: t3.uniFetch } });
+    assert.match(r3.note, /auto top-up failed/);
+    assert.equal(t3.sent.length, 0, JSON.stringify(bad));
+  }
+  assert.equal(toppedUpToday(ctx), 100_000n);
 });
 
 // ─── underwriter lowering rules ───
