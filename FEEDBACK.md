@@ -101,4 +101,4 @@ executes API calldata must pin where that calldata can go. The integration notes
 rejected by our own target check until we redeployed. Asks:
 - Publish the current SwapProxy address per chain on the Deployments page, with a changelog entry when it moves.
 - Let integrators pin a proxy version (a header, like the router version), or keep the old proxy routable for a deprecation window.
-- `x-universal-router-version` now accepts only `2.0` and `2.1.2`; `2.1` returns 400. The docs page we read still implied `2.1`.
+- `x-universal-router-version` now accepts only `2.0` and `2.1.2`; `2.1` returns 400, so the accepted values are worth listing next to the header in the docs.
