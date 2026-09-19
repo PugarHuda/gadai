@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "slug": "gadai",
   "provider": "Gadai",
-  "providerUrl": "https://FEEDESK_WEB_HOST",
+  "providerUrl": "https://gadai-six.vercel.app",
   "logo": null,
   "demo": {
     "title": "borrow-against-fees",

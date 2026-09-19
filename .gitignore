@@ -8,3 +8,6 @@ cache/
 broadcast/
 *.tsbuildinfo
 .claude/
+
+.vercel
+.env*

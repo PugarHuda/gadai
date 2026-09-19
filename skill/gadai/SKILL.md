@@ -6,7 +6,7 @@ version: 1
 metadata:
   clawdbot:
     emoji: "🏦"
-    homepage: "https://FEEDESK_WEB_HOST"
+    homepage: "https://gadai-six.vercel.app"
     requires:
       bins: [curl]
 ---
@@ -190,8 +190,8 @@ Check that `to` equals the loan's `vault`. After the user confirms, submit it as
 ## 9. Other things the user may ask about (read-only)
 
 - **Desk info / who the agents are:** `GET $FD/api/desk` returns the desk contract, the Dynamic agent wallet, and the personas with their models.
-- **Follow the Desk:** `GET $FD/api/signals?limit=20` (every credit decision, scored) and `GET $FD/api/leaderboard` (personas ranked by realized repayment and follower PnL). Following a persona and mirroring its picks as Definitive Flash bracket or DCA orders needs a wallet signature in the web app: `https://FEEDESK_WEB_HOST/desk`.
-- **Dine on your fees:** an `ACTIVE` loan with a `drawLimitRaw` can draw a small FLY dining line through Blackbird. This needs a Blackbird OAuth login in the browser, at `https://FEEDESK_WEB_HOST/dine/<ID>`.
+- **Follow the Desk:** `GET $FD/api/signals?limit=20` (every credit decision, scored) and `GET $FD/api/leaderboard` (personas ranked by realized repayment and follower PnL). Following a persona and mirroring its picks as Definitive Flash bracket or DCA orders needs a wallet signature in the web app: `https://gadai-six.vercel.app/desk`.
+- **Dine on your fees:** an `ACTIVE` loan with a `drawLimitRaw` can draw a small FLY dining line through Blackbird. This needs a Blackbird OAuth login in the browser, at `https://gadai-six.vercel.app/dine/<ID>`.
 
 ## Errors
 
