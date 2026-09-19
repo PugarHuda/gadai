@@ -91,3 +91,14 @@ A single "request rules" table on the integration guide would save time.
 - **The CCA itself.** It gives price discovery and a hard graduation threshold, plus clean refunds on failure (`exitBid`). With these, "the auction didn't fill, so the loan is cancelled and the lien is returned" is a real code path, not a fake one.
 - **No protocol fee on Base.** `protocolFeeController() == 0x0` on the Base factory, which keeps the lending math simple.
 - **Source quality.** The v2.1.0 source is clear enough that we could answer every question above ourselves.
+
+## SwapProxy address changed under us (found 2026-09-19)
+
+Our FeeVault hardcodes the `x-permit2-disabled` SwapProxy as its only allowed swap target, because a vault that
+executes API calldata must pin where that calldata can go. The integration notes we built from on 2026-09-18 listed
+`0x0000000085E102724e78eCd2F45DC9cA239Affad`. On 2026-09-19 `/swap` returned `to = 0x02E5be68D46DAc0B524905bfF209cf47EE6dB2a9`
+(also a verified `SwapProxy`) for both `x-universal-router-version: 2.0` and `2.1.2`, so every keeper swap was
+rejected by our own target check until we redeployed. Asks:
+- Publish the current SwapProxy address per chain on the Deployments page, with a changelog entry when it moves.
+- Let integrators pin a proxy version (a header, like the router version), or keep the old proxy routable for a deprecation window.
+- `x-universal-router-version` now accepts only `2.0` and `2.1.2`; `2.1` returns 400. The docs page we read still implied `2.1`.

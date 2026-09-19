@@ -61,7 +61,7 @@ contract FeeVault is ReentrancyGuard {
     // ─── Base mainnet addresses (verified, docs/integrations/uniswap.md §0 + flash.md) ───
     address public constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
     address public constant WETH = 0x4200000000000000000000000000000000000006;
-    address public constant UNI_SWAP_PROXY = 0x0000000085E102724e78eCd2F45DC9cA239Affad; // Trading API x-permit2-disabled
+    address public constant UNI_SWAP_PROXY = 0x02E5be68D46DAc0B524905bfF209cf47EE6dB2a9; // Trading API x-permit2-disabled (SwapProxy the API returned on 2026-09-19)
     address public constant CCA_FACTORY = 0x000000001F26a0044BaA66024e7b6599c61963F8; // CCA v2.1.0
     address public constant FLASH_SETTLEMENT = 0x5d00000873b6BF41539e6f5365B0Ff7d3c368f78;
     /// @dev Chainlink ETH/USD on Base (8 decimals; verified on-chain by agent-wallet-keeper, COORDINATION 03:30).
