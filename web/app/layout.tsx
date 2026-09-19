@@ -10,7 +10,7 @@ const sans = IBM_Plex_Sans({ subsets: ["latin"], weight: ["400", "500", "600"], 
 const serif = Instrument_Serif({ subsets: ["latin"], weight: "400", variable: "--font-serif-display" });
 
 export const metadata: Metadata = {
-  title: "Fee Desk — credit against Bankr creator fees",
+  title: "Gadai — credit against Bankr creator fees",
   description: "USDC loans for Bankr agents, collateralized by Doppler fee rights on Base. Funded by FeeNote auctions.",
 };
 
@@ -21,7 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen antialiased">
         {missing.length ? (
           <main className="mx-auto max-w-2xl p-10">
-            <h1 className="h1">Fee Desk is not configured</h1>
+            <h1 className="h1">Gadai is not configured</h1>
             <p className="mt-4">Missing env (see .env.example), set at build time:</p>
             <ul className="mt-2 list-disc pl-6 font-mono text-stamp">
               {missing.map((m) => (
@@ -39,7 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Nav />
             <main className="mx-auto max-w-6xl px-4 pb-24 pt-6">{children}</main>
             <footer className="mx-auto max-w-6xl border-t-[1.5px] border-ink px-4 py-6 font-mono text-[11px] text-mute">
-              Fee Desk · Base 8453 · Bankr fee APIs + LLM Gateway · Dynamic wallets · Uniswap CCA + Trading API · Definitive Flash · Blackbird Flynet
+              Gadai · Base 8453 · Bankr fee APIs + LLM Gateway · Dynamic wallets · Uniswap CCA + Trading API · Definitive Flash · Blackbird Flynet
             </footer>
           </Providers>
         )}

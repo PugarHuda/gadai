@@ -1,4 +1,4 @@
-// Drift check between the skill text and the code it describes. Run: node skill/fee-desk/check.mjs
+// Drift check between the skill text and the code it describes. Run: node skill/gadai/check.mjs
 // 1. The 5-line apply message in SKILL.md (3a block + printf forms in SKILL.md and catalog.json) == shared applyMessage().
 // 2. Hard rule 2's pledge-data rule == a LIVE Bankr build-transfer-beneficiary response for the real GITLAWB pool.
 // 3. The apply error strings the skill tells the agent to handle still exist in the server.

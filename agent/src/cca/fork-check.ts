@@ -28,7 +28,7 @@ const POOL = "0xec33256bf1ded407a57fd3c1965e7556e42ac14db09bc4e6fef57d5e2eb0b0b9
 const BORROWER = "0xfdb6430011f6E4796Ca380CB39e47975b1f876Bf" as Address;
 const TOKEN = "0x5F980Dcfc4c0fa3911554cf5ab288ed0eb13DBa3" as Address; // GITLAWB (creator token of the test pool)
 const P = 100_000_000n, FACE = 110_000_000n;
-const [deskKey, lenderKey, treasuryKey] = ["desk", "lender", "treasury"].map((n) => keccak256(toHex(`fee-desk-fork-e2e-${n}`))); // fork-only keys
+const [deskKey, lenderKey, treasuryKey] = ["desk", "lender", "treasury"].map((n) => keccak256(toHex(`gadai-fork-e2e-${n}`))); // fork-only keys
 const deskWc = createWalletClient({ account: privateKeyToAccount(deskKey!), chain: base, transport: http(rpc) });
 const lenderWc = createWalletClient({ account: privateKeyToAccount(lenderKey!), chain: base, transport: http(rpc) });
 const treasury = privateKeyToAccount(treasuryKey!).address;

@@ -1,8 +1,8 @@
-# Uniswap integration notes for Fee Desk (Trading API and CCA)
+# Uniswap integration notes for Gadai (Trading API and CCA)
 
 Researched 2026-09-18. Tags: **[V]** means I checked it against official docs or source (URL given), **[V-chain]** means I also checked it on Base mainnet with `cast` against `https://base-rpc.publicnode.com`, and **[UNVERIFIED]** means we have to test it before relying on it.
 
-Fee Desk uses Uniswap in two places:
+Gadai uses Uniswap in two places:
 - **(a) Keeper swap.** The FeeVault's collected WETH is swapped to USDC through the Uniswap Trading API.
 - **(b) FeeNote CCA.** Each loan is tokenized as a FeeNote ERC-20 and sold for USDC in a Continuous Clearing Auction (CCA). The auction is what funds the loan.
 
@@ -73,7 +73,7 @@ No CCALens or AuctionStateLens is listed on Base in deployments.json. Read state
 **Header parameters**
 - `x-permit2-disabled: true` switches the flow to the SwapProxy (§1.3). Send it on `/check_approval`, `/quote` and `/swap`.
 - `x-universal-router-version` takes `2.0` or `2.1.1`. It **must be the same across all calls**.
-- `x-agent-info` is analytics only. Its value is JSON: `{"decision_origin":"autonomous","integration_name":"fee-desk-keeper","version":"0.1.0"}`. `decision_origin` must be exactly `autonomous` or `human_mediated`. Do not put wallets, IDs or keys in it. It can't affect the response, and parse failures are reported in the `x-agent-info-status` response header.
+- `x-agent-info` is analytics only. Its value is JSON: `{"decision_origin":"autonomous","integration_name":"gadai-keeper","version":"0.1.0"}`. `decision_origin` must be exactly `autonomous` or `human_mediated`. Do not put wallets, IDs or keys in it. It can't affect the response, and parse failures are reported in the `x-agent-info-status` response header.
 - `x-erc20eth-enabled` only matters for native-ETH input to UniswapX. We don't need it.
 
 Status endpoint (exists in the spec): `GET /swaps` checks AMM tx status. I did not read its parameters; use the RPC receipt instead.
@@ -111,7 +111,7 @@ const API = 'https://trade-api.gateway.uniswap.org/v1';
 const key = process.env.UNISWAP_API_KEY ?? (() => { throw new Error('UNISWAP_API_KEY missing (https://developers.uniswap.org/dashboard)'); })();
 const H = { 'x-api-key': key, 'content-type': 'application/json', accept: 'application/json',
   'x-permit2-disabled': 'true', 'x-universal-router-version': '2.0',
-  'x-agent-info': JSON.stringify({ decision_origin: 'autonomous', integration_name: 'fee-desk-keeper' }) };
+  'x-agent-info': JSON.stringify({ decision_origin: 'autonomous', integration_name: 'gadai-keeper' }) };
 const post = async (p: string, body: unknown) => {
   const r = await fetch(API + p, { method: 'POST', headers: H, body: JSON.stringify(body) });
   const j = await r.json(); if (!r.ok) throw new Error(`uniswap ${p} ${r.status}: ${JSON.stringify(j)}`); return j;
@@ -277,7 +277,7 @@ events: BidSubmitted(uint256 indexed id, address indexed owner, uint256 priceQ96
 Why skip it:
 - The LBP route sends the raised currency to the **strategy**. The initializer's `fundsRecipient` must be the strategy, and part of the currency becomes LP. That conflicts with "raised USDC funds the loan".
 - The `positionDefinitions` and `lpAllocationSchedule` encodings add a lot of surface area.
-- For Fee Desk, "graduation" is `isGraduated()`, meaning the CCA reached `requiredCurrencyRaised = principal`.
+- For Gadai, "graduation" is `isGraduated()`, meaning the CCA reached `requiredCurrencyRaised = principal`.
 - If a secondary market is wanted later, a simple v4 pool could be created for FeeNote/USDC. That is out of scope and not planned.
 
 ---

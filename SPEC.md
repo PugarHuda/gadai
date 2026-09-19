@@ -1,6 +1,6 @@
-# Fee Desk: build spec
+# Gadai: build spec
 
-Fee Desk is USDC credit for Bankr agents and creators. The collateral is the fee rights on their Doppler token, pledged on-chain on Base (8453).
+Gadai is USDC credit for Bankr agents and creators. The collateral is the fee rights on their Doppler token, pledged on-chain on Base (8453).
 This is the Runtime Agent Week build (Bankr x Propaganda). The deadline is Sun 2026-09-20 03:00 WIB.
 
 The source facts are in `IDEAS.md` (Idea 1 and the verification table) and `docs/integrations/{bankr,dynamic,uniswap,flash,flynet}.md`. Interface changes go on `docs/COORDINATION.md`, which overrides this file where they differ.
@@ -16,7 +16,7 @@ The source facts are in `IDEAS.md` (Idea 1 and the verification table) and `docs
 ## 1. Architecture
 
 ```
-                       ┌───────────── Bankr agent (chat) ── skill/fee-desk/SKILL.md ──┐
+                       ┌───────────── Bankr agent (chat) ── skill/gadai/SKILL.md ──┐
                        │                                                               │ REST
  Browser (web/, Next.js, Dynamic embedded wallets)                                     ▼
    loan book · apply/pledge · notes auction · desk leaderboard/follow · dine ──► agent/ (Hono, node:sqlite, Docker/Linux)
@@ -173,7 +173,7 @@ Cancellation covers three cases: the borrower never pledged (keeper), a pledge w
 5. **Settle leftover FLY:** `POST /api/loans/:id/dine/settle` → `createPaymentIntent` + `confirmPaymentIntent` to our own merchant (member token), which pulls leftover FLY back. The agent then pays the equivalent USDC into the vault from the desk wallet, which reduces `drawDebt` through `payDesk` accounting.
 
 ### J. Bankr Skill (chat)
-`skill/fee-desk/SKILL.md` + `catalog.json` (repo layout `<slug>/SKILL.md`). A Bankr agent installs it from our public GitHub URL. Steps in the Skill:
+`skill/gadai/SKILL.md` + `catalog.json` (repo layout `<slug>/SKILL.md`). A Bankr agent installs it from our public GitHub URL. Steps in the Skill:
 1. `GET $FEEDESK/api/quote?token&borrower`
 2. Show the terms and formula. Get explicit confirmation.
 3. `POST /api/loans`
@@ -330,7 +330,7 @@ DTO names refer to `shared/src/index.ts`.
 
 | Track | Deep integration | Files |
 |---|---|---|
-| **Bankr GP** | Fee APIs drive underwriting. `build-transfer-beneficiary` is the pledge, and the pledge is an enforceable lien. The LLM Gateway writes every credit memo (3 personas and models) and the restaurant picks. A Bankr Skill lets any Bankr agent borrow by chat. The loan turns into LLM credits. | `agent/src/bankr/`, `agent/src/underwriter/`, `skill/fee-desk/`, `contracts/src/FeeVault.sol` |
+| **Bankr GP** | Fee APIs drive underwriting. `build-transfer-beneficiary` is the pledge, and the pledge is an enforceable lien. The LLM Gateway writes every credit memo (3 personas and models) and the restaurant picks. A Bankr Skill lets any Bankr agent borrow by chat. The loan turns into LLM credits. | `agent/src/bankr/`, `agent/src/underwriter/`, `skill/gadai/`, `contracts/src/FeeVault.sol` |
 | **Dynamic** | The agent wallet (agent signing token, MPC) signs createLoan, the anchor bid, `disburse`, and every keeper tx after the LLM decision. Embedded wallets sign pledges, bids, releases, redeems and mirror orders. Delegated access runs auto-mirroring. | `agent/src/wallet/`, `agent/src/keeper/`, `agent/src/social/` (delegation), `web/app/providers.tsx`, `web/app/apply`, `web/app/desk` |
 | **Uniswap** | FeeNote is a new ERC-20 asset (a claim on the loan's fee stream), sold in a CCA that funds the loan. Agents price it: persona `maxNotePrice` and the desk anchor bid. The Trading API gives ETH pricing and the keeper's WETH→USDC swap through SwapProxy from a contract swapper. Also FEEDBACK.md. | `contracts/src/FeeVault.sol` (`startAuction`, `swapWethToUsdc`), `contracts/src/FeeNote.sol`, `agent/src/cca/`, `agent/src/uniswap/`, `web/app/loans/[id]` (bids), `FEEDBACK.md` |
 | **Definitive Flash** | The keeper sells the creator-token leg with a Flash **TWAP**, with the vault as the EIP-1271 funder. Follow the Desk turns public credit signals into a leaderboard, and followers mirror them with a Flash market entry plus an **attached Bracket** (TP/SL), or a DCA built as a long TWAP. Tag @DefinitiveFi. | `agent/src/flash/`, `agent/src/social/`, `contracts/src/FeeVault.sol` (`authorizeFlashOrder`, `isValidSignature`), `web/app/desk` |

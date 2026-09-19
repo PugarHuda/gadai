@@ -394,7 +394,7 @@ export type LoanDetail = Loan & { events: LoanEvent[]; signals: Signal[]; memos:
 export type ApplyRequest = { token: Address; borrower: Address; controller?: Address; via?: "web" | "bankr-skill"; nonce: string; signature: Hex };
 /** controller defaults to borrower; pass the SAME value you POST (omitted controller ⇒ sign with controller = borrower). */
 export const applyMessage = (token: Address, borrower: Address, controller: Address, nonce: string) =>
-  `Fee Desk: apply for a loan against my creator fees\nToken: ${token.toLowerCase()}\nBorrower: ${borrower.toLowerCase()}\nController: ${controller.toLowerCase()}\nNonce: ${nonce}`;
+  `Gadai: apply for a loan against my creator fees\nToken: ${token.toLowerCase()}\nBorrower: ${borrower.toLowerCase()}\nController: ${controller.toLowerCase()}\nNonce: ${nonce}`;
 export type PledgeRequest = { txHash?: Hex };
 
 export type DeskInfo = {
@@ -532,9 +532,9 @@ export type DineState = {
 };
 /** Borrower (or controller) signs this EIP-191 message to authorize a draw. */
 export const drawMessage = (loanId: number, amountUsdCents: number, nonce: string) =>
-  `Fee Desk dining draw\nLoan: ${loanId}\nAmount (USD cents): ${amountUsdCents}\nNonce: ${nonce}`;
+  `Gadai dining draw\nLoan: ${loanId}\nAmount (USD cents): ${amountUsdCents}\nNonce: ${nonce}`;
 export const flynetLinkMessage = (loanId: number, nonce: string) =>
-  `Fee Desk: link my Blackbird account to loan ${loanId}\nNonce: ${nonce}`;
+  `Gadai: link my Blackbird account to loan ${loanId}\nNonce: ${nonce}`;
 export type DrawRequest = { amountUsdCents: number; locationId?: string; nonce: string; signature: Hex };
 
 /** Documented Bankr chat phrase for pledging (docs.bankr.bot fee-splitting.md). */
@@ -544,9 +544,9 @@ export const pledgeChatText = (token: Address, vault: Address) =>
 // ─── Follow the Desk auth (agent-social-flash; see COORDINATION) ───
 /** Follower signs this EIP-191 message; POST /api/follows body = FollowRequest & {nonce, signature}. */
 export const followMessage = (f: FollowRequest, nonce: string) =>
-  `Fee Desk: follow persona ${f.personaId}\nFollower: ${f.follower.toLowerCase()}\nMode: ${f.mode}\nSize (USDC): ${f.sizeUsdc}\nTP %: ${f.tpPct}\nSL %: ${f.slPct}\nDCA days: ${f.dcaDays}\nAuto: ${f.auto ? "yes" : "no"}\nNonce: ${nonce}`;
+  `Gadai: follow persona ${f.personaId}\nFollower: ${f.follower.toLowerCase()}\nMode: ${f.mode}\nSize (USDC): ${f.sizeUsdc}\nTP %: ${f.tpPct}\nSL %: ${f.slPct}\nDCA days: ${f.dcaDays}\nAuto: ${f.auto ? "yes" : "no"}\nNonce: ${nonce}`;
 /** DELETE /api/follows/:id body = {nonce, signature} over this message, signed by the follower. */
-export const unfollowMessage = (followId: number, nonce: string) => `Fee Desk: unfollow ${followId}\nNonce: ${nonce}`;
+export const unfollowMessage = (followId: number, nonce: string) => `Gadai: unfollow ${followId}\nNonce: ${nonce}`;
 export type FollowSigned = FollowRequest & { nonce: string; signature: Hex };
 
 /** Flash sends EIP-712 JSON with string numbers; viem/wallets need numeric chainId + bigint uints. Use before signTypedData/hashTypedData. */

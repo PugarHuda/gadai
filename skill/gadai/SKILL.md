@@ -1,6 +1,6 @@
 ---
-name: fee-desk
-description: Borrow USDC on Base against the creator-fee stream of your Bankr (Doppler) token. Use when the user wants a loan, advance, or credit line on their token's trading fees; wants a Fee Desk quote; wants to pledge fee rights (transfer the fee beneficiary to a Fee Desk vault); wants to check loan status, auction progress or remaining debt; wants to repay early; wants to release fee rights back after repayment; or wants to turn the loan into Bankr LLM credits.
+name: gadai
+description: Borrow USDC on Base against the creator-fee stream of your Bankr (Doppler) token. Use when the user wants a loan, advance, or credit line on their token's trading fees; wants a Gadai quote; wants to pledge fee rights (transfer the fee beneficiary to a Gadai vault); wants to check loan status, auction progress or remaining debt; wants to repay early; wants to release fee rights back after repayment; or wants to turn the loan into Bankr LLM credits.
 tags: [lending, credit, fees, doppler, base, usdc, llm-credits]
 version: 1
 metadata:
@@ -11,9 +11,9 @@ metadata:
       bins: [curl]
 ---
 
-# Fee Desk
+# Gadai
 
-Fee Desk lends USDC to Bankr agents and creators. The collateral is the creator-fee share of a Doppler token on Base (chain 8453).
+Gadai lends USDC to Bankr agents and creators. The collateral is the creator-fee share of a Doppler token on Base (chain 8453).
 
 1. The borrower pledges its fee rights by moving its beneficiary share to a per-loan **FeeVault** contract. This uses the standard Doppler `updateBeneficiary(poolId, vault)`, which Bankr builds for you.
 2. The desk's underwriter agent reads your fee history from the Bankr API. Three LLM personas, running on the Bankr LLM Gateway, each write a credit memo. The lead persona's decision is binding.
@@ -21,13 +21,13 @@ Fee Desk lends USDC to Bankr agents and creators. The collateral is the creator-
 4. The vault collects your fees and converts them to USDC. WETH goes through the Uniswap Trading API. The token leg sells via a Definitive Flash TWAP. The loan repays itself from that USDC.
 5. Once the debt is zero, **anyone** can call `release()`. The vault then gives the fee rights back to you. You never depend on the desk to get them back.
 
-Fee Desk API base URL. Every call below uses `$FD`, so set it first:
+Gadai API base URL. Every call below uses `$FD`, so set it first:
 ```bash
 FD=https://FEEDESK_API_HOST
 ```
 Writes (sign a message, submit a transaction) use your own wallet. **Inside Bankr**, use your built-in tools for signing a message and submitting an arbitrary transaction. **Outside Bankr** (any other agent with the Bankr CLI or Wallet API), use `bankr wallet sign` / `bankr wallet submit`, or `https://api.bankr.bot/wallet/sign` / `/wallet/submit` with your Bankr API key in `X-API-Key`.
 
-All Fee Desk amounts ending in `Raw` are USDC base units with **6 decimals** (`"25000000"` = 25 USDC). All transactions are on Base, `chainId 8453`.
+All Gadai amounts ending in `Raw` are USDC base units with **6 decimals** (`"25000000"` = 25 USDC). All transactions are on Base, `chainId 8453`.
 
 ---
 
@@ -79,7 +79,7 @@ Continue only after the user says to apply. The desk only accepts an application
 
 **3a. Build the message.** Pick a fresh nonce: any string of 8 to 128 characters that you have never used before (e.g. 32 random hex characters, or the current Unix time in ms plus a random suffix). Each nonce works once. The message is exactly these **5 lines**, joined by a single newline `\n` (no `\r`, no trailing newline). Both addresses are **lowercase**, and `Controller` is the borrower again:
 ```
-Fee Desk: apply for a loan against my creator fees
+Gadai: apply for a loan against my creator fees
 Token: <token, lowercase 0x…>
 Borrower: <borrower, lowercase 0x…>
 Controller: <borrower, lowercase 0x…>
@@ -88,7 +88,7 @@ Nonce: <nonce>
 
 **3b. Sign it** with EIP-191 `personal_sign` from the borrower wallet. Signing a message moves no funds and sends no transaction.
 - Inside Bankr: your built-in sign-message tool (personal_sign) with that exact text.
-- Bankr CLI: `bankr wallet sign --type personal_sign --message "$MSG"`, where `MSG="$(printf 'Fee Desk: apply for a loan against my creator fees\nToken: %s\nBorrower: %s\nController: %s\nNonce: %s' "$TOKEN_LC" "$BORROWER_LC" "$BORROWER_LC" "$NONCE")"`.
+- Bankr CLI: `bankr wallet sign --type personal_sign --message "$MSG"`, where `MSG="$(printf 'Gadai: apply for a loan against my creator fees\nToken: %s\nBorrower: %s\nController: %s\nNonce: %s' "$TOKEN_LC" "$BORROWER_LC" "$BORROWER_LC" "$NONCE")"`.
 - Wallet API: `POST https://api.bankr.bot/wallet/sign` with `{"signatureType":"personal_sign","message":"<the 5 lines, joined with \n>"}`. It returns `{ "success": true, "signature": "0x…", "signer": "0x…" }`.
 
 If `signer` is not the borrower address, stop. The desk would reject it with 401.
@@ -120,7 +120,7 @@ If `pledgeTx` is `null`, fetch it with `GET $FD/api/loans/<ID>/pledge-tx`. Run t
 ```bash
 curl -s -X POST "https://api.bankr.bot/wallet/submit" -H "X-API-Key: $BANKR_API_KEY" -H 'content-type: application/json' \
   -d '{"transaction":{"to":"<pledgeTx.to>","chainId":8453,"value":"0","data":"<pledgeTx.data>"},
-       "description":"Fee Desk: pledge <SYMBOL> fee rights to vault <VAULT>","waitForConfirmation":true}'
+       "description":"Gadai: pledge <SYMBOL> fee rights to vault <VAULT>","waitForConfirmation":true}'
 # → { "success": true, "transactionHash": "0x…", "status": "…" }
 ```
 A raw submit is blocked if the API key has `allowedRecipients` set. In that case, use Option B.
@@ -129,7 +129,7 @@ A raw submit is blocked if the API key has `allowedRecipients` set. In that case
 `transfer my beneficiary share on token <TOKEN> to <VAULT>`
 Then read the resulting tx hash from the agent's reply.
 
-Then tell Fee Desk. It checks on-chain that the share has moved, confirms the pledge from the desk wallet, and opens the FeeNote auction:
+Then tell Gadai. It checks on-chain that the share has moved, confirms the pledge from the desk wallet, and opens the FeeNote auction:
 ```bash
 curl -s -X POST "$FD/api/loans/<ID>/pledge" -H 'content-type: application/json' -d '{"txHash":"<TX_HASH>"}'
 ```

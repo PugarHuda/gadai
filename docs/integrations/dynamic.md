@@ -1,11 +1,11 @@
-# Dynamic integration notes (Fee Desk)
+# Dynamic integration notes (Gadai)
 
 Researched 2026-09-18. Every item below is taken from the official docs or from the published npm `.d.ts` typings, and the source is linked. Anything not verified that way is marked **UNVERIFIED**.
 
 Docs index: https://www.dynamic.xyz/docs/llms.txt · Node section: https://www.dynamic.xyz/docs/node/llms.txt · React section: https://www.dynamic.xyz/docs/react/llms.txt
 Docs MCP (optional): `claude mcp add --transport http dynamic https://www.dynamic.xyz/docs/mcp`
 
-## Where Dynamic fits in Fee Desk
+## Where Dynamic fits in Gadai
 
 | Role | Dynamic product | Why |
 |---|---|---|
@@ -116,7 +116,7 @@ export async function getAgentWallet() {
     address: agent.address,
     signMessage: (message) => agent.signMessage({ message }),
     sessionPublicKey: publicKeyHex,            // REQUIRED, or backUpToDynamic calls fail
-    statement: 'Fee Desk underwriter agent sign-in',
+    statement: 'Gadai underwriter agent sign-in',
   });
 
   const client = new DynamicEvmWalletClient({ environmentId, enableMPCAccelerator: false });
@@ -222,7 +222,7 @@ export function PledgeButton({ feesManager, poolId, feeVault }: { feesManager: `
     });
     await publicClient.waitForTransactionReceipt({ hash });
   };
-  return <button onClick={pledge}>Pledge fees to Fee Desk</button>;
+  return <button onClick={pledge}>Pledge fees to Gadai</button>;
 }
 ```
 

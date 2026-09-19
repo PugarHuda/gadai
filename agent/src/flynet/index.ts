@@ -176,7 +176,7 @@ async function recommendFresh(ctx: Ctx, loanId: number): Promise<Recommendation[
   }));
 
   const raw = await llmChat([
-    { role: "system", content: 'You are the Fee Desk dining concierge. The borrower pays with FLY (Blackbird Pay) drawn against their pledged token fees. Pick up to 5 venues from the candidates: prefer open now, member history/tier, and specials/challenges that earn FLY back. Reasons are shown publicly: never mention visit counts, tier, check-ins or any personal history. Reply with ONLY JSON: {"picks":[{"locationId":"...","reason":"one sentence"}]}' },
+    { role: "system", content: 'You are the Gadai dining concierge. The borrower pays with FLY (Blackbird Pay) drawn against their pledged token fees. Pick up to 5 venues from the candidates: prefer open now, member history/tier, and specials/challenges that earn FLY back. Reasons are shown publicly: never mention visit counts, tier, check-ins or any personal history. Reply with ONLY JSON: {"picks":[{"locationId":"...","reason":"one sentence"}]}' },
     { role: "user", content: JSON.stringify(cands) },
   ], { model: opt("BANKR_LLM_MODEL", "claude-sonnet-4.6"), maxTokens: 800 });
   const json = raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1);
@@ -308,7 +308,7 @@ async function issueDrawFly(ctx: Ctx, drawId: number) {
     if (!link) throw Object.assign(new Error("Blackbird account unlinked"), { status: 404 });
     const reward = await discovery().rewards.issueReward({
       userId: link.member_id, amount: { value: d.fly_wei, currency: "FLY" },
-      description: `Fee Desk dining draw, loan #${loan.id}`, idempotencyKey: `feedesk-draw-${drawId}`,
+      description: `Gadai dining draw, loan #${loan.id}`, idempotencyKey: `feedesk-draw-${drawId}`,
       metadata: { loanId: String(loan.id), drawId: String(drawId), locationId: d.location_id ?? "" },
     });
     setDraw(ctx, drawId, { status: "issued", flynet_reward_id: reward.id, error: null });
@@ -364,7 +364,7 @@ export async function settle(ctx: Ctx, loanId: number, body: { nonce: string; si
     const link = getLink(ctx, loanId)!;
     const pi = await fly("createPaymentIntent", m.createPaymentIntent({
       customerUserId: link.member_id, amount: { value: pull.toString(), currency: "FLY" },
-      description: `Fee Desk: return unused dining FLY, loan #${loanId}`, idempotencyKey: `settle-${loanId}-${body.nonce}`,
+      description: `Gadai: return unused dining FLY, loan #${loanId}`, idempotencyKey: `settle-${loanId}-${body.nonce}`,
     }));
     const paid = await fly("confirmPaymentIntent", m.confirmPaymentIntent({ id: pi.id, body: { userId: link.member_id } }));
     if (paid.status !== "paid") throw new HTTPException(502, { message: `payment intent ${pi.id} status ${paid.status}` });

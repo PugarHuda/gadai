@@ -52,7 +52,7 @@ export async function signInAgent() {
       address: agent.address,
       signMessage: (message) => agent.signMessage({ message }),
       sessionPublicKey,
-      statement: "Fee Desk underwriter agent sign-in",
+      statement: "Gadai underwriter agent sign-in",
     });
     await client.authenticateJwt(r.jwt, { getSessionSignature });
     expiresAtMs = r.expiresAt < 1e12 ? r.expiresAt * 1000 : r.expiresAt; // seconds or ms; not specified in typings

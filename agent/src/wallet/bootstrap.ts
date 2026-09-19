@@ -42,7 +42,7 @@ const demoFork = process.env.DEMO_FORK === "1";
 const rpcUrl = demoFork ? opt("FORK_RPC_URL", "http://127.0.0.1:8545") : opt("BASE_RPC_URL", "https://base-rpc.publicnode.com");
 const wc = await s.client.getWalletClient({ ...readWalletSecrets(), chain: base, rpcUrl });
 const address = wc.account.address;
-const msg = `Fee Desk agent self-test ${new Date().toISOString()}`;
+const msg = `Gadai agent self-test ${new Date().toISOString()}`;
 const sig = await wc.signMessage({ account: wc.account, message: msg });
 if (!(await verifyMessage({ address, message: msg, signature: sig }))) throw new Error("MPC signature does not recover to the wallet address");
 console.log(`# MPC signMessage OK for ${address}`);

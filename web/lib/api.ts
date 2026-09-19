@@ -1,6 +1,6 @@
 import { ENV } from "./env";
 
-/** Call the Fee Desk agent REST API. Throws the agent's `{error}` message on non-2xx. */
+/** Call the Gadai agent REST API. Throws the agent's `{error}` message on non-2xx. */
 export async function api<T>(path: string, init?: { method?: string; body?: unknown; headers?: Record<string, string> }): Promise<T> {
   if (!ENV.AGENT_URL) throw new Error("Missing env NEXT_PUBLIC_AGENT_URL (see .env.example)");
   const r = await fetch(ENV.AGENT_URL + path, {

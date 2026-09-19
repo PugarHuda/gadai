@@ -1,4 +1,4 @@
--- Fee Desk agent storage (node:sqlite). Owned by agent-core; request changes via docs/COORDINATION.md.
+-- Gadai agent storage (node:sqlite). Owned by agent-core; request changes via docs/COORDINATION.md.
 -- Timestamps are ISO text. *_raw = decimal base-unit strings.
 CREATE TABLE IF NOT EXISTS loans (id INTEGER PRIMARY KEY, status TEXT NOT NULL, via TEXT NOT NULL,
   borrower TEXT NOT NULL, controller TEXT NOT NULL, token TEXT NOT NULL, symbol TEXT NOT NULL,

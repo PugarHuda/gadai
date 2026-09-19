@@ -1,4 +1,4 @@
-# Bankr integration notes (Fee Desk)
+# Bankr integration notes (Gadai)
 
 Researched 2026-09-18. Every item below was checked against official docs (docs.bankr.bot `.md` pages from https://docs.bankr.bot/llms.txt), live API calls, on-chain `cast` reads on Base, or verified Blockscout source.
 Legend: **[VERIFIED-LIVE]** = called or read it today. **[DOCS]** = in official docs but not called (usually needs a key). **[UNVERIFIED]** = inference, test before relying on it.
@@ -142,18 +142,18 @@ Docs: https://docs.bankr.bot/docs/skills/in-bankr/skill-format.md, /skills/for-o
 - **Actual repo layout** (verified): top-level folder per skill, `<slug>/SKILL.md` + **`<slug>/catalog.json`** (+ optional `references/`, `scripts/`, logo svg). The docs' `provider/skill/` nesting is **not** what the repo uses. The repo root has `README.md` (skills table, add a row), `featured.json`, `.github/CODEOWNERS`. No root `catalog.json`.
 - `catalog.json` schema (from bankr/, berry-juicer/, uniswap-cca/):
 ```json
-{ "schemaVersion": 1, "slug": "fee-desk", "provider": "Fee Desk", "providerUrl": "https://<our-url>",
+{ "schemaVersion": 1, "slug": "gadai", "provider": "Gadai", "providerUrl": "https://<our-url>",
   "logo": null, "demo": null, "setup": [],
-  "install": { "type": "bankr", "repoPath": "fee-desk",
-    "command": "install the fee-desk skill from https://github.com/BankrBot/skills/tree/main/fee-desk" } }
+  "install": { "type": "bankr", "repoPath": "gadai",
+    "command": "install the gadai skill from https://github.com/BankrBot/skills/tree/main/gadai" } }
 ```
-- **Install without the PR being merged** (this is what matters for the demo): the Bankr agent installs from **any public GitHub URL**: `install the skill at https://github.com/<us>/<repo>/tree/main/skill/fee-desk`. Folder URL, blob URL, or raw `SKILL.md` URL all work. So ship `skill/fee-desk/SKILL.md` + `catalog.json` in our public repo and open a PR to BankrBot/skills as a bonus. PR merge = maintainer review, **not under our control**. [DOCS]
-- The skill body should tell the agent to (1) GET our Fee Desk API `/quote?token=`, (2) show terms, (3) on user confirm, get pledge calldata (ours, or `build-transfer-beneficiary` with `newBeneficiary=FeeVault`), (4) submit it via its own wallet (Bankr's native "sign and submit raw transactions" capability, i.e. `/wallet/submit`), (5) POST the tx hash to our `/apply`. Keep side effects behind explicit user confirmation.
+- **Install without the PR being merged** (this is what matters for the demo): the Bankr agent installs from **any public GitHub URL**: `install the skill at https://github.com/<us>/<repo>/tree/main/skill/gadai`. Folder URL, blob URL, or raw `SKILL.md` URL all work. So ship `skill/gadai/SKILL.md` + `catalog.json` in our public repo and open a PR to BankrBot/skills as a bonus. PR merge = maintainer review, **not under our control**. [DOCS]
+- The skill body should tell the agent to (1) GET our Gadai API `/quote?token=`, (2) show terms, (3) on user confirm, get pledge calldata (ours, or `build-transfer-beneficiary` with `newBeneficiary=FeeVault`), (4) submit it via its own wallet (Bankr's native "sign and submit raw transactions" capability, i.e. `/wallet/submit`), (5) POST the tx hash to our `/apply`. Keep side effects behind explicit user confirmation.
 - Frontmatter example:
 ```yaml
 ---
-name: fee-desk
-description: Borrow USDC against your Bankr/Doppler token's creator-fee stream on Base. Use when the user wants a loan, credit line, or advance on their token trading fees, to check a Fee Desk quote, pledge fee rights, check loan status/repayment, or release fee rights after repayment.
+name: gadai
+description: Borrow USDC against your Bankr/Doppler token's creator-fee stream on Base. Use when the user wants a loan, credit line, or advance on their token trading fees, to check a Gadai quote, pledge fee rights, check loan status/repayment, or release fee rights after repayment.
 tags: [lending, fees, doppler, base, usdc]
 version: 1
 metadata:

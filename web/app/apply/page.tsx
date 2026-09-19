@@ -41,7 +41,7 @@ export default function Apply() {
   const apply = async () => {
     if (!s.address) return s.login();
     if (s.address.toLowerCase() !== borrower.toLowerCase())
-      throw new Error(`Connected ${s.address} is not the beneficiary ${borrower}. Only the beneficiary can sign the application. If it's a Bankr wallet, ask your Bankr agent to apply with the Fee Desk skill.`);
+      throw new Error(`Connected ${s.address} is not the beneficiary ${borrower}. Only the beneficiary can sign the application. If it's a Bankr wallet, ask your Bankr agent to apply with the Gadai skill.`);
     const b = borrower as Address, nonce = crypto.randomUUID();
     const body: ApplyRequest = { token: token as Address, borrower: b, controller: b, via: "web", nonce, signature: await s.signMessage(applyMessage(token as Address, b, b, nonce)) };
     setLoan(await api<LoanDetail>("/api/loans", { body }));

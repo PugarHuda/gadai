@@ -1,4 +1,4 @@
-# Uniswap developer feedback: Fee Desk
+# Uniswap developer feedback: Gadai
 
 We used two Uniswap products:
 - The **Trading API** swaps WETH to USDC with a smart contract as the swapper, through the no-Permit2 SwapProxy flow. Code: `agent/src/uniswap/index.ts`, `contracts/src/FeeVault.sol` `swapWethToUsdc`.

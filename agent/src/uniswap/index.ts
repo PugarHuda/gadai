@@ -17,7 +17,7 @@ export function headers(apiKey: string, urVersion: string): Record<string, strin
     accept: "application/json",
     "x-permit2-disabled": "true",
     "x-universal-router-version": urVersion, // must be identical on every call of one swap
-    "x-agent-info": JSON.stringify({ decision_origin: "autonomous", integration_name: "fee-desk-keeper", version: "0.1.0" }),
+    "x-agent-info": JSON.stringify({ decision_origin: "autonomous", integration_name: "gadai-keeper", version: "0.1.0" }),
   };
 }
 

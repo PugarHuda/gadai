@@ -1,4 +1,4 @@
-// Fee Desk agent entrypoint: builds Ctx, mounts every module's routes, starts loops.
+// Gadai agent entrypoint: builds Ctx, mounts every module's routes, starts loops.
 // Each module lives in src/<name>/index.ts and follows the contract in SPEC §5 / ctx.ts.
 // Run: node --env-file-if-exists=../.env src/index.ts  (Linux/macOS only — Dynamic MPC SDK has no Windows binaries; use `pnpm agent:docker`).
 import { createPublicClient, http, type PublicClient } from "viem";
@@ -27,7 +27,7 @@ if (missing.length) {
 
 const demoFork = process.env.DEMO_FORK === "1";
 const rpcUrl = demoFork ? opt("FORK_RPC_URL", "http://127.0.0.1:8545") : opt("BASE_RPC_URL", "https://base-rpc.publicnode.com");
-if (demoFork) console.warn("[fee-desk] DEMO_FORK=1 — all on-chain actions hit the Anvil fork at", rpcUrl, "(Flash disabled: mainnet-only)");
+if (demoFork) console.warn("[gadai] DEMO_FORK=1 — all on-chain actions hit the Anvil fork at", rpcUrl, "(Flash disabled: mainnet-only)");
 
 const openDb = mods.db?.openDb as ((path: string) => Ctx["db"]) | undefined;
 if (!openDb) throw new Error("db module must export openDb(path)");

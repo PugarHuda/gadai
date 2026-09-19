@@ -1,4 +1,4 @@
-# Fee Desk runbook
+# Gadai runbook
 
 Exact commands to run everything, what each step needs, and what it proves. Every command below was run on
 2026-09-19 (Windows 11 + Git Bash, Node 26.3, pnpm 11.21, Foundry). Where a step needs a key we don't have yet, it says so.
@@ -23,7 +23,7 @@ Windows: pnpm runs `package.json` scripts with `cmd.exe`. The root scripts (`for
 | `cd agent && pnpm test` | 52 pass, 0 fail, 1 skipped (the fork e2e test, which needs `FORK_E2E_RPC`) |
 | `pnpm web:build` | builds |
 | `node docs/anchors.mjs` | "README anchors OK (55 links)" |
-| `node skill/fee-desk/check.mjs` | passes, including the live Bankr `build-transfer-beneficiary` call |
+| `node skill/gadai/check.mjs` | passes, including the live Bankr `build-transfer-beneficiary` call |
 
 ## 2. On-chain end to end on a Base fork (no keys)
 

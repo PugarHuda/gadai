@@ -4,7 +4,7 @@ Tiga ide ini hasil sintesis dari 16 ide yang sudah diperdebatkan, dikritik, dan 
 
 ---
 
-## IDE 1: Fee Desk, pinjaman USDC untuk agent Bankr dengan jaminan hak fee token
+## IDE 1: Gadai, pinjaman USDC untuk agent Bankr dengan jaminan hak fee token
 
 **One-liner:** Agent Bankr yang kekurangan dana bisa meminjam USDC sekarang dengan menjaminkan hak fee (beneficiary) token-nya on-chain ke sebuah vault. Vault itu klaim fee, swap ke USDC lewat Uniswap, melunasi pinjaman, lalu otomatis mengembalikan hak fee ke peminjam.
 
@@ -38,7 +38,7 @@ Tiga ide ini hasil sintesis dari 16 ide yang sudah diperdebatkan, dikritik, dan 
 
 **Track:** Bankr Grand Prize (utama), Dynamic (utama), Uniswap (bonus).
 
-**Kompetitor & diferensiasi:** TrustLine dan Cred402 (hanya disebut critic, tidak dibuka) menilai kredit dari pendapatan tanpa jaminan. Fee Desk adalah yang pertama memakai beneficiary transfer Bankr sebagai lien. Klaim yang aman adalah "pertama memakai beneficiary transfer sebagai lien", bukan "kredit agent berjaminan pertama".
+**Kompetitor & diferensiasi:** TrustLine dan Cred402 (hanya disebut critic, tidak dibuka) menilai kredit dari pendapatan tanpa jaminan. Gadai adalah yang pertama memakai beneficiary transfer Bankr sebagai lien. Klaim yang aman adalah "pertama memakai beneficiary transfer sebagai lien", bukan "kredit agent berjaminan pertama".
 
 **Momen demo:** Layar dibagi dua. Agent underwriting menggambar fee 30 hari, garis decay, dan share 67%, lalu menyatakan "Approved". Peminjam mengetik chat transfer fees, Basescan menampilkan `updateBeneficiary`, dan status berubah jadi PLEDGED. USDC masuk, lalu `bankr llm credits add`. Adegan dipercepat: klaim, swap Uniswap, utang 0. Seorang pengguna acak memanggil `release()`, hak fee kembali ke peminjam, dan status berubah jadi RELEASED.
 
@@ -158,7 +158,7 @@ Tiga ide ini hasil sintesis dari 16 ide yang sudah diperdebatkan, dikritik, dan 
 
 ## Tabel Perbandingan
 
-| | Fee Desk | Warden Payout | Reopen Guard |
+| | Gadai | Warden Payout | Reopen Guard |
 |---|---|---|---|
 | Kategori Bankr | Lending (disebut eksplisit) | Autonomous agents, stablecoin payments | Tokenized equities |
 | Primitif khas Bankr | beneficiary transfer (unik) | fee loop + Security + Skill | tidak ada (hanya sinyal) |
@@ -170,14 +170,14 @@ Tiga ide ini hasil sintesis dari 16 ide yang sudah diperdebatkan, dikritik, dan 
 | Beban build solo | Sedang (1 kontrak + keeper) | Sedang-berat | Berat (indexer + hook + replay) |
 | Skor | ≈ 8,2 | ≈ 7,8 | ≈ 7,3 |
 
-## Rekomendasi: bangun Fee Desk (Ide 1)
+## Rekomendasi: bangun Gadai (Ide 1)
 
 1. **Fit ke grand prize paling tajam.** "Lending" disebut eksplisit di track The New Bankrs, dan idenya memakai primitif Bankr (beneficiary transfer) untuk sesuatu yang tidak diiklankan di dokumentasi mereka. Juri sponsor biasanya menghargai build yang membaca dokumentasi lebih dalam dari orang lain.
 2. **Setiap langkah menghasilkan tx di Basescan** yang bisa diklik juri, dan data fee-nya asli dari API publik tanpa auth.
 3. **Masuk tiga track sekaligus** dengan satu codebase.
 4. **Scope masuk akal untuk solo builder:** satu kontrak FeeVault, satu keeper, satu UI loan book.
 
-**Go/no-go hari pertama:** tes di Base apakah Fees Manager menerima kontrak sebagai beneficiary dan pemanggil `updateBeneficiary`, lalu tanya Dynamic apakah policy berlaku untuk agent wallet. Kalau vault gagal dan Dynamic tidak bisa menjamin policy, pindah ke **Warden Payout** (Ide 2), yang semua komponennya sudah terverifikasi di dokumentasi. Kalau ada waktu lebih, Fee Desk bisa meminjam kernel grant dari Ide 2 untuk membatasi wallet desk.
+**Go/no-go hari pertama:** tes di Base apakah Fees Manager menerima kontrak sebagai beneficiary dan pemanggil `updateBeneficiary`, lalu tanya Dynamic apakah policy berlaku untuk agent wallet. Kalau vault gagal dan Dynamic tidak bisa menjamin policy, pindah ke **Warden Payout** (Ide 2), yang semua komponennya sudah terverifikasi di dokumentasi. Kalau ada waktu lebih, Gadai bisa meminjam kernel grant dari Ide 2 untuk membatasi wallet desk.
 
 ---
 
@@ -195,7 +195,7 @@ Tiga ide ini hasil sintesis dari 16 ide yang sudah diperdebatkan, dikritik, dan 
 - **Kirim (remittance IDRX):** alamat deposit IDRX hanya tersedia lewat API akun bisnis. Novelty rendah dan hanya satu sponsor yang cocok.
 ---
 
-## Verifikasi Fee Desk (2026-09-18, dicek langsung, bukan hasil agen)
+## Verifikasi Gadai (2026-09-18, dicek langsung, bukan hasil agen)
 
 | Klaim | Status | Bukti |
 |---|---|---|

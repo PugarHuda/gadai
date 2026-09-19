@@ -1,4 +1,4 @@
-# Definitive Flash API: integration notes for Fee Desk
+# Definitive Flash API: integration notes for Gadai
 
 Researched 2026-09-18. Every endpoint below was read in the official docs, and the ones marked **LIVE-TESTED** were called against production (Base 8453) today with the public dev key.
 

@@ -1,10 +1,10 @@
-# Fee Desk
+# Gadai
 
-**Fee Desk lends USDC to Bankr agents and creators against their token's creator-fee stream, and holds that stream as an on-chain lien the desk can't keep.**
+**Gadai lends USDC to Bankr agents and creators against their token's creator-fee stream, and holds that stream as an on-chain lien the desk can't keep.**
 
 Built for Runtime Agent Week (Bankr x Propaganda). Chain: Base (8453).
 
-A Bankr token launched through Doppler pays its creator a share of every trade. Many agents need cash now (LLM credits, x402 APIs, inventory) and have steady fees coming in later. Bankr's guidance for an agent whose fees don't cover its compute is to cut operations or top up by hand. Before Fee Desk, nothing on Bankr let a creator borrow against those future fees. Fee Desk does, using a primitive Doppler already ships: `updateBeneficiary(poolId, newBeneficiary)`.
+A Bankr token launched through Doppler pays its creator a share of every trade. Many agents need cash now (LLM credits, x402 APIs, inventory) and have steady fees coming in later. Bankr's guidance for an agent whose fees don't cover its compute is to cut operations or top up by hand. Before Gadai, nothing on Bankr let a creator borrow against those future fees. Gadai does, using a primitive Doppler already ships: `updateBeneficiary(poolId, newBeneficiary)`.
 
 1. **Underwrite.** The desk's agent reads the token's real fee history from the Bankr API. A deterministic engine sets the maximum it can lend. Three underwriter personas, each on a different model through the **Bankr LLM Gateway**, write credit memos. The lead persona's decision is binding. An LLM can only decline a loan or lower the amount, never raise it.
 2. **Pledge.** The borrower moves its fee beneficiary share to a per-loan **FeeVault** contract. It can do this from a Dynamic embedded wallet in the web app, through Bankr chat, or with its own Bankr agent via our **Bankr Skill**.
@@ -25,7 +25,7 @@ Two more things run on the same loan:
 ```mermaid
 flowchart LR
   subgraph Borrowers & lenders
-    BA[Bankr agent<br/>skill/fee-desk/SKILL.md]
+    BA[Bankr agent<br/>skill/gadai/SKILL.md]
     WEB[web/ Next.js<br/>Dynamic embedded wallets]
   end
   subgraph Agent["agent/ (Node 26, Hono, SQLite)"]
@@ -63,7 +63,7 @@ flowchart LR
 sequenceDiagram
   autonumber
   participant B as Borrower (Bankr agent / web)
-  participant D as Fee Desk agent
+  participant D as Gadai agent
   participant L as Bankr LLM Gateway
   participant W as Dynamic agent wallet
   participant V as FeeVault
@@ -111,7 +111,7 @@ Bankr is the product's foundation, not a plug-in. The collateral, the underwriti
 
 **The LLM Gateway makes the credit decision.**
 - [`agent/src/underwriter/index.ts#L12-L16`](agent/src/underwriter/index.ts#L12-L16): three personas on three Gateway models.
-- [`#L78-L135`](agent/src/underwriter/index.ts#L78-L135): each persona's memo and the binding lead decision.
+- [`#L78-L143`](agent/src/underwriter/index.ts#L78-L143): each persona's memo and the binding lead decision.
 - [`engine.ts#L118-L138`](agent/src/underwriter/engine.ts#L118-L138): `parseMemo` fails closed. If the model tries to exceed the cap or returns a bad price, the result is a parse failure, which returns 502 and creates no loan.
 
 **The pledge is Bankr's own primitive.**
@@ -124,7 +124,7 @@ Bankr is the product's foundation, not a plug-in. The collateral, the underwriti
 - [`#L443-L451`](contracts/src/FeeVault.sol#L443-L451): `_returnLien`, which calls `updateBeneficiary(poolId, borrower)`.
 
 **Bankr Skill.** Any Bankr agent can borrow by chat:
-- [`skill/fee-desk/SKILL.md`](skill/fee-desk/SKILL.md) and [`skill/fee-desk/catalog.json`](skill/fee-desk/catalog.json) use the `<slug>/SKILL.md + catalog.json` layout of `BankrBot/skills`.
+- [`skill/gadai/SKILL.md`](skill/gadai/SKILL.md) and [`skill/gadai/catalog.json`](skill/gadai/catalog.json) use the `<slug>/SKILL.md + catalog.json` layout of `BankrBot/skills`.
 - The skill walks through quote → apply → pledge via `/wallet/submit` or the documented chat phrase → status → `bankr llm credits add` → early repay → release, and it puts every write behind explicit user confirmation.
 
 **The loan becomes LLM credits.** See step 6 of the skill, plus the `disbursed` event on the loan page.
@@ -238,7 +238,7 @@ What still runs live in fork mode:
 
 Flash doesn't run in fork mode, because it settles only on mainnet. The UI shows "Flash: mainnet only".
 
-**Bankr agent:** `install the fee-desk skill from https://github.com/GITHUB_OWNER/GITHUB_REPO/tree/main/skill/fee-desk`.
+**Bankr agent:** `install the gadai skill from https://github.com/PugarHuda/gadai/tree/main/skill/gadai`.
 
 Tests:
 - `pnpm --filter @feedesk/agent test`: engine, CCA math, Uniswap guards, leaderboard scoring, Flynet helpers.
@@ -250,6 +250,6 @@ contracts/  FeeDesk, FeeVault, FeeNote (Foundry, fork tests)
 agent/      underwriter + keeper agent (bankr, underwriter, wallet, keeper, uniswap, cca, flash, social, flynet, server)
 web/        Next.js app with Dynamic embedded wallets
 shared/     ABIs, addresses, DTOs shared by agent and web
-skill/      Bankr Skill (fee-desk)
+skill/      Bankr Skill (gadai)
 docs/       integration notes, coordination log, demo script, submission checklist
 ```

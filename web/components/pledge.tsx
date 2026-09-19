@@ -44,7 +44,7 @@ cast send --unlocked --from ${loan.borrower} ${loan.pledgeTx?.to ?? loan.feesMan
         </div>
         <div className="border-[1.5px] border-ink p-3">
           <div className="label">2 · Bankr agent / wallet</div>
-          <p className="mt-1 text-xs">Beneficiary is your Bankr wallet? Paste this into Bankr chat (or have your agent submit the pledgeTx via the Fee Desk skill):</p>
+          <p className="mt-1 text-xs">Beneficiary is your Bankr wallet? Paste this into Bankr chat (or have your agent submit the pledgeTx via the Gadai skill):</p>
           <pre className="mt-2 whitespace-pre-wrap break-all bg-ink p-2 font-mono text-[11px] text-paper">{loan.pledgeChatText}</pre>
           <button className="link mt-1 text-xs" onClick={() => navigator.clipboard.writeText(loan.pledgeChatText ?? "").then(() => setCopied(true))}>{copied ? "copied" : "copy"}</button>
         </div>

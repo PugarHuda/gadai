@@ -1,4 +1,4 @@
-# Fee Desk contracts (Foundry, Base 8453)
+# Gadai contracts (Foundry, Base 8453)
 
 | File | What it does |
 |---|---|

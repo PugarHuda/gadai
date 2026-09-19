@@ -1,4 +1,4 @@
-# Fee Desk: 3-minute demo script
+# Gadai: 3-minute demo script
 
 Record at 1920×1080. Use a browser at 125% zoom, a terminal with a large font, and Basescan in a third tab. Keep the voice-over (VO) short and let the chain do the talking. Every tx hash shown on screen must be real: from mainnet, or from the fork with the DEMO_FORK banner visible.
 
@@ -13,7 +13,7 @@ Record at 1920×1080. Use a browser at 125% zoom, a terminal with a large font, 
    - `docker compose --profile fork up anvil`, started less than 10 minutes before recording (so the Uniswap `/swap` deadline and pool state are fresh);
    - FeeDesk deployed to the fork;
    - the agent wallet funded with ETH and USDC on the fork.
-4. The Bankr agent has the skill installed: `install the fee-desk skill from https://github.com/GITHUB_OWNER/GITHUB_REPO/tree/main/skill/fee-desk`.
+4. The Bankr agent has the skill installed: `install the gadai skill from https://github.com/PugarHuda/gadai/tree/main/skill/gadai`.
 5. A Blackbird staging member is logged in for the dining shot, and the staging app wallet holds FLY.
 6. A follower wallet on `/desk` already follows `prudent` in bracket mode.
 
@@ -21,7 +21,7 @@ Record at 1920×1080. Use a browser at 125% zoom, a terminal with a large font, 
 
 | t | Screen | Action | VO |
 |---|---|---|---|
-| 0:00–0:12 | `/` loan book | Slow scroll: loans, statuses, repaid %, Basescan links | "Bankr agents earn trading fees, but LLM credits are prepaid. Fee Desk lends them USDC today against those fees, with the fee rights locked in a contract as collateral." |
+| 0:00–0:12 | `/` loan book | Slow scroll: loans, statuses, repaid %, Basescan links | "Bankr agents earn trading fees, but LLM credits are prepaid. Gadai lends them USDC today against those fees, with the fee rights locked in a contract as collateral." |
 | 0:12–0:35 | Bankr chat (terminal or bankr.bot) | Type: *"borrow against my GITLAWB fees with fee desk"*. The skill runs `/api/quote`, then shows the terms and the formula string | "Any Bankr agent can borrow by chat through our Bankr Skill. The quote comes from real fee history in the Bankr API, and it discounts fee decay and lumpy days." |
 | 0:35–0:55 | Same chat → `/loans/[id]` | Agent: *"apply"*. Cut to the loan page: three memo cards (Prudent/Claude, Momentum/Gemini, Skeptic/GPT) and the lead's APPROVED badge | "Three underwriters on the Bankr LLM Gateway write credit memos on three different models. The lead's decision is binding, and the model can only lower the amount, never raise it." |
 | 0:55–1:10 | Loan timeline + Basescan | Click the `loan_created` tx: `createLoan` from the Dynamic agent wallet | "The moment it approves, the desk's own Dynamic agent wallet deploys this loan's vault on-chain. The agent decides, then acts." |

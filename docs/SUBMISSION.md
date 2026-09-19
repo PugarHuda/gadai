@@ -1,21 +1,21 @@
-# Submission checklist: Fee Desk
+# Submission checklist: Gadai
 
 The deadline is **Sun 2026-09-20 03:00 WIB**. Tick every box only against evidence you can click (a file:line, a tx hash, or a video timestamp).
 
 ## 0. Before submitting (everyone)
 
-- [ ] Repo is **public** on GitHub. Put its URL here: `https://github.com/GITHUB_OWNER/GITHUB_REPO`
+- [ ] Repo is **public** on GitHub. Put its URL here: `https://github.com/PugarHuda/gadai`
 - [ ] Fill in the placeholders in the skill and docs (run from the repo root, Git Bash):
   ```bash
   OWNER=… REPO=… API_HOST=…   # API_HOST = AGENT_PUBLIC_URL without https://
   WEB_HOST=…                  # public web URL without https://
   sed -i "s#GITHUB_OWNER#$OWNER#g; s#GITHUB_REPO#$REPO#g; s#FEEDESK_API_HOST#$API_HOST#g; s#FEEDESK_WEB_HOST#$WEB_HOST#g" \
-    skill/fee-desk/SKILL.md skill/fee-desk/catalog.json README.md docs/DEMO.md
+    skill/gadai/SKILL.md skill/gadai/catalog.json README.md docs/DEMO.md
   grep -rn "GITHUB_OWNER\|FEEDESK_API_HOST\|FEEDESK_WEB_HOST" skill README.md docs/DEMO.md || echo "no placeholders left"
   ```
   This file (SUBMISSION.md) is left out on purpose so the commands above stay reusable. Fill in its repo URL by hand.
 - [ ] README line links match the code: `node docs/anchors.mjs` prints `README anchors OK`. After the last code change, run `node docs/anchors.mjs --write` and commit. The check also fails while `pnpm contracts:deploy` points at a missing `contracts/script/Deploy.s.sol`.
-- [ ] The skill matches the server: `node skill/fee-desk/check.mjs` passes. It checks the applyMessage text and the pledge-data rule against a live `build-transfer-beneficiary` response.
+- [ ] The skill matches the server: `node skill/gadai/check.mjs` passes. It checks the applyMessage text and the pledge-data rule against a live `build-transfer-beneficiary` response.
 - [ ] `pnpm --filter @feedesk/agent test` and `pnpm contracts:test` are green. Paste the summary lines into the submission form.
 - [ ] `.env` is **not** committed: `git ls-files | grep -c '^.env$'` prints `0`.
 - [ ] The 3-minute video is recorded following `docs/DEMO.md` and uploaded (unlisted YouTube or Loom). Link: ______
@@ -35,9 +35,9 @@ The deadline is **Sun 2026-09-20 03:00 WIB**. Tick every box only against eviden
 |---|---|---|
 | Uses the Bankr fee APIs for real decisions | `agent/src/bankr/index.ts` (`tokenFees`, `creatorFees`, `claimableFees`, `buildTransferBeneficiary`, `buildClaim`); `agent/src/underwriter/index.ts` `quote` | [ ] |
 | Bankr LLM Gateway powers the underwriting | `agent/src/bankr/index.ts` `llmChat`; `agent/src/underwriter/index.ts` `PERSONAS`, `underwrite`; three memos appear on every loan page | [ ] |
-| Bankr Skill that lets any Bankr agent apply, check status and repay | `skill/fee-desk/SKILL.md` + `catalog.json`; video 0:12–1:30 | [ ] |
+| Bankr Skill that lets any Bankr agent apply, check status and repay | `skill/gadai/SKILL.md` + `catalog.json`; video 0:12–1:30 | [ ] |
 | The skill is installed by a real Bankr agent from our public URL (screenshot of the install reply) | ______ | [ ] |
-| Optional: PR to `BankrBot/skills` adding `fee-desk/` (copy `skill/fee-desk/`, set `repoPath: "fee-desk"`, add a row to the root README table) | PR URL ______ | [ ] |
+| Optional: PR to `BankrBot/skills` adding `gadai/` (copy `skill/gadai/`, set `repoPath: "gadai"`, add a row to the root README table) | PR URL ______ | [ ] |
 | The loan becomes LLM credits (`bankr llm credits add`) | video 1:50–2:05 | [ ] |
 
 ## 2. Dynamic ($2k): an agent that makes a meaningful decision, then carries out a wallet/payment action
@@ -84,7 +84,7 @@ The deadline is **Sun 2026-09-20 03:00 WIB**. Tick every box only against eviden
 
 Keep it under 280 characters, and attach the video or a GIF of the loan page:
 
-> Fee Desk: Bankr agents borrow USDC against their token's creator fees.
+> Gadai: Bankr agents borrow USDC against their token's creator fees.
 > Fees → lien vault. 3 LLM underwriters on @bankrbot decide, a @dynamic_xyz agent wallet pays, loans sell as FeeNotes in a @Uniswap CCA, @DefinitiveFi Flash TWAP repays.
 > <repo URL>
 

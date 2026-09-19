@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "slug": "gadai",
+  "provider": "Gadai",
+  "providerUrl": "https://FEEDESK_WEB_HOST",
+  "logo": null,
+  "demo": {
+    "title": "borrow-against-fees",
+    "language": "bash",
+    "code": "FD=https://FEEDESK_API_HOST\n# quote (read-only)\ncurl -s \"$FD/api/quote?token=0xTOKEN&borrower=0xYOU\"\n# apply: sign the 5-line applyMessage as the borrower, then 3 LLM personas on the Bankr LLM Gateway write credit memos\nMSG=\"$(printf 'Gadai: apply for a loan against my creator fees\\nToken: %s\\nBorrower: %s\\nController: %s\\nNonce: %s' 0xtoken 0xyou 0xyou \"$NONCE\")\"\nbankr wallet sign --type personal_sign --message \"$MSG\"\ncurl -s -X POST \"$FD/api/loans\" -H 'content-type: application/json' -d '{\"token\":\"0xTOKEN\",\"borrower\":\"0xYOU\",\"via\":\"bankr-skill\",\"nonce\":\"NONCE\",\"signature\":\"0xSIG\"}'\n# → { \"id\": LOAN_ID, \"vault\": \"0xVAULT\", \"pledgeTx\": {...} }. Pledge fee rights to the loan's FeeVault (Bankr chat phrase):\n# > transfer my beneficiary share on token 0xTOKEN to 0xVAULT\ncurl -s -X POST \"$FD/api/loans/LOAN_ID/pledge\" -H 'content-type: application/json' -d '{\"txHash\":\"0x...\"}'\n# funded by a FeeNote CCA, USDC arrives, then:\nbankr llm credits add 20"
+  },
+  "setup": [
+    "Your wallet must be the current fee beneficiary of a Base Doppler token launched on Bankr",
+    "Applying needs one personal_sign from that wallet (Bankr built-in signing, `bankr wallet sign`, or Wallet API /wallet/sign)",
+    "Pledging needs a raw transaction submit (Bankr built-in tool, `bankr wallet submit`, or /wallet/submit) or the Bankr chat phrase"
+  ],
+  "install": {
+    "type": "bankr",
+    "repoPath": "gadai",
+    "command": "install the gadai skill from https://github.com/PugarHuda/gadai/tree/main/skill/gadai"
+  }
+}
