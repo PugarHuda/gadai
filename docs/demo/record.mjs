@@ -29,16 +29,24 @@ await scroll(500);
 cap("A loan moves in five steps: pledge, auction, disburse, repay, release. Everything runs on a Base fork with a real Bankr pool.");
 await wait(8000);
 
+await go("/board");
+cap("The Credit Line Board prices every Bankr agent on Base live: fee history from Bankr's API, compute burn from the LLM Gateway, one engine.");
+await wait(8000);
+await scroll(700, 6);
+cap("Fourteen agents are pre-approved today. Each row explains its limit, or why it has none.");
+await wait(7000);
+
 await go("/apply");
 cap("A creator applies with their Bankr token. The underwriter reads live fee data from Bankr's public fee API.");
 await wait(7000);
 
 borrower("setup");
-borrower("apply");
+const agentId = borrower("register-agent").match(/ERC-8004 agent (\d+)/)[1];
+borrower(`apply ${agentId}`);
 ID = Math.max(...(await loans()).map((l) => l.id));
 if ((await loans()).length !== 1) throw new Error("expected exactly one loan on a fresh fork");
 await go(`/loans/${ID}`);
-cap("Three underwriter personas write credit memos. With no Bankr LLM credits they are labeled engine-only, never passed off as AI.");
+cap("Three underwriter personas decide independently. Without Bankr LLM credits they run as labeled rules, and the skeptic lends less. The borrower brings an ERC-8004 agent identity.");
 await wait(5000);
 await scroll(900, 8);
 await wait(4000);
@@ -64,7 +72,7 @@ await go(`/loans/${ID}`);
 cap("The keeper collects fees from the pool and swaps WETH to USDC through the Uniswap Trading API.");
 await wait(6000);
 await scroll(1400, 10);
-cap("Debt reaches zero, FeeNote holders can redeem, and release() hands the fee rights back. Every step is a transaction.");
+cap("Debt reaches zero, release hands the fee rights back, and the desk writes repayment reputation to the borrower's ERC-8004 identity. Every desk transaction carries a Base builder code.");
 await wait(9000);
 
 await go("/desk");
@@ -72,6 +80,10 @@ cap("Follow the Desk: every credit decision is a public signal. Followers mirror
 await wait(9000);
 await go("/dine");
 cap("Dine on your fees: borrowers draw a small Flynet dining line against pledged fees at Blackbird restaurants.");
+await wait(8000);
+await page.goto("https://x402.bankr.bot/0x0455408228f460722ecbe80789bcf1628b479e98/gadai-credit?token=0x5F980Dcfc4c0fa3911554cf5ab288ed0eb13DBa3").catch(() => {});
+await wait(1500);
+cap("Other agents can buy the same credit report for two cents over x402 on Bankr's cloud: agent-to-agent commerce, paid in USDC on Base.");
 await wait(8000);
 await go("/");
 cap("Gadai. Credit for agents, secured by the fees they already earn. github.com/PugarHuda/gadai");
