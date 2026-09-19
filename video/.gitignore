@@ -1,0 +1,6 @@
+node_modules/
+out/
+public/clips/_*/
+public/clips/
+public/*.wav
+public/*.mp3

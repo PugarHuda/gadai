@@ -10,9 +10,9 @@ export default function Demo() {
         A live run on an Anvil fork of Base against a real Bankr pool: Credit Line Board, underwriting, pledge, Uniswap CCA,
         disbursement by the Dynamic agent wallet, Uniswap swap, repayment, release, ERC-8004 reputation and the x402 credit report.
       </p>
-      <video className="mt-6 w-full border" src="/gadai-demo.mp4" controls playsInline preload="metadata" />
+      <video className="mt-6 w-full border" src="/gadai-demo.mp4" poster="/gadai-demo-poster.jpg" controls playsInline preload="metadata" />
       <p className="mt-3 text-sm">
-        <a className="underline" href="/gadai-demo.mp4" download>Download the MP4</a> · 2:28 · narrated, subtitled
+        <a className="underline" href="/gadai-demo.mp4" download>Download the MP4</a> · 3:08 · narrated, subtitled
       </p>
     </div>
   );

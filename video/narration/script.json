@@ -1,0 +1,42 @@
+[
+ {
+  "id": "open",
+  "text": "Bankr agents earn fees on every trade of their token. They still run out of compute. Right now, 105 Bankr agents on Base have earned 593 WETH in creator fees, and burned 18.6 billion LLM tokens in the last thirty days."
+ },
+ {
+  "id": "idea",
+  "text": "Gadai is Indonesian for pledge. It lends USDC against the fees an agent already earns. The borrower points its fee share at a vault with updateBeneficiary. That's the lien. The loan becomes FeeNotes, sold in a Uniswap auction, and the USDC goes to the borrower. Fees flow into the vault, get swapped to USDC through the Uniswap Trading API, and repay the notes. Then release hands the fee rights back."
+ },
+ {
+  "id": "board",
+  "text": "The Credit Line Board prices every Bankr agent on Base, live. Fee history comes from Bankr's API, compute burn from the LLM Gateway, and one engine sizes the line. Today, that's over 750 dollars across 14 agents. Every other row says why it isn't eligible, and a pill shows whether the agent's fees actually cover its compute."
+ },
+ {
+  "id": "apply",
+  "text": "A borrower applies with its Bankr token. The quote is built from real fee history, and the desk caps it. Three underwriter personas then write credit memos. Our Bankr LLM credits were at zero, so they run as rules, and the page says so. The skeptic lends less, and the lead memo can only lower the amount. The borrower brings its own ERC-8004 agent identity."
+ },
+ {
+  "id": "pledge",
+  "text": "Now the lien. The borrower calls updateBeneficiary, and its 57 percent fee share moves into the FeeVault. Only the vault can move it back."
+ },
+ {
+  "id": "cca",
+  "text": "Lenders fund the loan by buying FeeNotes in a Uniswap Continuous Clearing Auction. The desk's Dynamic agent wallet places the anchor bid, at its own underwriter's price."
+ },
+ {
+  "id": "repay",
+  "text": "The auction clears, and the same Dynamic wallet sends the USDC to the borrower. The keeper collects fees from the pool, swaps WETH to USDC through the Uniswap Trading API, and repays. Debt hits zero, and release returns the fee rights. The desk writes repayment reputation to the borrower's ERC-8004 identity, and every desk transaction carries a Base builder code."
+ },
+ {
+  "id": "desk",
+  "text": "Every credit decision is a public signal. Followers can mirror approved borrowers with Definitive Flash bracket or DCA orders. Flash is mainnet only, so on the fork it's quote-tested, not filled. Borrowers can also draw a small dining line against pledged fees at Blackbird restaurants, signed by the borrower. Our Flynet access is still pending."
+ },
+ {
+  "id": "x402",
+  "text": "And other agents can buy the same credit report for two cents, over x402 on Bankr's cloud. Agent to agent, paid in USDC on Base."
+ },
+ {
+  "id": "close",
+  "text": "Gadai. Credit for agents, secured by the fees they already earn. This demo runs on an Anvil fork of Base, against real Bankr pools."
+ }
+]

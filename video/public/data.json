@@ -1,0 +1,490 @@
+{
+ "capturedAt": "2026-09-19T15:26:11.890Z",
+ "board": {
+  "generatedAt": "2026-09-19T15:24:59.085Z",
+  "totals": {
+   "agents": 105,
+   "eligible": 14,
+   "totalCreditUsdc": 755.31,
+   "lifetimeFeesWeth": 593.158038,
+   "claimableWeth": 9.670721,
+   "llmTokens30d": 18555413051,
+   "failed": 0,
+   "nonBase": 17
+  },
+  "ethUsd": 2640.468925
+ },
+ "loan": {
+  "id": 1,
+  "status": "RELEASED",
+  "via": "web",
+  "borrower": "0xfdb6430011f6E4796Ca380CB39e47975b1f876Bf",
+  "controller": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "token": "0x5F980Dcfc4c0fa3911554cf5ab288ed0eb13DBa3",
+  "symbol": "GITLAWB",
+  "poolId": "0xec33256bf1ded407a57fd3c1965e7556e42ac14db09bc4e6fef57d5e2eb0b0b9",
+  "feesManager": "0xD59cE43E53D69F190E15d9822Fb4540dCcc91178",
+  "vault": "0x2286043ef6d70346b19831de8295E0D25f8987C9",
+  "note": "0xecF7Bc1aDB93d0D099f1293F82b10B461DE8FE60",
+  "auction": "0xEBc71e4Eb6FBF94196f9997598c41D5700C7E368",
+  "terms": {
+   "principalRaw": "237380000",
+   "faceValueRaw": "276023256",
+   "feeRatePct": 16.28,
+   "floorPrice": 0.86,
+   "floorPriceQ96": "68136219762267330330447797258",
+   "tickSpacingQ96": "792281625142643375935439503",
+   "termDays": 4.88,
+   "drawLimitRaw": "23730000",
+   "advanceRatePct": 30,
+   "maxPrincipalRaw": "237380000"
+  },
+  "leadMemo": {
+   "personaId": "prudent",
+   "model": "rules (Bankr LLM unavailable)",
+   "decision": "approve",
+   "principalRaw": "237380000",
+   "maxNotePrice": 0.86,
+   "confidence": 0.5,
+   "rationale": "Rule prudent/approve fired: cv30d 3.466 < 5, approving the engine terms at 30% advance. r7=0.233159 r30=0.104438 rLife=0.246313 WETH/day, slope30d=0.00483051, cv30d=3.466, history 251d, $56.52/day, maxPrincipal $237.38.",
+   "risks": [
+    "no LLM review",
+    "claim-timed fee history"
+   ]
+  },
+  "pledgeTx": null,
+  "pledgeChatText": null,
+  "debt": {
+   "noteSupplyRaw": "1",
+   "usdcInVaultRaw": "1",
+   "drawDebtRaw": "0",
+   "outstandingRaw": "0",
+   "wethInVaultRaw": "0",
+   "tokenInVaultRaw": "0",
+   "canRelease": false
+  },
+  "createdAt": "2026-09-19T15:15:25.346Z",
+  "updatedAt": "2026-09-19T15:19:16.050Z",
+  "events": [
+   {
+    "id": 1,
+    "loanId": 1,
+    "kind": "applied",
+    "txHash": null,
+    "data": {
+     "via": "web",
+     "formula": "dailyEarnings Σall-time 108.173745 ≠ claimed+claimable 5.371835 → scaled by share 57.00%; r7=(Σ7d 1.466505 + claimable 0.165609)/7=0.233159 · r30=(Σ30d 2.967543 + claimable)/30=0.104438 · rLife=(lifetime 61.659009 + claimable)/251d=0.246313 · rOwn=(own claimed+claimable 5.371835)/251d=0.021402 WETH/day → rate=min=0.021402 (dailyEarnings are claim events: slope/cv are claim-timed); slope30d=0.00483051 → projected over 14d=0.021402 → used 0.021402 WETH/day × ETH $2640.92 = $56.52/day; maxPrincipal=min(cap $250, 30% × $56.52 × 14d)=$237.38; principal=$237.38; cv30d=3.466 → fee=5+10·min(1,cv/3)=15% → floorPrice=0.86 USDC/note (0.01 grid, rounded down) → face=ceil(principal/floor)=$276.023256 (effective fee 16.28%); termDays=face/usdPerDay=4.88; drawLimit=min(10%·principal, $50)=$23.73; ERC-8004 agent #94700: no Gadai feedback yet → no change"
+    },
+    "createdAt": "2026-09-19T15:15:25.350Z"
+   },
+   {
+    "id": 2,
+    "loanId": 1,
+    "kind": "erc8004_registered",
+    "txHash": null,
+    "data": {
+     "borrowerAgentId": "94700",
+     "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+     "registry": "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432"
+    },
+    "createdAt": "2026-09-19T15:15:25.361Z"
+   },
+   {
+    "id": 3,
+    "loanId": 1,
+    "kind": "memo",
+    "txHash": null,
+    "data": {
+     "personaId": "prudent",
+     "model": "rules (Bankr LLM unavailable)",
+     "decision": "approve",
+     "principalRaw": "237380000",
+     "maxNotePrice": 0.86
+    },
+    "createdAt": "2026-09-19T15:15:25.367Z"
+   },
+   {
+    "id": 4,
+    "loanId": 1,
+    "kind": "memo",
+    "txHash": null,
+    "data": {
+     "personaId": "momentum",
+     "model": "rules (Bankr LLM unavailable)",
+     "decision": "approve",
+     "principalRaw": "250000000",
+     "maxNotePrice": 0.86
+    },
+    "createdAt": "2026-09-19T15:15:25.373Z"
+   },
+   {
+    "id": 5,
+    "loanId": 1,
+    "kind": "memo",
+    "txHash": null,
+    "data": {
+     "personaId": "skeptic",
+     "model": "rules (Bankr LLM unavailable)",
+     "decision": "approve",
+     "principalRaw": "79120000",
+     "maxNotePrice": 0.86
+    },
+    "createdAt": "2026-09-19T15:15:25.379Z"
+   },
+   {
+    "id": 6,
+    "loanId": 1,
+    "kind": "loan_created",
+    "txHash": "0xbec08e9a6b2005efc32e0ba9c7acd037da3acc030758f3d13590ff19cce04acb",
+    "data": {
+     "onchainId": 1,
+     "vault": "0x2286043ef6d70346b19831de8295E0D25f8987C9",
+     "note": "0xecF7Bc1aDB93d0D099f1293F82b10B461DE8FE60",
+     "terms": {
+      "principalRaw": "237380000",
+      "faceValueRaw": "276023256",
+      "feeRatePct": 16.28,
+      "floorPrice": 0.86,
+      "floorPriceQ96": "68136219762267330330447797258",
+      "tickSpacingQ96": "792281625142643375935439503",
+      "termDays": 4.88,
+      "drawLimitRaw": "23730000",
+      "advanceRatePct": 30,
+      "maxPrincipalRaw": "237380000"
+     }
+    },
+    "createdAt": "2026-09-19T15:15:30.515Z"
+   },
+   {
+    "id": 7,
+    "loanId": 1,
+    "kind": "pledged",
+    "txHash": "0x5fb50e339fa941559084cccb882ff2d23e36c566607d413cf3627ce3d1284e03",
+    "data": {
+     "vaultShares": "570000000000000000",
+     "pledgeTxHash": "0x352ebe9f3a53b7ff663c8cb49bddc67aec9efed732b134515fd606c5fa9184a1",
+     "bankrIndexedVault": null
+    },
+    "createdAt": "2026-09-19T15:16:44.935Z"
+   },
+   {
+    "id": 8,
+    "loanId": 1,
+    "kind": "bid",
+    "txHash": "0x1d6f919ad8c474c2341bc9dbaa8432806cdfdb4e4486cc6e3041ca6a4b2146ce",
+    "data": {
+     "action": "desk_anchor_bid",
+     "bidder": "0x81b73786BF2dE819e66BB57d08effADe0085305D",
+     "amountRaw": "239753800",
+     "maxPrice": 0.87,
+     "persona": "prudent"
+    },
+    "createdAt": "2026-09-19T15:17:05.628Z"
+   },
+   {
+    "id": 9,
+    "loanId": 1,
+    "kind": "auction_started",
+    "txHash": "0x253eed3ed68078ad5221f9bdd83ecd0cfd23d177d9a2ad7101c4931c518f1548",
+    "data": {
+     "auction": "0xEBc71e4Eb6FBF94196f9997598c41D5700C7E368"
+    },
+    "createdAt": "2026-09-19T15:17:05.642Z"
+   },
+   {
+    "id": 10,
+    "loanId": 1,
+    "kind": "disbursed",
+    "txHash": "0xa0475d0a9f340f4f74f527d1dadd6325ec375e5ad80020eb32c4dd1e2ddb36a7",
+    "data": {
+     "amountRaw": "239753799",
+     "to": "0xfdb6430011f6E4796Ca380CB39e47975b1f876Bf",
+     "signer": "0x81b73786BF2dE819e66BB57d08effADe0085305D"
+    },
+    "createdAt": "2026-09-19T15:18:25.952Z"
+   },
+   {
+    "id": 11,
+    "loanId": 1,
+    "kind": "bid",
+    "txHash": "0xbb1c35fa300db4e5ee7b5485fe093c38308c1c315ef24fbe7c7917b35b985b4f",
+    "data": {
+     "action": "desk_Exit bid (fully filled)",
+     "bidId": "0"
+    },
+    "createdAt": "2026-09-19T15:18:29.535Z"
+   },
+   {
+    "id": 12,
+    "loanId": 1,
+    "kind": "bid",
+    "txHash": "0xac99e59526c321940004ab9e2286c7b1bf19c11872c7c6f7d83bfea59a4e2696",
+    "data": {
+     "action": "desk_Claim FeeNotes",
+     "bidId": "0"
+    },
+    "createdAt": "2026-09-19T15:18:33.185Z"
+   },
+   {
+    "id": 13,
+    "loanId": 1,
+    "kind": "collected",
+    "txHash": "0xa9f5d3e3005784745267a7011918925371bce69f23544f0ce530e08c5a5c226b",
+    "data": {
+     "fees0Raw": "165609873190962118",
+     "fees1Raw": "6120586955684132665847165",
+     "bankrClaimable": {
+      "eligible": false,
+      "tokenAddress": "0x5f980dcfc4c0fa3911554cf5ab288ed0eb13dba3"
+     }
+    },
+    "createdAt": "2026-09-19T15:19:00.819Z"
+   },
+   {
+    "id": 14,
+    "loanId": 1,
+    "kind": "swapped",
+    "txHash": "0x17e8c81722634661f56fa5dfc019e5576483e1af9278901a3f173e23374629ef",
+    "data": {
+     "via": "uniswap-trading-api",
+     "wethInRaw": "109655975929536499",
+     "usdcOutRaw": "289710457",
+     "quoteOutRaw": "289683137",
+     "minOutRaw": "288234721",
+     "requestId": "febbb686e6cc0ef53bb8be413e7572a3",
+     "wethHeldRaw": "165609873190962118",
+     "debtBeforeRaw": "276023256",
+     "chainlinkEthUsd8": "264303350860"
+    },
+    "createdAt": "2026-09-19T15:19:11.408Z"
+   },
+   {
+    "id": 15,
+    "loanId": 1,
+    "kind": "repaid",
+    "txHash": "0x17e8c81722634661f56fa5dfc019e5576483e1af9278901a3f173e23374629ef",
+    "data": {
+     "outstandingRaw": "0",
+     "usdcInVaultRaw": "289710457",
+     "noteSupplyRaw": "276023256"
+    },
+    "createdAt": "2026-09-19T15:19:11.460Z"
+   },
+   {
+    "id": 16,
+    "loanId": 1,
+    "kind": "released",
+    "txHash": "0xbdc32ff6ca1559f98a095b3f7a3363a35a4905c3fa479ee76297290da397319c",
+    "data": {
+     "to": "0xfdb6430011f6E4796Ca380CB39e47975b1f876Bf"
+    },
+    "createdAt": "2026-09-19T15:19:15.993Z"
+   },
+   {
+    "id": 17,
+    "loanId": 1,
+    "kind": "erc8004_feedback",
+    "txHash": "0x015c6cf4f46bc3acfddbfd14dccf848d21d94aa54f26212a3d7ad8470023b9bc",
+    "data": {
+     "agentId": "94700",
+     "value": 100,
+     "tag1": "gadai",
+     "tag2": "repaid",
+     "feedbackHash": "0xa847c25c927af6fd919a9c12bb416f1b2a832398a7433a20b025362f3b863bb4"
+    },
+    "createdAt": "2026-09-19T15:19:20.625Z"
+   },
+   {
+    "id": 18,
+    "loanId": 1,
+    "kind": "desk_paid",
+    "txHash": "0x3d4399133596a93717a5d85374ba1dd01fba32d06e0d9a2f8019065f73299bd8",
+    "data": {
+     "source": "feenote_redeem",
+     "notesRaw": "276023255",
+     "usdcRaw": "276023255",
+     "by": "0x81b73786BF2dE819e66BB57d08effADe0085305D"
+    },
+    "createdAt": "2026-09-19T15:19:24.446Z"
+   },
+   {
+    "id": 19,
+    "loanId": 1,
+    "kind": "erc8004_metadata",
+    "txHash": "0x0ae396ea48a14d98953b330a1b2e30a30fbec8a90323d4860b4e62207fee195c",
+    "data": {
+     "deskAgentId": "94699",
+     "key": "gadai.loan.1",
+     "status": "RELEASED",
+     "txCount": 11
+    },
+    "createdAt": "2026-09-19T15:19:30.694Z"
+   }
+  ],
+  "signals": [
+   {
+    "id": 1,
+    "loanId": 1,
+    "personaId": "prudent",
+    "token": "0x5f980dcfc4c0fa3911554cf5ab288ed0eb13dba3",
+    "symbol": "GITLAWB",
+    "decision": "approve",
+    "score": 50,
+    "principalRaw": "237380000",
+    "maxNotePrice": 0.86,
+    "rationale": "Rule prudent/approve fired: cv30d 3.466 < 5, approving the engine terms at 30% advance. r7=0.233159 r30=0.104438 rLife=0.246313 WETH/day, slope30d=0.00483051, cv30d=3.466, history 251d, $56.52/day, maxPrincipal $237.38.",
+    "createdAt": "2026-09-19T15:15:30.521Z",
+    "mirrorable": false,
+    "mirrorNote": "lead memo not written by an LLM (rules (Bankr LLM unavailable)): no follower orders"
+   },
+   {
+    "id": 2,
+    "loanId": 1,
+    "personaId": "momentum",
+    "token": "0x5f980dcfc4c0fa3911554cf5ab288ed0eb13dba3",
+    "symbol": "GITLAWB",
+    "decision": "approve",
+    "score": 50,
+    "principalRaw": "250000000",
+    "maxNotePrice": 0.86,
+    "rationale": "Rule momentum/approve fired: no decay (slope30d 0.00483051, r7 0.233159 vs r30 0.104438), approving at 45% advance. r7=0.233159 r30=0.104438 rLife=0.246313 WETH/day, slope30d=0.00483051, cv30d=3.466, history 251d, $56.52/day, maxPrincipal $250.00.",
+    "createdAt": "2026-09-19T15:15:30.524Z",
+    "mirrorable": false,
+    "mirrorNote": "lead memo not written by an LLM (rules (Bankr LLM unavailable)): no follower orders"
+   },
+   {
+    "id": 3,
+    "loanId": 1,
+    "personaId": "skeptic",
+    "token": "0x5f980dcfc4c0fa3911554cf5ab288ed0eb13dba3",
+    "symbol": "GITLAWB",
+    "decision": "approve",
+    "score": 50,
+    "principalRaw": "79120000",
+    "maxNotePrice": 0.86,
+    "rationale": "Rule skeptic/halved fired: assuming fees halve to $28.26/day, principal = 20% × that × 14d = $79.12. r7=0.233159 r30=0.104438 rLife=0.246313 WETH/day, slope30d=0.00483051, cv30d=3.466, history 251d, $56.52/day, maxPrincipal $158.25.",
+    "createdAt": "2026-09-19T15:15:30.527Z",
+    "mirrorable": false,
+    "mirrorNote": "lead memo not written by an LLM (rules (Bankr LLM unavailable)): no follower orders"
+   }
+  ],
+  "memos": [
+   {
+    "personaId": "prudent",
+    "model": "rules (Bankr LLM unavailable)",
+    "decision": "approve",
+    "principalRaw": "237380000",
+    "maxNotePrice": 0.86,
+    "confidence": 0.5,
+    "rationale": "Rule prudent/approve fired: cv30d 3.466 < 5, approving the engine terms at 30% advance. r7=0.233159 r30=0.104438 rLife=0.246313 WETH/day, slope30d=0.00483051, cv30d=3.466, history 251d, $56.52/day, maxPrincipal $237.38.",
+    "risks": [
+     "no LLM review",
+     "claim-timed fee history"
+    ]
+   },
+   {
+    "personaId": "momentum",
+    "model": "rules (Bankr LLM unavailable)",
+    "decision": "approve",
+    "principalRaw": "250000000",
+    "maxNotePrice": 0.86,
+    "confidence": 0.5,
+    "rationale": "Rule momentum/approve fired: no decay (slope30d 0.00483051, r7 0.233159 vs r30 0.104438), approving at 45% advance. r7=0.233159 r30=0.104438 rLife=0.246313 WETH/day, slope30d=0.00483051, cv30d=3.466, history 251d, $56.52/day, maxPrincipal $250.00.",
+    "risks": [
+     "no LLM review",
+     "momentum can reverse"
+    ]
+   },
+   {
+    "personaId": "skeptic",
+    "model": "rules (Bankr LLM unavailable)",
+    "decision": "approve",
+    "principalRaw": "79120000",
+    "maxNotePrice": 0.86,
+    "confidence": 0.5,
+    "rationale": "Rule skeptic/halved fired: assuming fees halve to $28.26/day, principal = 20% × that × 14d = $79.12. r7=0.233159 r30=0.104438 rLife=0.246313 WETH/day, slope30d=0.00483051, cv30d=3.466, history 251d, $56.52/day, maxPrincipal $158.25.",
+    "risks": [
+     "no LLM review",
+     "fees halve"
+    ]
+   }
+  ]
+ },
+ "loanSummary": {
+  "id": 1,
+  "status": "RELEASED",
+  "via": "web",
+  "borrower": "0xfdb6430011f6E4796Ca380CB39e47975b1f876Bf",
+  "controller": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "token": "0x5F980Dcfc4c0fa3911554cf5ab288ed0eb13DBa3",
+  "symbol": "GITLAWB",
+  "poolId": "0xec33256bf1ded407a57fd3c1965e7556e42ac14db09bc4e6fef57d5e2eb0b0b9",
+  "feesManager": "0xD59cE43E53D69F190E15d9822Fb4540dCcc91178",
+  "vault": "0x2286043ef6d70346b19831de8295E0D25f8987C9",
+  "note": "0xecF7Bc1aDB93d0D099f1293F82b10B461DE8FE60",
+  "auction": "0xEBc71e4Eb6FBF94196f9997598c41D5700C7E368",
+  "terms": {
+   "principalRaw": "237380000",
+   "faceValueRaw": "276023256",
+   "feeRatePct": 16.28,
+   "floorPrice": 0.86,
+   "floorPriceQ96": "68136219762267330330447797258",
+   "tickSpacingQ96": "792281625142643375935439503",
+   "termDays": 4.88,
+   "drawLimitRaw": "23730000",
+   "advanceRatePct": 30,
+   "maxPrincipalRaw": "237380000"
+  },
+  "leadMemo": {
+   "personaId": "prudent",
+   "model": "rules (Bankr LLM unavailable)",
+   "decision": "approve",
+   "principalRaw": "237380000",
+   "maxNotePrice": 0.86,
+   "confidence": 0.5,
+   "rationale": "Rule prudent/approve fired: cv30d 3.466 < 5, approving the engine terms at 30% advance. r7=0.233159 r30=0.104438 rLife=0.246313 WETH/day, slope30d=0.00483051, cv30d=3.466, history 251d, $56.52/day, maxPrincipal $237.38.",
+   "risks": [
+    "no LLM review",
+    "claim-timed fee history"
+   ]
+  },
+  "pledgeTx": null,
+  "pledgeChatText": null,
+  "debt": null,
+  "createdAt": "2026-09-19T15:15:25.346Z",
+  "updatedAt": "2026-09-19T15:19:16.050Z"
+ },
+ "builder": {
+  "tx": "0xa0475d0a9f340f4f74f527d1dadd6325ec375e5ad80020eb32c4dd1e2ddb36a7",
+  "kind": "disburse",
+  "body": "abc6fd0b",
+  "suffix": "62635f33326434706338670b0080218021802180218021802180218021",
+  "code": "bc_32d4pc8g"
+ },
+ "x402": {
+  "status": 402,
+  "body": {
+   "x402Version": 2,
+   "error": "Payment Required",
+   "accepts": [
+    {
+     "scheme": "exact",
+     "network": "eip155:8453",
+     "maxAmountRequired": "20000",
+     "amount": "20000",
+     "resource": "https://x402.bankr.bot/0x0455408228f460722ecbe80789bcf1628b479e98/gadai-credit",
+     "description": "Gadai credit report for any Bankr Doppler token on Base: live creator-fee history (Bankr public API) run through Gadai's deterministic underwriting engine. Returns fee run-rates (r7/r30/lifetime, slope, cv), the max USDC credit line the fee stream supports (30% advance x 14d, $250 cap), fee rate, CCA floor price, term, eligibility and the full formula with numbers plugged in.",
+     "mimeType": "",
+     "payTo": "0x8AEE621035D93Deb3C0C1177fac252dC2dd501a0",
+     "maxTimeoutSeconds": 60,
+     "asset": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+     "extra": {
+      "name": "USD Coin",
+      "version": "2"
+     }
+    }
+   ],
+   "facilitator": "https://api.bankr.bot/facilitator"
+  }
+ }
+}
