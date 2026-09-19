@@ -1,0 +1,41 @@
+{
+ "captured_on": "2026-09-19",
+ "source": "GET https://api.blackbird.xyz/flynet/v1/specials?restaurant=a53dd63e-69d6-457a-bc72-891ec96fb4fb (production)",
+ "specials": [
+  {
+   "id": "3443cf1d-3299-410e-989e-715f22aa4c93",
+   "object": "special",
+   "restaurant_id": "a53dd63e-69d6-457a-bc72-891ec96fb4fb",
+   "label": "Earn 10X back in Fly",
+   "description": "Claim required: Earn 10% back in Fly (no minimum spend)",
+   "emoji": "🏆",
+   "image": "token",
+   "fly_reward": null,
+   "fly_reward_bips": null,
+   "check_in_threshold": null,
+   "created_at": "2026-09-15T16:25:53.228196Z",
+   "updated_at": "2026-09-16T17:20:41.782887Z"
+  },
+  {
+   "id": "5f249cd3-ad3d-4673-a2f0-3496a66fad17",
+   "object": "special",
+   "restaurant_id": "a53dd63e-69d6-457a-bc72-891ec96fb4fb",
+   "label": "Earn 10X back in Fly",
+   "description": "Claim required: Earn 10% back in Fly (no minimum spend)",
+   "emoji": "🏆",
+   "image": "token",
+   "fly_reward": null,
+   "fly_reward_bips": null,
+   "check_in_threshold": null,
+   "created_at": "2026-09-15T16:25:53.135827Z",
+   "updated_at": "2026-09-16T17:20:41.782887Z"
+  }
+ ],
+ "pagination": {
+  "total_count": 2,
+  "total_pages": 1,
+  "current_page": 0,
+  "next_page": null,
+  "page_size": 50
+ }
+}

@@ -1,0 +1,90 @@
+{
+ "requestId": "9a4fc651b4d01813fc249baba431adc2",
+ "routing": "CLASSIC",
+ "isTokenApprovalApplicable": true,
+ "permitTransaction": null,
+ "quote": {
+  "chainId": 4663,
+  "swapper": "0x3e6aEE86bD7aADafd134f470EA1f86A78449eBEd",
+  "tradeType": "EXACT_INPUT",
+  "route": [
+   [
+    {
+     "type": "v3-pool",
+     "address": "0xA953CA88ff430e9487c60cA34d757414f4efdA07",
+     "tokenIn": {
+      "address": "0x322F0929c4625eD5bAd873c95208D54E1c003b2d",
+      "chainId": 4663,
+      "symbol": "TSLA",
+      "decimals": "18"
+     },
+     "tokenOut": {
+      "address": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+      "chainId": 4663,
+      "symbol": "WETH",
+      "decimals": "18"
+     },
+     "sqrtRatioX96": "213032184853003178233202307226",
+     "liquidity": "3337878446888338552395",
+     "tickCurrent": "19783",
+     "fee": "3000",
+     "amountIn": "100000000000000000",
+     "amountOut": "13789834640715802"
+    }
+   ]
+  ],
+  "input": {
+   "amount": "100000000000000000",
+   "token": "0x322F0929c4625eD5bAd873c95208D54E1c003b2d",
+   "maximumAmount": "100000000000000000"
+  },
+  "output": {
+   "amount": "13789834640715802",
+   "token": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+   "recipient": "0x3e6aEE86bD7aADafd134f470EA1f86A78449eBEd",
+   "minimumAmount": "13720885467512222"
+  },
+  "slippage": 0.5,
+  "priceImpact": 0.3,
+  "priceDifference": 0.3,
+  "gasFee": "9050100000000",
+  "gasFeeUSD": "0.01601274103729886",
+  "gasFeeQuote": "6071812000000",
+  "gasUseEstimate": "97000",
+  "routeString": "[v3] 100.00% = [0.3%] 0xA953CA88ff430e9487c60cA34d757414f4efdA07",
+  "blockNumber": "67180822",
+  "quoteId": "01a0ba3a-f1bd-8000-9160-c7cc7b740100",
+  "maxFeePerGas": "93300000",
+  "maxPriorityFeePerGas": "0",
+  "txFailureReasons": [],
+  "gasEstimates": [
+   {
+    "type": "eip1559",
+    "strategy": {
+     "limitInflationFactor": 1.15,
+     "priceInflationFactor": 1,
+     "percentileThresholdFor1559Fee": 25,
+     "minPriorityFeeGwei": 1,
+     "maxPriorityFeeGwei": 1.8,
+     "baseFeeMultiplier": 1.05,
+     "baseFeeHistoryWindow": 100,
+     "minPriorityFeeRatioOfBaseFee": 0.2,
+     "thresholdToInflateLastBlockBaseFee": 0
+    },
+    "gasLimit": "145015",
+    "gasFee": "13529899500000",
+    "maxPriorityFeePerGas": "0",
+    "maxFeePerGas": "93300000"
+   }
+  ],
+  "aggregatedOutputs": [
+   {
+    "amount": "13789834640715802",
+    "token": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+    "recipient": "0x3e6aEE86bD7aADafd134f470EA1f86A78449eBEd",
+    "bps": 10000,
+    "minAmount": "13720885467512222"
+   }
+  ]
+ }
+}

@@ -1,0 +1,1833 @@
+{
+ "captured_on": "2026-09-19",
+ "source": "GET https://api.blackbird.xyz/flynet/v1/locations (production), pages 0-33, subset",
+ "locations": [
+  {
+   "id": "dc5068ab-30f4-40d8-b9e3-b868fcae965d",
+   "object": "location",
+   "name": "Astoria",
+   "restaurant": {
+    "id": "dbd98153-257f-4293-97b9-df3174fd2753",
+    "object": "restaurant",
+    "name": "Bareburger",
+    "cuisine": [
+     "Burgers"
+    ],
+    "cohort": "fsr",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/49e7bbc8-013b-4929-9ace-5d948d474653/1x.png?v=1761056405",
+     "web_2x": "https://images.blackbird.xyz/49e7bbc8-013b-4929-9ace-5d948d474653/2x.png?v=1761056405",
+     "full_3x": "https://images.blackbird.xyz/49e7bbc8-013b-4929-9ace-5d948d474653/3x.png?v=1761056406"
+    },
+    "website_url": "https://bareburger.com/",
+    "instagram_url": null,
+    "created_at": "2025-10-15T19:30:57.950477Z",
+    "updated_at": "2026-02-04T09:01:35.877371Z"
+   },
+   "neighborhood": {
+    "id": "de94907d-e23a-4172-bce3-97069ced6971",
+    "object": "neighborhood",
+    "name": "Astoria",
+    "region": "New York, NY"
+   },
+   "slug": "bareburger-astoria",
+   "address": {
+    "street": "33-21 31st Ave",
+    "street2": "",
+    "city": "Astoria",
+    "state": "NY",
+    "zipcode": "11103",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 40.7634391,
+    "longitude": -73.92107020000002
+   },
+   "phone_number": null,
+   "time_zone": "America/New_York",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": null,
+   "reservations_enabled": false,
+   "google_place_id": "ChIJX5bnADlfwokRUhMJPlULX_o",
+   "created_at": "2025-10-15T19:42:11.309429Z",
+   "updated_at": "2026-09-19T04:00:26.491062Z"
+  },
+  {
+   "id": "019bcedb-7be0-4cac-b0b0-c96249c05f2f",
+   "object": "location",
+   "name": "Bowery",
+   "restaurant": {
+    "id": "8a69da80-1dd2-4a86-bbd4-aa1a9b72b06e",
+    "object": "restaurant",
+    "name": "Casa 13urger",
+    "cuisine": [
+     "Burgers",
+     "Burger Joint"
+    ],
+    "cohort": "qsr",
+    "price": 1,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/43d3d0e9-a36d-4f93-9f33-738e24fc7112/1x.png?v=1757700317",
+     "web_2x": "https://images.blackbird.xyz/43d3d0e9-a36d-4f93-9f33-738e24fc7112/2x.png?v=1757700318",
+     "full_3x": "https://images.blackbird.xyz/43d3d0e9-a36d-4f93-9f33-738e24fc7112/3x.png?v=1757700319"
+    },
+    "website_url": "http://casa13urger.com/",
+    "instagram_url": null,
+    "created_at": "2025-09-10T17:20:25.118323Z",
+    "updated_at": "2026-02-04T09:01:31.902618Z"
+   },
+   "neighborhood": {
+    "id": "9d054fbf-7ba8-4035-aee3-8383d0521b70",
+    "object": "neighborhood",
+    "name": "Bowery",
+    "region": "New York, NY"
+   },
+   "slug": "casa-13urger-bowery",
+   "address": {
+    "street": "1 Delancey St",
+    "street2": "",
+    "city": "New York",
+    "state": "NY",
+    "zipcode": "10002",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 40.7200245,
+    "longitude": -73.993799
+   },
+   "phone_number": null,
+   "time_zone": "America/New_York",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": null,
+   "reservations_enabled": false,
+   "google_place_id": "ChIJRa6AQwBZwokRpCvQJ_fS_bs",
+   "created_at": "2025-09-10T17:21:20.119255Z",
+   "updated_at": "2026-09-18T04:01:18.000093Z"
+  },
+  {
+   "id": "05efd035-d981-4cd6-98c3-35878f524752",
+   "object": "location",
+   "name": "Chelsea",
+   "restaurant": {
+    "id": "62c73654-2cb2-444c-b178-412d9febc665",
+    "object": "restaurant",
+    "name": "Creamline",
+    "cuisine": [
+     "Burgers"
+    ],
+    "cohort": "qsr",
+    "price": 1,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/e56ec87f-d3fd-474f-a339-4ebe4888b2af/1x.png?v=1758817107",
+     "web_2x": "https://images.blackbird.xyz/e56ec87f-d3fd-474f-a339-4ebe4888b2af/2x.png?v=1758817107",
+     "full_3x": "https://images.blackbird.xyz/e56ec87f-d3fd-474f-a339-4ebe4888b2af/3x.png?v=1758817107"
+    },
+    "website_url": "https://www.creamlinenyc.com/",
+    "instagram_url": null,
+    "created_at": "2025-09-25T16:09:44.830698Z",
+    "updated_at": "2026-02-04T09:01:33.339211Z"
+   },
+   "neighborhood": {
+    "id": "bd55726f-4a68-4f19-8a14-41c2781a4d2e",
+    "object": "neighborhood",
+    "name": "Chelsea",
+    "region": "New York, NY"
+   },
+   "slug": "creamline-chelsea",
+   "address": {
+    "street": "75 9th Ave",
+    "street2": "",
+    "city": "New York",
+    "state": "NY",
+    "zipcode": "10011",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 40.7425395,
+    "longitude": -74.0057514
+   },
+   "phone_number": null,
+   "time_zone": "America/New_York",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": null,
+   "reservations_enabled": false,
+   "google_place_id": "ChIJDaTJXL9ZwokRmcrRLE2Z1tg",
+   "created_at": "2025-09-25T16:15:43.982372Z",
+   "updated_at": "2026-09-18T04:02:36.2581Z"
+  },
+  {
+   "id": "c6132e34-ae06-40ea-83b5-c899aefc79df",
+   "object": "location",
+   "name": "Cobble Hill",
+   "restaurant": {
+    "id": "dbd98153-257f-4293-97b9-df3174fd2753",
+    "object": "restaurant",
+    "name": "Bareburger",
+    "cuisine": [
+     "Burgers"
+    ],
+    "cohort": "fsr",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/49e7bbc8-013b-4929-9ace-5d948d474653/1x.png?v=1761056405",
+     "web_2x": "https://images.blackbird.xyz/49e7bbc8-013b-4929-9ace-5d948d474653/2x.png?v=1761056405",
+     "full_3x": "https://images.blackbird.xyz/49e7bbc8-013b-4929-9ace-5d948d474653/3x.png?v=1761056406"
+    },
+    "website_url": "https://bareburger.com/",
+    "instagram_url": null,
+    "created_at": "2025-10-15T19:30:57.950477Z",
+    "updated_at": "2026-02-04T09:01:35.877371Z"
+   },
+   "neighborhood": {
+    "id": "26b8e0ea-f107-4d39-8ead-2f0a3a439013",
+    "object": "neighborhood",
+    "name": "Cobble Hill",
+    "region": "New York, NY"
+   },
+   "slug": "bareburger-cobble-hill",
+   "address": {
+    "street": "149 Court St",
+    "street2": "",
+    "city": "Brooklyn",
+    "state": "NY",
+    "zipcode": "11201",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 40.6891984,
+    "longitude": -73.9923831
+   },
+   "phone_number": null,
+   "time_zone": "America/New_York",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": null,
+   "reservations_enabled": false,
+   "google_place_id": "ChIJfd3bpU9awokRafXmlZ6HI5U",
+   "created_at": "2025-10-15T19:38:05.723638Z",
+   "updated_at": "2026-09-19T04:00:23.350185Z"
+  },
+  {
+   "id": "ef925a44-937b-4e9c-a20f-c6dd7ce6f747",
+   "object": "location",
+   "name": "Forest Hills",
+   "restaurant": {
+    "id": "dbd98153-257f-4293-97b9-df3174fd2753",
+    "object": "restaurant",
+    "name": "Bareburger",
+    "cuisine": [
+     "Burgers"
+    ],
+    "cohort": "fsr",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/49e7bbc8-013b-4929-9ace-5d948d474653/1x.png?v=1761056405",
+     "web_2x": "https://images.blackbird.xyz/49e7bbc8-013b-4929-9ace-5d948d474653/2x.png?v=1761056405",
+     "full_3x": "https://images.blackbird.xyz/49e7bbc8-013b-4929-9ace-5d948d474653/3x.png?v=1761056406"
+    },
+    "website_url": "https://bareburger.com/",
+    "instagram_url": null,
+    "created_at": "2025-10-15T19:30:57.950477Z",
+    "updated_at": "2026-02-04T09:01:35.877371Z"
+   },
+   "neighborhood": {
+    "id": "7ac6cc5b-7063-43c4-aa42-409d8d9221b0",
+    "object": "neighborhood",
+    "name": "Forest Hills",
+    "region": "New York, NY"
+   },
+   "slug": "bareburger-forrest-hills",
+   "address": {
+    "street": "71-49 Austin St",
+    "street2": "",
+    "city": "Forest Hills",
+    "state": "NY",
+    "zipcode": "11375",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 40.7197195,
+    "longitude": -73.8430323
+   },
+   "phone_number": null,
+   "time_zone": "America/New_York",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": null,
+   "reservations_enabled": false,
+   "google_place_id": "ChIJO9OzsCBewokRJPKp9E_zm4A",
+   "created_at": "2025-10-15T19:35:01.948161Z",
+   "updated_at": "2026-09-18T04:03:05.050603Z"
+  },
+  {
+   "id": "e7ee67bb-de74-49fe-864f-1bb0bf6000ff",
+   "object": "location",
+   "name": "Hell's Kitchen",
+   "restaurant": {
+    "id": "cae15e54-dbee-429d-98f2-1b32c62123c3",
+    "object": "restaurant",
+    "name": "Kings of Kobe - Wagyu Kitchen & Bar",
+    "cuisine": [
+     "Burgers",
+     "American"
+    ],
+    "cohort": "fsr",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/f94abfbb-9bab-4e70-9bc6-96a4df9310f1/1x.png",
+     "web_2x": "https://images.blackbird.xyz/f94abfbb-9bab-4e70-9bc6-96a4df9310f1/2x.png",
+     "full_3x": "https://images.blackbird.xyz/f94abfbb-9bab-4e70-9bc6-96a4df9310f1/3x.png"
+    },
+    "website_url": "https://www.kingsofkobe.com/",
+    "instagram_url": null,
+    "created_at": "2024-11-27T17:45:37.80293Z",
+    "updated_at": "2026-02-04T09:01:00.541899Z"
+   },
+   "neighborhood": {
+    "id": "37f3eac8-2fff-483e-affb-a8e4dbf5c2d3",
+    "object": "neighborhood",
+    "name": "Hell's Kitchen",
+    "region": "New York, NY"
+   },
+   "slug": "kings-of-kobe---wagy-hells-kitchen",
+   "address": {
+    "street": "650 W 42nd St",
+    "street2": "",
+    "city": "New York",
+    "state": "NY",
+    "zipcode": "10036",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 40.76131827548253,
+    "longitude": -74.00028554232841
+   },
+   "phone_number": "(414) 710-9970",
+   "time_zone": "America/New_York",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": "https://www.opentable.com/r/kings-of-kobe-wagyu-kitchen-and-bar-new-york",
+   "reservations_enabled": true,
+   "google_place_id": "ChIJlaUCHbxZwokRUPWZkyNQyYg",
+   "created_at": "2024-12-13T17:51:07.995942Z",
+   "updated_at": "2026-09-18T04:03:32.449972Z"
+  },
+  {
+   "id": "aec582dc-5f47-40c3-ab10-1da436d69e2e",
+   "object": "location",
+   "name": "Hell's Kitchen",
+   "restaurant": {
+    "id": "dbd98153-257f-4293-97b9-df3174fd2753",
+    "object": "restaurant",
+    "name": "Bareburger",
+    "cuisine": [
+     "Burgers"
+    ],
+    "cohort": "fsr",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/49e7bbc8-013b-4929-9ace-5d948d474653/1x.png?v=1761056405",
+     "web_2x": "https://images.blackbird.xyz/49e7bbc8-013b-4929-9ace-5d948d474653/2x.png?v=1761056405",
+     "full_3x": "https://images.blackbird.xyz/49e7bbc8-013b-4929-9ace-5d948d474653/3x.png?v=1761056406"
+    },
+    "website_url": "https://bareburger.com/",
+    "instagram_url": null,
+    "created_at": "2025-10-15T19:30:57.950477Z",
+    "updated_at": "2026-02-04T09:01:35.877371Z"
+   },
+   "neighborhood": {
+    "id": "37f3eac8-2fff-483e-affb-a8e4dbf5c2d3",
+    "object": "neighborhood",
+    "name": "Hell's Kitchen",
+    "region": "New York, NY"
+   },
+   "slug": "bareburger-bareburger",
+   "address": {
+    "street": "366 W 46th St",
+    "street2": "",
+    "city": "New York",
+    "state": "NY",
+    "zipcode": "10036",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 40.7606624,
+    "longitude": -73.9903131
+   },
+   "phone_number": null,
+   "time_zone": "America/New_York",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": null,
+   "reservations_enabled": false,
+   "google_place_id": "ChIJhTdv51NYwokR7V105uVzf8g",
+   "created_at": "2025-10-15T19:32:59.5231Z",
+   "updated_at": "2026-09-18T04:02:16.567504Z"
+  },
+  {
+   "id": "8e57cb15-d237-4ea8-91df-d1ef2078afe7",
+   "object": "location",
+   "name": "Hell's Kitchen",
+   "restaurant": {
+    "id": "20d0ee42-c80f-42e4-b959-d3bf1c844b4d",
+    "object": "restaurant",
+    "name": "Lovely's Old Fashioned",
+    "cuisine": [
+     "Burger Joint"
+    ],
+    "cohort": "qsr",
+    "price": 1,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/1461565a-dd92-44f8-aa05-fb32c831a108/1x.png",
+     "web_2x": "https://images.blackbird.xyz/1461565a-dd92-44f8-aa05-fb32c831a108/2x.png",
+     "full_3x": "https://images.blackbird.xyz/1461565a-dd92-44f8-aa05-fb32c831a108/3x.png"
+    },
+    "website_url": "https://lovelysoldfashioned.com/",
+    "instagram_url": null,
+    "created_at": "2024-03-04T17:44:00.139738Z",
+    "updated_at": "2026-02-04T09:00:49.777516Z"
+   },
+   "neighborhood": {
+    "id": "37f3eac8-2fff-483e-affb-a8e4dbf5c2d3",
+    "object": "neighborhood",
+    "name": "Hell's Kitchen",
+    "region": "New York, NY"
+   },
+   "slug": "lovelys-old-fashion-hells-kitchen",
+   "address": {
+    "street": "642 9th Ave",
+    "street2": "",
+    "city": "New York",
+    "state": "NY",
+    "zipcode": "10036",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 40.760455268241145,
+    "longitude": -73.99095717602724
+   },
+   "phone_number": "+14146676388",
+   "time_zone": "America/New_York",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": null,
+   "reservations_enabled": false,
+   "google_place_id": "ChIJd4_SnFJZwokRBeuZ-YwGaUw",
+   "created_at": "2024-03-05T18:27:27.555299Z",
+   "updated_at": "2026-09-18T04:02:35.055002Z"
+  },
+  {
+   "id": "b62d4b9a-b5f5-4796-ba06-240fae5d1665",
+   "object": "location",
+   "name": "Alphabet City",
+   "restaurant": {
+    "id": "8c25d991-e42c-4311-b475-b7ab9700074e",
+    "object": "restaurant",
+    "name": "Accidental Bar",
+    "cuisine": [
+     "Sake Bar",
+     "Japanese Snacks"
+    ],
+    "cohort": "bar",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/ada7cfa5-51a8-42d5-9d24-05333d5b761d/1x.png",
+     "web_2x": "https://images.blackbird.xyz/ada7cfa5-51a8-42d5-9d24-05333d5b761d/2x.png",
+     "full_3x": "https://images.blackbird.xyz/ada7cfa5-51a8-42d5-9d24-05333d5b761d/3x.png"
+    },
+    "website_url": "https://www.accidentalbar.com/",
+    "instagram_url": null,
+    "created_at": "2025-03-20T14:59:26.620519Z",
+    "updated_at": "2026-03-09T22:32:49.40805Z"
+   },
+   "neighborhood": {
+    "id": "ebf302d0-b1a4-4589-9d77-033654c43917",
+    "object": "neighborhood",
+    "name": "Alphabet City",
+    "region": "New York, NY"
+   },
+   "slug": "accidental-bar-alphabet-city",
+   "address": {
+    "street": "98 Loisaida Ave",
+    "street2": "",
+    "city": "New York",
+    "state": "NY",
+    "zipcode": "10009",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 40.72401242241888,
+    "longitude": -73.97899483253047
+   },
+   "phone_number": "(414) 348-4109",
+   "time_zone": "America/New_York",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": "https://resy.com/cities/new-york-ny/venues/accidental-bar?date=2025-03-26&seats=2",
+   "reservations_enabled": true,
+   "google_place_id": "ChIJUeg8neFZwokRjTD4oCwTPGk",
+   "created_at": "2025-03-20T19:00:49.004144Z",
+   "updated_at": "2026-09-18T04:01:42.732369Z"
+  },
+  {
+   "id": "ef31a7c3-3258-463a-9e72-d10e3daf377a",
+   "object": "location",
+   "name": "Boerum Hill",
+   "restaurant": {
+    "id": "c8f80562-4eec-41e1-9250-aa00330f2570",
+    "object": "restaurant",
+    "name": "The Little Pig",
+    "cuisine": [
+     "Bar"
+    ],
+    "cohort": "bar",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/651db06c-5ef4-4a81-9b6e-293f30eeec6f/1x.png?v=1778601227",
+     "web_2x": "https://images.blackbird.xyz/651db06c-5ef4-4a81-9b6e-293f30eeec6f/2x.png?v=1778601227",
+     "full_3x": "https://images.blackbird.xyz/651db06c-5ef4-4a81-9b6e-293f30eeec6f/3x.png?v=1778601227"
+    },
+    "website_url": "https://www.thelittlepigbk.com/",
+    "instagram_url": null,
+    "created_at": "2025-03-18T20:28:48.696725Z",
+    "updated_at": "2026-05-12T15:53:47.515289Z"
+   },
+   "neighborhood": {
+    "id": "00a97764-a58a-4b76-9049-1a08fb6dbffc",
+    "object": "neighborhood",
+    "name": "Boerum Hill",
+    "region": "New York, NY"
+   },
+   "slug": "the-little-pig-boerum-hill",
+   "address": {
+    "street": "497 Atlantic Ave",
+    "street2": "",
+    "city": "Brooklyn",
+    "state": "NY",
+    "zipcode": "11217",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 40.68579241382005,
+    "longitude": -73.98131786038537
+   },
+   "phone_number": null,
+   "time_zone": "America/New_York",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": null,
+   "reservations_enabled": false,
+   "google_place_id": "ChIJF2grHfFbwokRMJul5yRY4cw",
+   "created_at": "2025-03-18T21:39:32.48692Z",
+   "updated_at": "2026-09-18T04:02:44.986386Z"
+  },
+  {
+   "id": "f01433d1-4d01-4fe8-bb19-4d666d81979d",
+   "object": "location",
+   "name": "Bowery",
+   "restaurant": {
+    "id": "0219727e-3220-4b0d-9259-ef0671b59c13",
+    "object": "restaurant",
+    "name": "Pinky Swear",
+    "cuisine": [
+     "American",
+     "Bar"
+    ],
+    "cohort": "bar",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/63313601-eca8-440a-94a5-6d61531c170c/1x.png?v=1785180339",
+     "web_2x": "https://images.blackbird.xyz/63313601-eca8-440a-94a5-6d61531c170c/2x.png?v=1785180339",
+     "full_3x": "https://images.blackbird.xyz/63313601-eca8-440a-94a5-6d61531c170c/3x.png?v=1785180339"
+    },
+    "website_url": "http://www.pinkyswearnyc.com/",
+    "instagram_url": null,
+    "created_at": "2026-07-27T15:15:23.652662Z",
+    "updated_at": "2026-07-27T19:25:39.52356Z"
+   },
+   "neighborhood": {
+    "id": "9d054fbf-7ba8-4035-aee3-8383d0521b70",
+    "object": "neighborhood",
+    "name": "Bowery",
+    "region": "New York, NY"
+   },
+   "slug": "pinky-swear-pinky-swear",
+   "address": {
+    "street": "171A Chrystie St",
+    "street2": "",
+    "city": "New York",
+    "state": "NY",
+    "zipcode": "10002",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 40.7208665,
+    "longitude": -73.992656
+   },
+   "phone_number": null,
+   "time_zone": "America/New_York",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": null,
+   "reservations_enabled": false,
+   "google_place_id": "ChIJBXsM1G1ZwokReuZHJHD_SC4",
+   "created_at": "2026-07-27T15:16:24.843417Z",
+   "updated_at": "2026-09-18T04:02:20.167006Z"
+  },
+  {
+   "id": "c2437975-6a06-4966-8ef8-272674ed4920",
+   "object": "location",
+   "name": "Brooklyn Heights",
+   "restaurant": {
+    "id": "c52f3ae0-fea3-44c6-83af-6c02c6f7963c",
+    "object": "restaurant",
+    "name": "Someday Bar",
+    "cuisine": [
+     "Bar"
+    ],
+    "cohort": "bar",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/80e4a9de-7353-4008-be3d-b1ceb08386c0/1x.png",
+     "web_2x": "https://images.blackbird.xyz/80e4a9de-7353-4008-be3d-b1ceb08386c0/2x.png",
+     "full_3x": "https://images.blackbird.xyz/80e4a9de-7353-4008-be3d-b1ceb08386c0/3x.png"
+    },
+    "website_url": "https://www.somedaybarnyc.com/",
+    "instagram_url": "https://www.instagram.com/somedaybarnyc",
+    "created_at": "2025-01-29T16:17:30.328519Z",
+    "updated_at": "2026-02-04T09:01:00.54726Z"
+   },
+   "neighborhood": {
+    "id": "00a97764-a58a-4b76-9049-1a08fb6dbffc",
+    "object": "neighborhood",
+    "name": "Boerum Hill",
+    "region": "New York, NY"
+   },
+   "slug": "someday-bar-brooklyn-heights",
+   "address": {
+    "street": "364 Atlantic Ave",
+    "street2": "",
+    "city": "Brooklyn",
+    "state": "NY",
+    "zipcode": "11217",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 40.68729244180931,
+    "longitude": -73.98635791349348
+   },
+   "phone_number": "+1(414) 895-6317",
+   "time_zone": "America/New_York",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": null,
+   "reservations_enabled": false,
+   "google_place_id": "ChIJW7hnbe5bwokRG2IHXWO1xcA",
+   "created_at": "2025-01-30T21:59:46.02278Z",
+   "updated_at": "2026-09-18T04:03:18.124764Z"
+  },
+  {
+   "id": "9191909c-e915-4031-971b-42ef7c509de5",
+   "object": "location",
+   "name": "Bryant Park",
+   "restaurant": {
+    "id": "07f6ea4c-bedd-4042-8d8f-a80e09901d5e",
+    "object": "restaurant",
+    "name": "Talea",
+    "cuisine": [
+     "Brewery",
+     "Bar"
+    ],
+    "cohort": "bar",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/0fd0b3fa-cf72-4c5b-9444-f8bdb572c47c/1x.png",
+     "web_2x": "https://images.blackbird.xyz/0fd0b3fa-cf72-4c5b-9444-f8bdb572c47c/2x.png",
+     "full_3x": "https://images.blackbird.xyz/0fd0b3fa-cf72-4c5b-9444-f8bdb572c47c/3x.png"
+    },
+    "website_url": "https://www.taleabeer.com/",
+    "instagram_url": null,
+    "created_at": "2023-12-12T20:18:36.444788Z",
+    "updated_at": "2026-02-04T09:00:47.190498Z"
+   },
+   "neighborhood": {
+    "id": "b3cdae07-797a-4aee-a2eb-53116193f3b7",
+    "object": "neighborhood",
+    "name": "Bryant Park",
+    "region": "New York, NY"
+   },
+   "slug": "talea-bryant-park",
+   "address": {
+    "street": "22 W 40th St",
+    "street2": "",
+    "city": "New York",
+    "state": "NY",
+    "zipcode": "10018",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 40.75271460210409,
+    "longitude": -73.98305907790989
+   },
+   "phone_number": "(414) 348-9033",
+   "time_zone": "America/New_York",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": null,
+   "reservations_enabled": false,
+   "google_place_id": "ChIJ8YhauntZwokRzw7MOoKb1-I",
+   "created_at": "2025-03-23T20:14:10.028195Z",
+   "updated_at": "2026-09-18T04:01:17.789433Z"
+  },
+  {
+   "id": "4326ef9c-7559-4ba1-a6e4-e47eb580dac1",
+   "object": "location",
+   "name": "Astoria",
+   "restaurant": {
+    "id": "b039eef8-05dc-4200-bb2b-8747046c1087",
+    "object": "restaurant",
+    "name": "Sotto la Luna",
+    "cuisine": [
+     "Italian"
+    ],
+    "cohort": "fsr",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/b2d61b3b-537e-4cae-a632-8257fe34008e/1x.png?v=1777909512",
+     "web_2x": "https://images.blackbird.xyz/b2d61b3b-537e-4cae-a632-8257fe34008e/2x.png?v=1777909512",
+     "full_3x": "https://images.blackbird.xyz/b2d61b3b-537e-4cae-a632-8257fe34008e/3x.png?v=1777909512"
+    },
+    "website_url": "https://www.sottolalunanyc.com/",
+    "instagram_url": null,
+    "created_at": "2026-04-27T20:02:37.147404Z",
+    "updated_at": "2026-05-04T15:45:12.984567Z"
+   },
+   "neighborhood": {
+    "id": "de94907d-e23a-4172-bce3-97069ced6971",
+    "object": "neighborhood",
+    "name": "Astoria",
+    "region": "New York, NY"
+   },
+   "slug": "sotto-la-luna-astoria",
+   "address": {
+    "street": "34-39 31st St",
+    "street2": "",
+    "city": "Astoria",
+    "state": "NY",
+    "zipcode": "11106",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 40.7582411,
+    "longitude": -73.92817939999999
+   },
+   "phone_number": null,
+   "time_zone": "America/New_York",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": "https://resy.com/cities/new-york-ny/venues/sotto-la-luna",
+   "reservations_enabled": true,
+   "google_place_id": "ChIJBTuSXqhfwokRpjEVqzy1U6U",
+   "created_at": "2026-04-27T20:03:52.40904Z",
+   "updated_at": "2026-09-18T04:00:36.171344Z"
+  },
+  {
+   "id": "94216395-0542-492b-954e-a76e7ce644ef",
+   "object": "location",
+   "name": "Bedford-Stuyvesant",
+   "restaurant": {
+    "id": "0760b9b8-75e7-495f-a2db-83e0d4eb5d1f",
+    "object": "restaurant",
+    "name": "Cicchetti",
+    "cuisine": [
+     "Wine Bar",
+     "Italian"
+    ],
+    "cohort": "fsr",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/c8a52533-e35b-4185-b434-aeafa8560c63/1x.png?v=1780338660",
+     "web_2x": "https://images.blackbird.xyz/c8a52533-e35b-4185-b434-aeafa8560c63/2x.png?v=1780338661",
+     "full_3x": "https://images.blackbird.xyz/c8a52533-e35b-4185-b434-aeafa8560c63/3x.png?v=1780338661"
+    },
+    "website_url": "https://cicchettibk.com/",
+    "instagram_url": null,
+    "created_at": "2026-06-01T18:29:38.896533Z",
+    "updated_at": "2026-06-01T18:31:01.468687Z"
+   },
+   "neighborhood": {
+    "id": "3d51d652-351a-4731-9550-ebbc2d406d30",
+    "object": "neighborhood",
+    "name": "Bedford-Stuyvesant",
+    "region": "New York, NY"
+   },
+   "slug": "cicchetti-bedford-stuyvesant",
+   "address": {
+    "street": "185 Howard Ave",
+    "street2": "",
+    "city": "Brooklyn",
+    "state": "NY",
+    "zipcode": "11233",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 40.6819389,
+    "longitude": -73.91964949999999
+   },
+   "phone_number": null,
+   "time_zone": "America/New_York",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": "https://tables.toasttab.com/cicchetti-bk-185-howard-avenue/reserve?",
+   "reservations_enabled": true,
+   "google_place_id": "ChIJ71SONs9dwokRJC0NxZRa1eU",
+   "created_at": "2026-06-01T18:30:07.83597Z",
+   "updated_at": "2026-09-18T04:00:11.315913Z"
+  },
+  {
+   "id": "38649e09-d08c-4900-8d82-b489303dbd76",
+   "object": "location",
+   "name": "Bowery",
+   "restaurant": {
+    "id": "85580120-649c-4484-bd27-1acbc6a83846",
+    "object": "restaurant",
+    "name": "Ainslie Bowery",
+    "cuisine": [
+     "Italian"
+    ],
+    "cohort": "fsr",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/1a013ff3-6d3c-4ca5-b751-b272679d284e/1x.png?v=1763566027",
+     "web_2x": "https://images.blackbird.xyz/1a013ff3-6d3c-4ca5-b751-b272679d284e/2x.png?v=1763566027",
+     "full_3x": "https://images.blackbird.xyz/1a013ff3-6d3c-4ca5-b751-b272679d284e/3x.png?v=1763566027"
+    },
+    "website_url": "http://www.ainsliebowery.com/?utm_source=local&utm_medium=organic&utm_campaign=gbp-ainsliebowery",
+    "instagram_url": null,
+    "created_at": "2025-11-19T15:19:31.827762Z",
+    "updated_at": "2026-02-04T09:01:39.040819Z"
+   },
+   "neighborhood": {
+    "id": "9d054fbf-7ba8-4035-aee3-8383d0521b70",
+    "object": "neighborhood",
+    "name": "Bowery",
+    "region": "New York, NY"
+   },
+   "slug": "ainslie-bowery-bowery",
+   "address": {
+    "street": "199 Bowery",
+    "street2": "",
+    "city": "New York",
+    "state": "NY",
+    "zipcode": "10002",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 40.7209818,
+    "longitude": -73.9931495
+   },
+   "phone_number": null,
+   "time_zone": "America/New_York",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": "https://www.opentable.com/booking/restref/availability",
+   "reservations_enabled": true,
+   "google_place_id": "ChIJYX4u-qRZwokRzEn18urM0vM",
+   "created_at": "2025-11-19T15:21:38.419913Z",
+   "updated_at": "2026-09-18T04:00:36.429975Z"
+  },
+  {
+   "id": "4ef788a9-9733-46a1-975b-6e03fa6847a6",
+   "object": "location",
+   "name": "Carroll Gardens",
+   "restaurant": {
+    "id": "ae38ae11-0deb-40a5-8536-8db89646b101",
+    "object": "restaurant",
+    "name": "Frankies 457 Spuntino",
+    "cuisine": [
+     "Italian"
+    ],
+    "cohort": "fsr",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/c14853e8-e02e-4814-b7ab-7fc2769b4988/1x.png",
+     "web_2x": "https://images.blackbird.xyz/c14853e8-e02e-4814-b7ab-7fc2769b4988/2x.png",
+     "full_3x": "https://images.blackbird.xyz/c14853e8-e02e-4814-b7ab-7fc2769b4988/3x.png"
+    },
+    "website_url": "https://www.frankiesspuntino.com/menus/",
+    "instagram_url": null,
+    "created_at": "2024-01-16T22:27:27.51223Z",
+    "updated_at": "2026-02-04T09:00:47.190813Z"
+   },
+   "neighborhood": {
+    "id": "5dc5f20d-2706-43e5-872c-f82a5921eddd",
+    "object": "neighborhood",
+    "name": "Carroll Gardens",
+    "region": "New York, NY"
+   },
+   "slug": "frankies-457-spuntin-carroll-gardens",
+   "address": {
+    "street": "457 Court St",
+    "street2": "",
+    "city": "Brooklyn",
+    "state": "NY",
+    "zipcode": "11231",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 40.6773983049882,
+    "longitude": -73.99818755092625
+   },
+   "phone_number": "+14149282457",
+   "time_zone": "America/New_York",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": "https://www.opentable.com/restref/client/?restref=251353&lang=en-US&ot_source=Restaurant%20website&corrid=152f0acc-d2f4-4571-a472-89c8f8cee3c9",
+   "reservations_enabled": true,
+   "google_place_id": "ChIJm7uvMfZawokRNR0XRCotzWY",
+   "created_at": "2025-03-26T20:24:55.266287Z",
+   "updated_at": "2026-09-18T04:01:39.334527Z"
+  },
+  {
+   "id": "ec6a8bc5-69d8-40f2-97a9-4293c5d03c4e",
+   "object": "location",
+   "name": "Carroll Gardens",
+   "restaurant": {
+    "id": "7de4632e-fe1b-4a61-960f-269c4adbecd4",
+    "object": "restaurant",
+    "name": "Osteria Radisa",
+    "cuisine": [
+     "Italian"
+    ],
+    "cohort": "fsr",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/1182d74a-f014-459b-848b-ba80570dc9ba/1x.png?v=1761059617",
+     "web_2x": "https://images.blackbird.xyz/1182d74a-f014-459b-848b-ba80570dc9ba/2x.png?v=1761059617",
+     "full_3x": "https://images.blackbird.xyz/1182d74a-f014-459b-848b-ba80570dc9ba/3x.png?v=1761059618"
+    },
+    "website_url": "https://www.radisabrooklyn.com/",
+    "instagram_url": null,
+    "created_at": "2025-10-21T15:04:03.777091Z",
+    "updated_at": "2026-02-04T09:01:35.878241Z"
+   },
+   "neighborhood": {
+    "id": "5dc5f20d-2706-43e5-872c-f82a5921eddd",
+    "object": "neighborhood",
+    "name": "Carroll Gardens",
+    "region": "New York, NY"
+   },
+   "slug": "osteria-radisa-carroll-gardens",
+   "address": {
+    "street": "241 Smith St",
+    "street2": "",
+    "city": "Brooklyn",
+    "state": "NY",
+    "zipcode": "11231",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 40.68357719999999,
+    "longitude": -73.9923676
+   },
+   "phone_number": null,
+   "time_zone": "America/New_York",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": "https://resy.com/cities/new-york-ny/venues/radisa-osteria?date=2025-10-21&seats=2",
+   "reservations_enabled": true,
+   "google_place_id": "ChIJ23q-NABbwokRE84Awz0yWVA",
+   "created_at": "2025-10-21T15:23:06.55495Z",
+   "updated_at": "2026-09-08T15:48:55.56585Z"
+  },
+  {
+   "id": "b5c35e65-5dda-48dd-b939-eaadb6b21e23",
+   "object": "location",
+   "name": "116 Montgomery St",
+   "restaurant": {
+    "id": "a53dd63e-69d6-457a-bc72-891ec96fb4fb",
+    "object": "restaurant",
+    "name": "Proper Food",
+    "cuisine": [
+     "American",
+     "Salads & Wraps",
+     "10X Coffee Club",
+     "Sandwiches"
+    ],
+    "cohort": "qsr",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/705e3e7a-d45c-4b50-a8ea-1289c6b4b620/1x.png?v=1774918213",
+     "web_2x": "https://images.blackbird.xyz/705e3e7a-d45c-4b50-a8ea-1289c6b4b620/2x.png?v=1774918213",
+     "full_3x": "https://images.blackbird.xyz/705e3e7a-d45c-4b50-a8ea-1289c6b4b620/3x.png?v=1774918213"
+    },
+    "website_url": "http://properfood.com/",
+    "instagram_url": null,
+    "created_at": "2026-03-31T00:44:33.976202Z",
+    "updated_at": "2026-06-08T17:58:06.007488Z"
+   },
+   "neighborhood": {
+    "id": "2fda0a0a-74d5-4aa5-b40b-b55031c4fbb2",
+    "object": "neighborhood",
+    "name": "Financial District",
+    "region": "San Francisco, CA"
+   },
+   "slug": "proper-food-financial-district",
+   "address": {
+    "street": "116 Montgomery St",
+    "street2": "",
+    "city": "San Francisco",
+    "state": "CA",
+    "zipcode": "94104",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 37.7903812,
+    "longitude": -122.4020921
+   },
+   "phone_number": null,
+   "time_zone": "America/Los_Angeles",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": null,
+   "reservations_enabled": false,
+   "google_place_id": "ChIJ1Sko3YmAhYARauDzf_eZXL8",
+   "created_at": "2026-03-31T00:47:36.572754Z",
+   "updated_at": "2026-09-18T04:02:16.45023Z"
+  },
+  {
+   "id": "cc1f429e-7a4f-4d8f-8d4d-507554985f96",
+   "object": "location",
+   "name": "180 Howard",
+   "restaurant": {
+    "id": "a53dd63e-69d6-457a-bc72-891ec96fb4fb",
+    "object": "restaurant",
+    "name": "Proper Food",
+    "cuisine": [
+     "American",
+     "Salads & Wraps",
+     "10X Coffee Club",
+     "Sandwiches"
+    ],
+    "cohort": "qsr",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/705e3e7a-d45c-4b50-a8ea-1289c6b4b620/1x.png?v=1774918213",
+     "web_2x": "https://images.blackbird.xyz/705e3e7a-d45c-4b50-a8ea-1289c6b4b620/2x.png?v=1774918213",
+     "full_3x": "https://images.blackbird.xyz/705e3e7a-d45c-4b50-a8ea-1289c6b4b620/3x.png?v=1774918213"
+    },
+    "website_url": "http://properfood.com/",
+    "instagram_url": null,
+    "created_at": "2026-03-31T00:44:33.976202Z",
+    "updated_at": "2026-06-08T17:58:06.007488Z"
+   },
+   "neighborhood": {
+    "id": "49044e77-4442-4832-b753-bdc873d69ee7",
+    "object": "neighborhood",
+    "name": "SOMA",
+    "region": "San Francisco, CA"
+   },
+   "slug": "proper-food-soma",
+   "address": {
+    "street": "180 Howard St",
+    "street2": "",
+    "city": "San Francisco",
+    "state": "CA",
+    "zipcode": "94105",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 37.7908188,
+    "longitude": -122.3933928
+   },
+   "phone_number": null,
+   "time_zone": "America/Los_Angeles",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": null,
+   "reservations_enabled": false,
+   "google_place_id": "ChIJY_hfT1qBhYARBkO7I9QYu3M",
+   "created_at": "2026-03-31T00:45:30.419617Z",
+   "updated_at": "2026-09-18T04:01:27.798108Z"
+  },
+  {
+   "id": "9e257f00-83d2-4bd0-ad70-f03c9dc4644d",
+   "object": "location",
+   "name": "2 Embarcadero",
+   "restaurant": {
+    "id": "a53dd63e-69d6-457a-bc72-891ec96fb4fb",
+    "object": "restaurant",
+    "name": "Proper Food",
+    "cuisine": [
+     "American",
+     "Salads & Wraps",
+     "10X Coffee Club",
+     "Sandwiches"
+    ],
+    "cohort": "qsr",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/705e3e7a-d45c-4b50-a8ea-1289c6b4b620/1x.png?v=1774918213",
+     "web_2x": "https://images.blackbird.xyz/705e3e7a-d45c-4b50-a8ea-1289c6b4b620/2x.png?v=1774918213",
+     "full_3x": "https://images.blackbird.xyz/705e3e7a-d45c-4b50-a8ea-1289c6b4b620/3x.png?v=1774918213"
+    },
+    "website_url": "http://properfood.com/",
+    "instagram_url": null,
+    "created_at": "2026-03-31T00:44:33.976202Z",
+    "updated_at": "2026-06-08T17:58:06.007488Z"
+   },
+   "neighborhood": {
+    "id": "2fda0a0a-74d5-4aa5-b40b-b55031c4fbb2",
+    "object": "neighborhood",
+    "name": "Financial District",
+    "region": "San Francisco, CA"
+   },
+   "slug": "proper-food-2-embarcadero",
+   "address": {
+    "street": "2 Embarcadero Ctr",
+    "street2": "",
+    "city": "San Francisco",
+    "state": "CA",
+    "zipcode": "94111",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 37.79478810000001,
+    "longitude": -122.3984101
+   },
+   "phone_number": null,
+   "time_zone": "America/Los_Angeles",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": null,
+   "reservations_enabled": false,
+   "google_place_id": "ChIJOy5hLYeBhYARbdHa5UW5l0Y",
+   "created_at": "2026-05-15T15:57:32.347067Z",
+   "updated_at": "2026-09-18T04:03:06.94506Z"
+  },
+  {
+   "id": "37d191f8-e0f8-497e-94b3-4d4f0e39665f",
+   "object": "location",
+   "name": "35 Spear St",
+   "restaurant": {
+    "id": "a53dd63e-69d6-457a-bc72-891ec96fb4fb",
+    "object": "restaurant",
+    "name": "Proper Food",
+    "cuisine": [
+     "American",
+     "Salads & Wraps",
+     "10X Coffee Club",
+     "Sandwiches"
+    ],
+    "cohort": "qsr",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/705e3e7a-d45c-4b50-a8ea-1289c6b4b620/1x.png?v=1774918213",
+     "web_2x": "https://images.blackbird.xyz/705e3e7a-d45c-4b50-a8ea-1289c6b4b620/2x.png?v=1774918213",
+     "full_3x": "https://images.blackbird.xyz/705e3e7a-d45c-4b50-a8ea-1289c6b4b620/3x.png?v=1774918213"
+    },
+    "website_url": "http://properfood.com/",
+    "instagram_url": null,
+    "created_at": "2026-03-31T00:44:33.976202Z",
+    "updated_at": "2026-06-08T17:58:06.007488Z"
+   },
+   "neighborhood": {
+    "id": "2fda0a0a-74d5-4aa5-b40b-b55031c4fbb2",
+    "object": "neighborhood",
+    "name": "Financial District",
+    "region": "San Francisco, CA"
+   },
+   "slug": "proper-food-35-spear-st",
+   "address": {
+    "street": "35 Spear St",
+    "street2": "",
+    "city": "San Francisco",
+    "state": "CA",
+    "zipcode": "94105",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 37.7934766,
+    "longitude": -122.3949946
+   },
+   "phone_number": null,
+   "time_zone": "America/Los_Angeles",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": null,
+   "reservations_enabled": false,
+   "google_place_id": "ChIJOcUlG2SAhYARsXj5YpdHKRM",
+   "created_at": "2026-06-10T18:35:18.256126Z",
+   "updated_at": "2026-09-18T04:00:14.337436Z"
+  },
+  {
+   "id": "ad798685-f1f1-463e-bd86-b5bcd9b23225",
+   "object": "location",
+   "name": "45 Fremont St",
+   "restaurant": {
+    "id": "a53dd63e-69d6-457a-bc72-891ec96fb4fb",
+    "object": "restaurant",
+    "name": "Proper Food",
+    "cuisine": [
+     "American",
+     "Salads & Wraps",
+     "10X Coffee Club",
+     "Sandwiches"
+    ],
+    "cohort": "qsr",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/705e3e7a-d45c-4b50-a8ea-1289c6b4b620/1x.png?v=1774918213",
+     "web_2x": "https://images.blackbird.xyz/705e3e7a-d45c-4b50-a8ea-1289c6b4b620/2x.png?v=1774918213",
+     "full_3x": "https://images.blackbird.xyz/705e3e7a-d45c-4b50-a8ea-1289c6b4b620/3x.png?v=1774918213"
+    },
+    "website_url": "http://properfood.com/",
+    "instagram_url": null,
+    "created_at": "2026-03-31T00:44:33.976202Z",
+    "updated_at": "2026-06-08T17:58:06.007488Z"
+   },
+   "neighborhood": {
+    "id": "49044e77-4442-4832-b753-bdc873d69ee7",
+    "object": "neighborhood",
+    "name": "SOMA",
+    "region": "San Francisco, CA"
+   },
+   "slug": "proper-food-45-fremont-st",
+   "address": {
+    "street": "45 Fremont St",
+    "street2": "",
+    "city": "San Francisco",
+    "state": "CA",
+    "zipcode": "94105",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 37.7912489,
+    "longitude": -122.3971488
+   },
+   "phone_number": null,
+   "time_zone": "America/Los_Angeles",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": null,
+   "reservations_enabled": false,
+   "google_place_id": "ChIJTy2Z6JyBhYARymgMIX3hdAw",
+   "created_at": "2026-06-10T18:40:24.915696Z",
+   "updated_at": "2026-09-18T04:03:01.90946Z"
+  },
+  {
+   "id": "d64ddd43-9125-435c-8617-a951715922e5",
+   "object": "location",
+   "name": "525 Market St",
+   "restaurant": {
+    "id": "a53dd63e-69d6-457a-bc72-891ec96fb4fb",
+    "object": "restaurant",
+    "name": "Proper Food",
+    "cuisine": [
+     "American",
+     "Salads & Wraps",
+     "10X Coffee Club",
+     "Sandwiches"
+    ],
+    "cohort": "qsr",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/705e3e7a-d45c-4b50-a8ea-1289c6b4b620/1x.png?v=1774918213",
+     "web_2x": "https://images.blackbird.xyz/705e3e7a-d45c-4b50-a8ea-1289c6b4b620/2x.png?v=1774918213",
+     "full_3x": "https://images.blackbird.xyz/705e3e7a-d45c-4b50-a8ea-1289c6b4b620/3x.png?v=1774918213"
+    },
+    "website_url": "http://properfood.com/",
+    "instagram_url": null,
+    "created_at": "2026-03-31T00:44:33.976202Z",
+    "updated_at": "2026-06-08T17:58:06.007488Z"
+   },
+   "neighborhood": {
+    "id": "49044e77-4442-4832-b753-bdc873d69ee7",
+    "object": "neighborhood",
+    "name": "SOMA",
+    "region": "San Francisco, CA"
+   },
+   "slug": "proper-food-525-market-st",
+   "address": {
+    "street": "525 Market St",
+    "street2": "",
+    "city": "San Francisco",
+    "state": "CA",
+    "zipcode": "94105",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 37.7905181,
+    "longitude": -122.3995056
+   },
+   "phone_number": null,
+   "time_zone": "America/Los_Angeles",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": null,
+   "reservations_enabled": false,
+   "google_place_id": "ChIJRW-dZSaBhYARRlbh6eOytiM",
+   "created_at": "2026-05-15T15:58:31.965611Z",
+   "updated_at": "2026-09-18T04:02:08.619844Z"
+  },
+  {
+   "id": "7a460693-ee48-4206-8205-454c9ace6296",
+   "object": "location",
+   "name": "Baker",
+   "restaurant": {
+    "id": "a896bcb6-39b5-42d5-b7c8-1a159f8188b0",
+    "object": "restaurant",
+    "name": "Adventure Time Bar",
+    "cuisine": [
+     "Cocktail Bar"
+    ],
+    "cohort": "bar",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/2a8db8d3-d3bb-4368-82d9-541a579912c9/1x.png?v=1771529680",
+     "web_2x": "https://images.blackbird.xyz/2a8db8d3-d3bb-4368-82d9-541a579912c9/2x.png?v=1771529681",
+     "full_3x": "https://images.blackbird.xyz/2a8db8d3-d3bb-4368-82d9-541a579912c9/3x.png?v=1771529682"
+    },
+    "website_url": "https://spotlight-series-den2026.netlify.app/",
+    "instagram_url": null,
+    "created_at": "2026-01-28T20:49:28.326765Z",
+    "updated_at": "2026-06-12T20:48:14.485329Z"
+   },
+   "neighborhood": {
+    "id": "ab0ba6d3-a773-47b5-b997-32ef8691f3a4",
+    "object": "neighborhood",
+    "name": "Baker",
+    "region": "Denver, CO"
+   },
+   "slug": "adventure-time-bar-baker",
+   "address": {
+    "street": "101 Broadway #9",
+    "street2": "",
+    "city": "Denver",
+    "state": "CO",
+    "zipcode": "80203",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 39.7186348,
+    "longitude": -104.9876891
+   },
+   "phone_number": null,
+   "time_zone": "America/Denver",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": "https://spotlight-series-den2026.netlify.app/",
+   "reservations_enabled": true,
+   "google_place_id": "ChIJdQ0gnTd_bIcRaZMveRl0E4A",
+   "created_at": "2026-01-28T20:52:00.578165Z",
+   "updated_at": "2026-09-18T04:03:36.742671Z"
+  },
+  {
+   "id": "b3f5d316-7255-4945-8bc1-676c188fc6b8",
+   "object": "location",
+   "name": "Berkeley",
+   "restaurant": {
+    "id": "2ff633ea-6567-4b26-857a-6b04ff9d882d",
+    "object": "restaurant",
+    "name": "Wild Taco Denver",
+    "cuisine": [
+     "Mexican"
+    ],
+    "cohort": "fsr",
+    "price": 1,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/c0986f88-cb41-4a4c-98b7-00bbaa697bb0/1x.png",
+     "web_2x": "https://images.blackbird.xyz/c0986f88-cb41-4a4c-98b7-00bbaa697bb0/2x.png",
+     "full_3x": "https://images.blackbird.xyz/c0986f88-cb41-4a4c-98b7-00bbaa697bb0/3x.png"
+    },
+    "website_url": "http://wildtacodenver.com/",
+    "instagram_url": null,
+    "created_at": "2025-06-16T15:50:23.613794Z",
+    "updated_at": "2026-02-04T09:01:22.81072Z"
+   },
+   "neighborhood": {
+    "id": "074df1b7-7d22-4e70-9f46-cb3c23952356",
+    "object": "neighborhood",
+    "name": "Berkeley",
+    "region": "Denver, CO"
+   },
+   "slug": "wild-taco-denver-berkeley",
+   "address": {
+    "street": "4499 W 38th Ave",
+    "street2": "",
+    "city": "Denver",
+    "state": "CO",
+    "zipcode": "80212",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 39.7696155,
+    "longitude": -105.0448627
+   },
+   "phone_number": null,
+   "time_zone": "America/Denver",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": null,
+   "reservations_enabled": false,
+   "google_place_id": "ChIJDXN_xtGHa4cRO1YlWuG53qY",
+   "created_at": "2025-06-27T20:12:28.494143Z",
+   "updated_at": "2026-09-18T04:02:41.80573Z"
+  },
+  {
+   "id": "47267b99-bacb-4fcf-90c4-caf910d6e043",
+   "object": "location",
+   "name": "Berkeley",
+   "restaurant": {
+    "id": "be3f27b5-aaf7-4fc7-9a8f-d2eae077afa2",
+    "object": "restaurant",
+    "name": "Legacy Pie Co",
+    "cuisine": [
+     "Bakery"
+    ],
+    "cohort": "qsr",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/715268bf-8389-40bf-afe0-7478cfb16593/1x.png?v=1781829723",
+     "web_2x": "https://images.blackbird.xyz/715268bf-8389-40bf-afe0-7478cfb16593/2x.png?v=1781829723",
+     "full_3x": "https://images.blackbird.xyz/715268bf-8389-40bf-afe0-7478cfb16593/3x.png?v=1781829723"
+    },
+    "website_url": "https://legacypie.co/",
+    "instagram_url": null,
+    "created_at": "2026-05-14T18:38:33.830543Z",
+    "updated_at": "2026-06-19T00:42:04.012602Z"
+   },
+   "neighborhood": {
+    "id": "074df1b7-7d22-4e70-9f46-cb3c23952356",
+    "object": "neighborhood",
+    "name": "Berkeley",
+    "region": "Denver, CO"
+   },
+   "slug": "legacy-pie-co-berkeley",
+   "address": {
+    "street": "4000 Tennyson St Suite 100",
+    "street2": "",
+    "city": "Denver",
+    "state": "CO",
+    "zipcode": "80212",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 39.7717819,
+    "longitude": -105.0437324
+   },
+   "phone_number": null,
+   "time_zone": "America/Denver",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": null,
+   "reservations_enabled": false,
+   "google_place_id": "ChIJ64PV-GqHa4cR0lZU-1M4vjE",
+   "created_at": "2026-05-14T19:31:06.81959Z",
+   "updated_at": "2026-09-18T04:01:41.003583Z"
+  },
+  {
+   "id": "85eff60f-06c8-4d87-9911-9d74ec02483c",
+   "object": "location",
+   "name": "Boulder",
+   "restaurant": {
+    "id": "6594ee43-0ee7-4f7a-909d-53603b82d981",
+    "object": "restaurant",
+    "name": "Centro Mexican Kitchen",
+    "cuisine": [
+     "Mexican"
+    ],
+    "cohort": "fsr",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/7782dfe4-2492-46e2-9d93-72288e38bb92/1x.png?v=1769636180",
+     "web_2x": "https://images.blackbird.xyz/7782dfe4-2492-46e2-9d93-72288e38bb92/2x.png?v=1769636180",
+     "full_3x": "https://images.blackbird.xyz/7782dfe4-2492-46e2-9d93-72288e38bb92/3x.png?v=1769636180"
+    },
+    "website_url": "https://www.centromexican.com/",
+    "instagram_url": null,
+    "created_at": "2026-01-23T19:47:23.913078Z",
+    "updated_at": "2026-02-04T09:01:45.246709Z"
+   },
+   "neighborhood": {
+    "id": "c8e2c741-9fde-47d8-9ebb-f9cdf90fb5c0",
+    "object": "neighborhood",
+    "name": "Pearl Street",
+    "region": "Denver, CO"
+   },
+   "slug": "centro-mexican-kitch-boulder",
+   "address": {
+    "street": "950 Pearl St",
+    "street2": "",
+    "city": "Boulder",
+    "state": "CO",
+    "zipcode": "80302",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 40.01715799999999,
+    "longitude": -105.282536
+   },
+   "phone_number": null,
+   "time_zone": "America/Denver",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": null,
+   "reservations_enabled": false,
+   "google_place_id": "ChIJpS9bwibsa4cR9pgAy9zE5V0",
+   "created_at": "2026-01-23T19:55:55.014612Z",
+   "updated_at": "2026-09-18T04:02:03.589045Z"
+  },
+  {
+   "id": "bc1b8f80-4694-4a7b-bd70-29efe38b5a16",
+   "object": "location",
+   "name": "Carroll Gardens",
+   "restaurant": {
+    "id": "939f200d-49b8-476b-9391-bb75082152cc",
+    "object": "restaurant",
+    "name": "F&F x Blackbird Pizza Sessions",
+    "cuisine": [
+     "Pizza"
+    ],
+    "cohort": "fsr",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/0826faed-f9a1-4d2e-8390-46c4a27752e8/1x.png?v=1781538647",
+     "web_2x": "https://images.blackbird.xyz/0826faed-f9a1-4d2e-8390-46c4a27752e8/2x.png?v=1781538647",
+     "full_3x": "https://images.blackbird.xyz/0826faed-f9a1-4d2e-8390-46c4a27752e8/3x.png?v=1781538648"
+    },
+    "website_url": "https://www.blackbird.xyz/ff",
+    "instagram_url": null,
+    "created_at": "2025-05-20T17:59:38.820555Z",
+    "updated_at": "2026-06-15T15:50:48.44825Z"
+   },
+   "neighborhood": {
+    "id": "5dc5f20d-2706-43e5-872c-f82a5921eddd",
+    "object": "neighborhood",
+    "name": "Carroll Gardens",
+    "region": "New York, NY"
+   },
+   "slug": "ff-x-blackbird-pizz-carroll-gardens",
+   "address": {
+    "street": "457 Court St",
+    "street2": "",
+    "city": "Brooklyn",
+    "state": "NY",
+    "zipcode": "11231",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 40.6773862,
+    "longitude": -73.99815000000001
+   },
+   "phone_number": null,
+   "time_zone": "America/New_York",
+   "payments_enabled": false,
+   "is_club": false,
+   "reservation_url": "https://resy.com/cities/new-york-ny/venues/fandf-pizzeria?date=2024-06-06&seats=2",
+   "reservations_enabled": true,
+   "google_place_id": "ChIJO32xszpbwokRVr_g36taCbI",
+   "created_at": "2025-05-20T18:31:58.124654Z",
+   "updated_at": "2026-09-18T04:01:29.857352Z"
+  },
+  {
+   "id": "922f288e-f43c-45d9-a503-e8716e176033",
+   "object": "location",
+   "name": "Events",
+   "restaurant": {
+    "id": "8bd0e0e5-9ed9-48e3-b593-0fc60006edbe",
+    "object": "restaurant",
+    "name": "Nom Wah events",
+    "cuisine": [
+     "Dim Sum",
+     "Chinese"
+    ],
+    "cohort": "qsr",
+    "price": 1,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/004dc78b-6509-415c-805b-9133cc7a92cd/1x.png",
+     "web_2x": "https://images.blackbird.xyz/004dc78b-6509-415c-805b-9133cc7a92cd/2x.png",
+     "full_3x": "https://images.blackbird.xyz/004dc78b-6509-415c-805b-9133cc7a92cd/3x.png"
+    },
+    "website_url": "https://nomwah.com/",
+    "instagram_url": null,
+    "created_at": "2024-10-04T17:46:12.385418Z",
+    "updated_at": "2024-11-08T09:00:54.425613Z"
+   },
+   "neighborhood": {
+    "id": "a0fd024d-f095-4349-82c3-42ede6f14b90",
+    "object": "neighborhood",
+    "name": "Nolita",
+    "region": "New York, NY"
+   },
+   "slug": "dac5398d-b387-4c1e-827c-a72a0613e758",
+   "address": {
+    "street": "10 Kenmare St",
+    "street2": "",
+    "city": "New York",
+    "state": "NY",
+    "zipcode": "10012",
+    "country": "USA"
+   },
+   "coordinate": null,
+   "phone_number": null,
+   "time_zone": "America/New_York",
+   "payments_enabled": false,
+   "is_club": false,
+   "reservation_url": null,
+   "reservations_enabled": false,
+   "google_place_id": "ChIJLxEbJoZZwokRBgg1pE4COTo",
+   "created_at": "2024-10-08T15:02:23.938238Z",
+   "updated_at": "2026-09-18T04:02:18.968346Z"
+  },
+  {
+   "id": "2c9bfc4d-b1cb-428f-ac61-1316aa75ee8c",
+   "object": "location",
+   "name": "Abigail's Kitchen - Lower East Side",
+   "restaurant": {
+    "id": "85e87ff7-4c74-42b9-a98f-665c9d537040",
+    "object": "restaurant",
+    "name": "Abigail's Kitchen",
+    "cuisine": [
+     "American",
+     "Bar",
+     "French",
+     "Bistro",
+     "French-American"
+    ],
+    "cohort": "fsr",
+    "price": 2,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/37656d33-4d7d-4b22-b122-997b8e182070/1x.png?v=1787329634",
+     "web_2x": "https://images.blackbird.xyz/37656d33-4d7d-4b22-b122-997b8e182070/2x.png?v=1787329634",
+     "full_3x": "https://images.blackbird.xyz/37656d33-4d7d-4b22-b122-997b8e182070/3x.png?v=1787329634"
+    },
+    "website_url": "http://abigailskitchennyc.com/",
+    "instagram_url": null,
+    "created_at": "2026-08-21T16:17:10.052002Z",
+    "updated_at": "2026-08-21T16:27:14.853531Z"
+   },
+   "neighborhood": {
+    "id": "ffb7f4d6-64f4-49bf-983f-aab1e1cab22e",
+    "object": "neighborhood",
+    "name": "Lower East Side",
+    "region": "New York, NY"
+   },
+   "slug": "abigails-kitchen-abigails-kitchen---lower-east-side",
+   "address": {
+    "street": "193 Henry Street",
+    "street2": null,
+    "city": "New York",
+    "state": "NY",
+    "zipcode": "10002",
+    "country": "USA"
+   },
+   "coordinate": null,
+   "phone_number": null,
+   "time_zone": "America/New_York",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": null,
+   "reservations_enabled": false,
+   "google_place_id": "ChIJW0sdEZJZwokRNNe8OEa2sW4",
+   "created_at": "2026-08-21T16:18:54.80221Z",
+   "updated_at": "2026-09-18T04:03:23.998924Z"
+  },
+  {
+   "id": "4581d965-e375-4b5a-bc2a-fb2185ecbd27",
+   "object": "location",
+   "name": "Amari",
+   "restaurant": {
+    "id": "560b9374-dc22-4584-97dd-ee0adc9140e1",
+    "object": "restaurant",
+    "name": "Amari",
+    "cuisine": [
+     "Pasta",
+     "Pizza",
+     "Italian"
+    ],
+    "cohort": "fsr",
+    "price": 3,
+    "tags": [],
+    "asset": null,
+    "website_url": "https://www.amarilv.com/",
+    "instagram_url": null,
+    "created_at": "2026-08-19T17:11:31.549869Z",
+    "updated_at": "2026-08-19T17:17:45.396474Z"
+   },
+   "neighborhood": {
+    "id": "5805e635-07a8-4181-b52c-5855255361c9",
+    "object": "neighborhood",
+    "name": "Sovana",
+    "region": "Los Angeles, CA"
+   },
+   "slug": "amari-amari",
+   "address": {
+    "street": "6825 Tom Rodriguez Street",
+    "street2": "",
+    "city": "Las Vegas",
+    "state": "NV",
+    "zipcode": "89113",
+    "country": "USA"
+   },
+   "coordinate": null,
+   "phone_number": null,
+   "time_zone": "America/Los_Angeles",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": null,
+   "reservations_enabled": false,
+   "google_place_id": "ChIJzwWk7wfHyIARWuqZypFqGeg",
+   "created_at": "2026-08-19T17:14:05.689312Z",
+   "updated_at": "2026-09-18T04:01:52.104628Z"
+  },
+  {
+   "id": "0ffca970-cd39-439c-b314-d16d76d77938",
+   "object": "location",
+   "name": "Ansonborough",
+   "restaurant": {
+    "id": "7e32a02d-80eb-460c-b391-3e561b47b960",
+    "object": "restaurant",
+    "name": "FIG",
+    "cuisine": [
+     "Southern"
+    ],
+    "cohort": "fsr",
+    "price": 4,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/8e2c65c5-7e09-417a-b2fd-0986434372e8/1x.png?v=1787017016",
+     "web_2x": "https://images.blackbird.xyz/8e2c65c5-7e09-417a-b2fd-0986434372e8/2x.png?v=1787017016",
+     "full_3x": "https://images.blackbird.xyz/8e2c65c5-7e09-417a-b2fd-0986434372e8/3x.png?v=1787017016"
+    },
+    "website_url": "http://eatatfig.com/",
+    "instagram_url": null,
+    "created_at": "2026-08-17T16:23:03.946534Z",
+    "updated_at": "2026-08-18T01:37:01.651832Z"
+   },
+   "neighborhood": {
+    "id": "a01a1e0a-aee2-4049-aa48-632d0bd1e67f",
+    "object": "neighborhood",
+    "name": "Ansonborough",
+    "region": "Charleston, SC"
+   },
+   "slug": "fig-french-quarter",
+   "address": {
+    "street": "232 Meeting St",
+    "street2": "",
+    "city": "Charleston",
+    "state": "SC",
+    "zipcode": "29401",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 32.7823426,
+    "longitude": -79.93157529999999
+   },
+   "phone_number": null,
+   "time_zone": "America/New_York",
+   "payments_enabled": true,
+   "is_club": true,
+   "reservation_url": "https://resy.com/cities/charleston-sc/venues/fig?date=2026-08-17&seats=2",
+   "reservations_enabled": true,
+   "google_place_id": "ChIJZ5NDYBJ6_ogRWD0_bczq9Z4",
+   "created_at": "2026-08-17T16:25:15.841867Z",
+   "updated_at": "2026-09-18T04:01:13.060266Z"
+  },
+  {
+   "id": "70d4704e-4ad8-40d9-b1b3-045c3a5a8164",
+   "object": "location",
+   "name": "Arts District",
+   "restaurant": {
+    "id": "9d46a576-94d2-411c-9c53-21d993b1912e",
+    "object": "restaurant",
+    "name": "Damian",
+    "cuisine": [
+     "Mexican"
+    ],
+    "cohort": "fsr",
+    "price": 4,
+    "tags": [],
+    "asset": {
+     "preview_1x": "https://images.blackbird.xyz/4f5969c7-f72c-41e7-9908-1550a3b0cb4b/1x.png?v=1778648558",
+     "web_2x": "https://images.blackbird.xyz/4f5969c7-f72c-41e7-9908-1550a3b0cb4b/2x.png?v=1778648559",
+     "full_3x": "https://images.blackbird.xyz/4f5969c7-f72c-41e7-9908-1550a3b0cb4b/3x.png?v=1778648559"
+    },
+    "website_url": "http://www.damiandtla.com/",
+    "instagram_url": null,
+    "created_at": "2026-05-13T05:01:07.190232Z",
+    "updated_at": "2026-05-13T05:02:39.440512Z"
+   },
+   "neighborhood": {
+    "id": "0568a07e-b3a1-41c8-b446-bae918027be0",
+    "object": "neighborhood",
+    "name": "Arts District",
+    "region": "Los Angeles, CA"
+   },
+   "slug": "damian-damian",
+   "address": {
+    "street": "2132 E 7th Pl",
+    "street2": "",
+    "city": "Los Angeles",
+    "state": "CA",
+    "zipcode": "90021",
+    "country": "USA"
+   },
+   "coordinate": {
+    "latitude": 34.033466,
+    "longitude": -118.2289512
+   },
+   "phone_number": "(213) 270-0178",
+   "time_zone": "America/Los_Angeles",
+   "payments_enabled": true,
+   "is_club": false,
+   "reservation_url": "https://resy.com/cities/los-angeles-ca/venues/damian",
+   "reservations_enabled": true,
+   "google_place_id": "ChIJf5HW3w7HwoAR0EEIlkAD5vA",
+   "created_at": "2026-05-13T05:05:17.997501Z",
+   "updated_at": "2026-09-18T04:01:16.661287Z"
+  }
+ ],
+ "pagination": {
+  "total_count": 34,
+  "total_pages": 1,
+  "current_page": 0,
+  "next_page": null,
+  "page_size": 50
+ }
+}

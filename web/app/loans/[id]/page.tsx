@@ -3,11 +3,11 @@ import { use, useState } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { encodeFunctionData } from "viem";
-import { CHAIN_ID_BASE, type DeskInfo, type LoanDetail, type TxRequest } from "@feedesk/shared";
+import { CHAIN_ID_BASE, type DeskInfo, type LoanDetail, type RiskCheck, type TxRequest } from "@feedesk/shared";
 import { api } from "@/lib/api";
 import { noteAbi, publicClient, vaultAbi } from "@/lib/chain";
 import { useSigner } from "@/lib/wallet";
-import { Addr, Btn, Card, Lifecycle, Loading, Pill, Tx, ago, pct, usdcRaw, useLoad } from "@/components/ui";
+import { Addr, Btn, Card, Lifecycle, Loading, Pill, Tx, ago, pct, short, usdcRaw, useLoad } from "@/components/ui";
 import { Memos, MirrorTag } from "@/components/memo";
 import { PledgePanel } from "@/components/pledge";
 import { AuctionPanel } from "@/components/auction";
@@ -35,6 +35,7 @@ const KIND_LABEL: Record<string, string> = {
   erc8004_registered: "borrower ERC-8004 agent linked",
   erc8004_feedback: "repayment feedback (ERC-8004 reputation)",
   erc8004_metadata: "loan outcome published (ERC-8004)",
+  risk_check: "token risk verdict bought over x402 (Dynamic agent wallet, Base mainnet)",
 };
 const STAMP: Record<string, string> = { APPROVED: "text-violet", PLEDGED: "text-amber-ink", AUCTION: "text-amber-ink", ACTIVE: "text-desk", RELEASED: "text-violet", DECLINED: "text-stamp", CANCELLED: "text-stamp" };
 
@@ -186,6 +187,8 @@ export default function LoanPage({ params }: { params: Promise<{ id: string }> }
             </Card>
           )}
 
+          <RiskCard r={loan.events.findLast((e) => e.kind === "risk_check")?.data as RiskCheck | undefined} />
+
           <Card title="Credit memos · Bankr LLM Gateway">
             <Memos memos={loan.memos} personas={desk.data?.personas} />
           </Card>
@@ -202,6 +205,7 @@ export default function LoanPage({ params }: { params: Promise<{ id: string }> }
                     </div>
                     <div className="text-xs">
                       {e.txHash && <Tx h={e.txHash} />}
+                      {e.kind === "risk_check" && (e.data as RiskCheck | null)?.paid?.txHash && <MainnetTx h={(e.data as RiskCheck).paid!.txHash!} />}
                       {e.data != null && <EventData d={e.data} />}
                     </div>
                   </li>
@@ -264,5 +268,46 @@ function EventData({ d }: { d: unknown }) {
     <span className="ml-2 font-mono text-mute">
       {entries.slice(0, 6).map(([k, v]) => `${k}=${String(v).length > 24 ? String(v).slice(0, 22) + "…" : v}`).join(" · ")}
     </span>
+  );
+}
+
+/** Settlement of the x402 payment: always Base MAINNET (real USDC), even when the desk runs on the Anvil fork. */
+function MainnetTx({ h }: { h: string }) {
+  return (
+    <a className="link font-mono" href={`https://basescan.org/tx/${h}`} target="_blank" rel="noreferrer" title={`${h} (Base mainnet)`}>
+      {short(h)} <span className="tag text-mute">mainnet</span>
+    </a>
+  );
+}
+
+const VERDICT_TONE: Record<string, string> = { SAFE: "text-desk bg-desk/5", SUSPICIOUS: "text-amber-ink bg-amber/15", HONEYPOT: "text-stamp bg-stamp/5" };
+
+/** "Paid risk check": the desk's Dynamic wallet bought a third-party honeypot verdict over x402 before deciding. */
+function RiskCard({ r }: { r?: RiskCheck }) {
+  if (!r) return null;
+  const effect = r.verdict === "HONEYPOT" ? "declined" : r.verdict === "SUSPICIOUS" ? "limit halved" : r.verdict === "SAFE" ? "no change" : "not used";
+  return (
+    <Card title={r.paid ? "Paid risk check · x402" : "Risk check · x402 (not purchased)"} right={r.paid ? "real USDC on Base mainnet" : undefined}>
+      {r.verdict ? (
+        <dl className="grid grid-cols-2 gap-4 text-sm md:grid-cols-5">
+          <div><dt className="label">verdict</dt><dd className="mt-0.5"><span className={`pill ${VERDICT_TONE[r.verdict] ?? "text-mute"}`}>{r.verdict}</span></dd></div>
+          <div><dt className="label">effect on limit</dt><dd className="mt-0.5">{effect}</dd></div>
+          <div><dt className="label">paid</dt><dd className="num mt-0.5">{r.paid ? `$${r.paid.amountUsd.toFixed(2)} USDC` : "—"}</dd></div>
+          <div>
+            <dt className="label">payer · desk Dynamic wallet</dt>
+            <dd className="mt-0.5">{r.paid ? <a className="link font-mono" href={`https://basescan.org/address/${r.paid.payer}`} target="_blank" rel="noreferrer" title={r.paid.payer}>{short(r.paid.payer)}</a> : "—"}</dd>
+          </div>
+          <div><dt className="label">settlement</dt><dd className="mt-0.5">{r.paid?.txHash ? <MainnetTx h={r.paid.txHash} /> : "—"}</dd></div>
+        </dl>
+      ) : (
+        <p className="text-sm text-mute">{r.note}. The desk never invents a verdict; the limit was set without one.</p>
+      )}
+      {r.verdict && (
+        <p className="mt-3 text-xs text-mute">
+          Bought from a Bankr x402 Cloud honeypot-check service: the agent got HTTP 402, signed an EIP-3009 USDC authorization with its Dynamic MPC wallet, retried, and used the answer.
+          {r.cached && ` Cached verdict from ${ago(r.checkedAt)} (reused for 24h).`}
+        </p>
+      )}
+    </Card>
   );
 }

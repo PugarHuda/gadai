@@ -12,10 +12,19 @@ type Row = {
   maxLoanUsdc: number; feeRatePct: number | null; floorPrice: number | null;
   eligible: boolean; reason: string | null; error: string | null;
 };
+type QuotePx = { symbol: string; address: string; stock: boolean; wethPerUnit: number; usd: number; source: string };
+type RhRow = Row & {
+  chain: "robinhood"; quote: QuotePx | null;
+  lifetimeQuote: number | null; claimableQuote: number | null; ratePerDayQuote: number | null; usdPerDay: number | null; indicativeUsdc: number;
+};
 type Board = {
   generatedAt: string; ethUsd: number;
-  totals: { agents: number; eligible: number; totalCreditUsdc: number; lifetimeFeesWeth: number; claimableWeth: number; llmTokens30d: number; failed: number; nonBase: number };
+  totals: {
+    agents: number; eligible: number; totalCreditUsdc: number; lifetimeFeesWeth: number; claimableWeth: number; llmTokens30d: number; failed: number; nonBase: number;
+    robinhoodAgents: number; indicativeCreditUsdc: number; equityAgents: number; equityFeesUsd: number; indicativeEquityCreditUsdc: number;
+  };
   rows: Row[];
+  robinhood: RhRow[];
 };
 
 const weth = (n: number | null, d = 4) => (n == null ? "—" : n.toFixed(d));
@@ -78,6 +87,7 @@ export default function BoardPage() {
         <p className="mt-5 max-w-[66ch] text-base leading-relaxed text-ink/85">
           Every agent profile on Bankr with a Base token, run through the same deterministic engine that prices a real application: fee history from the Bankr fee API, the lead
           underwriter&apos;s advance rate, a live Uniswap ETH quote and the desk cap. A pre-approval is not a loan: applying re-checks the pool on-chain and adds the LLM memos.
+          Agents on Robinhood Chain, several of them paid in tokenized stocks, get <a className="link" href="#equities">indicative lines below</a>.
         </p>
       </header>
 
@@ -93,7 +103,8 @@ export default function BoardPage() {
                 <Stat k="LLM tokens, 30d" v={compact(d.totals.llmTokens30d)} sub="Bankr LLM Gateway usage" />
               </div>
               <p className="text-xs text-mute">
-                Built {ago(d.generatedAt)} · ETH {usd(d.ethUsd, 2)} (Uniswap Trading API quote) · {d.totals.nonBase} non-Base profiles skipped
+                Built {ago(d.generatedAt)} · ETH {usd(d.ethUsd, 2)} (Uniswap Trading API quote) · {d.totals.nonBase} non-Base profiles:{" "}
+                <a className="link" href="#equities">{d.totals.robinhoodAgents} on Robinhood Chain, priced below</a>
                 {d.totals.failed > 0 && <> · <span className="text-stamp">{d.totals.failed} rows failed to fetch (shown below, not dropped)</span></>}
                 {" "}· cached 10 min
               </p>
@@ -196,6 +207,150 @@ export default function BoardPage() {
           </Card>
         </section>
       )}
+
+      {d && <Equities d={d} />}
     </div>
+  );
+}
+
+const RH_EXPLORER = "https://robinhoodchain.blockscout.com";
+const units = (n: number | null, sym: string, d = 4) => (n == null ? "—" : `${n.toLocaleString("en-US", { maximumFractionDigits: d })} ${sym}`);
+
+function RhStatus({ r }: { r: RhRow }) {
+  if (r.error)
+    return (
+      <div className="max-w-64">
+        <span className="pill text-stamp bg-stamp/5">fetch failed</span>
+        <p className="mt-1 text-xs leading-snug text-mute" title={r.error}>{r.reason}</p>
+      </div>
+    );
+  if (r.indicativeUsdc > 0) return <span className="pill whitespace-nowrap text-amber-ink bg-amber/15" title={r.reason ?? undefined}>indicative, not lendable yet</span>;
+  return (
+    <div className="max-w-64">
+      <span className="pill text-mute">no line</span>
+      <p className="mt-1 text-xs leading-snug text-mute">{(r.reason ?? "").replace(/^not eligible: /, "")}</p>
+    </div>
+  );
+}
+
+const Ticker = ({ q }: { q: QuotePx | null }) =>
+  q == null ? <span className="text-mute">—</span> : (
+    <a className="link font-mono font-semibold" href={`${RH_EXPLORER}/token/${q.address}`} target="_blank" rel="noreferrer" title={q.source}>{q.symbol}</a>
+  );
+
+/** Robinhood Chain agents, most with creator fees paid in tokenized stocks. Same engine; priced, not lendable. */
+function Equities({ d }: { d: Board }) {
+  const [onlyStocks, setOnlyStocks] = useState(true);
+  const rows = (d.robinhood ?? []).filter((r) => !onlyStocks || r.quote?.stock);
+  const tickers = [...new Map((d.robinhood ?? []).filter((r) => r.quote?.stock).map((r) => [r.quote!.symbol, r.quote!])).values()];
+  const t = d.totals;
+  return (
+    <section id="equities" aria-labelledby="eq-h" className="scroll-mt-24 space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 id="eq-h" className="text-lg font-bold [font-stretch:108%]">Onchain equities · Robinhood Chain</h2>
+          <p className="mt-2 max-w-[70ch] text-sm leading-relaxed text-ink/85">
+            These agents launched on Robinhood Chain. Several earn their creator fees in tokenized stocks: the pool is quoted in SPY, TSLA or MSTR, so every fee claim
+            pays out in shares. Gadai runs the same engine on that stream, counted in shares and priced in USD: each stock is quoted into WETH with the Uniswap Trading API
+            on Robinhood Chain (4663), then valued at ETH/USD.{" "}
+            <strong className="font-semibold text-ink">These lines are indicative.</strong> The pools use the same Doppler FeesManager interface as on Base (
+            <span className="font-mono">getShares</span>, <span className="font-mono">updateBeneficiary</span>, <span className="font-mono">collectFees</span>, checked on-chain),
+            but Gadai&apos;s desk contracts are deployed only on Base and its vault only liquidates WETH. The desk prices these lines but cannot lend against them yet.
+          </p>
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" className="accent-violet" checked={onlyStocks} onChange={(e) => setOnlyStocks(e.target.checked)} />
+          Stock-quoted fees only
+        </label>
+      </div>
+      <div className="card grid grid-cols-2 gap-px overflow-hidden bg-rule md:grid-cols-4">
+        <Stat k="Equity-fee agents" v={t.equityAgents} sub={tickers.length ? `fees in ${tickers.map((q) => q.symbol).join(", ")}` : "none right now"} />
+        <Stat k="Equity fees, lifetime" v={usd(t.equityFeesUsd, 0)} sub="beneficiary share, shares × live price" />
+        <Stat k="Indicative equity credit" v={usd(t.indicativeEquityCreditUsdc, 0)} sub="engine max principal, not lendable" />
+        <Stat k="All Robinhood lines" v={usd(t.indicativeCreditUsdc, 0)} sub={`${t.robinhoodAgents} agents, incl. WETH-quoted`} />
+      </div>
+      {tickers.length > 0 && (
+        <p className="num text-xs text-mute">
+          {tickers.map((q) => `${q.symbol} ${usd(q.usd, 2)} (${q.wethPerUnit.toFixed(5)} WETH)`).join(" · ")} · Uniswap Trading API, 0.1 share → WETH on chain 4663, × ETH/USD
+        </p>
+      )}
+      <Card title={`${rows.length} agents`} right="Bankr fee API (in shares) · Uniswap on Robinhood Chain">
+        {rows.length === 0 ? (
+          <Empty title="No Robinhood Chain agent earns fees in a stock right now">Untick the filter to see the WETH-quoted Robinhood Chain agents.</Empty>
+        ) : (
+          <>
+            <ul className="divide-y divide-rule md:hidden">
+              {rows.map((r) => {
+                const sym = r.quote?.symbol ?? "";
+                return (
+                  <li key={r.slug} className="space-y-1.5 py-3 first:pt-0 last:pb-0">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="font-semibold">{r.name} <span className="num text-sm font-normal text-mute">${r.symbol}</span></span>
+                      <span className="num text-lg">{r.indicativeUsdc > 0 ? usd(r.indicativeUsdc) : "—"}</span>
+                    </div>
+                    <div className="text-xs text-mute">Robinhood Chain · fees in <Ticker q={r.quote} /></div>
+                    <RhStatus r={r} />
+                    <div className="num flex flex-wrap gap-x-4 text-xs text-mute">
+                      <span>life {units(r.lifetimeQuote, sym)}</span>
+                      <span>{units(r.ratePerDayQuote, sym, 6)}/day{r.usdPerDay != null && ` (${usd(r.usdPerDay)})`}</span>
+                      <span>claimable {units(r.claimableQuote, sym)}</span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="hidden overflow-x-auto md:block">
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th>Agent</th>
+                    <th>Fees in</th>
+                    <th className="text-right">Lifetime fees</th>
+                    <th className="text-right">Engine rate</th>
+                    <th className="text-right">Claimable</th>
+                    <th className="text-right">Indicative line</th>
+                    <th className="text-right">Fee</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r) => {
+                    const sym = r.quote?.symbol ?? "";
+                    const px = r.quote?.usd;
+                    return (
+                      <tr key={r.slug} className="transition-colors hover:bg-violet-tint/50">
+                        <td className="min-w-44">
+                          <div className="font-semibold">{r.name}</div>
+                          <div className="text-xs">
+                            <a className="link font-mono" href={`${RH_EXPLORER}/token/${r.token}`} target="_blank" rel="noreferrer" title={r.token}>${r.symbol}</a>
+                            <span className="text-mute"> · Robinhood Chain{r.sharePct != null && ` · share ${r.sharePct}%`}</span>
+                          </div>
+                        </td>
+                        <td className="whitespace-nowrap">
+                          <Ticker q={r.quote} />
+                          {px != null && <div className="num text-xs text-mute">{usd(px, 2)}</div>}
+                        </td>
+                        <td className="num text-right whitespace-nowrap">
+                          {units(r.lifetimeQuote, sym)}
+                          {r.lifetimeQuote != null && px != null && <div className="text-xs text-mute">{usd(r.lifetimeQuote * px, 0)}</div>}
+                        </td>
+                        <td className="num text-right whitespace-nowrap">
+                          {units(r.ratePerDayQuote, sym, 6)}/d
+                          {r.usdPerDay != null && <div className="text-xs text-mute">{usd(r.usdPerDay)}/day</div>}
+                        </td>
+                        <td className="num text-right whitespace-nowrap">{units(r.claimableQuote, sym)}</td>
+                        <td className="num text-right whitespace-nowrap">{r.indicativeUsdc > 0 ? usd(r.indicativeUsdc) : <span className="text-mute">—</span>}</td>
+                        <td className="num text-right">{r.feeRatePct == null ? <span className="text-mute">—</span> : pct(r.feeRatePct, 2)}</td>
+                        <td><RhStatus r={r} /></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </Card>
+    </section>
   );
 }

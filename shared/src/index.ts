@@ -200,6 +200,7 @@ export const FEE_VAULT_ABI = [
   "function noteSupply() view returns (uint256)",
   "function oracleMinUsdcOut(uint256 wethIn) view returns (uint256)",
   "function payDesk() returns (uint256)",
+  "function pledgeShares() view returns (uint256)",
   "function pledgedAt() view returns (uint64)",
   "function poolId() view returns (bytes32)",
   "function principal() view returns (uint256)",
@@ -282,7 +283,17 @@ export type LoanStatus = "DECLINED" | "APPROVED" | "PLEDGED" | "AUCTION" | "ACTI
 export type LoanEventKind =
   | "applied" | "memo" | "declined" | "loan_created" | "pledged" | "auction_started" | "bid"
   | "disbursed" | "collected" | "swapped" | "flash_twap" | "token_leg_sent" | "repaid" | "draw"
-  | "desk_paid" | "released" | "cancelled" | "error" | "erc8004_registered" | "erc8004_feedback" | "erc8004_metadata";
+  | "desk_paid" | "released" | "cancelled" | "error" | "erc8004_registered" | "erc8004_feedback" | "erc8004_metadata"
+  | "risk_check";
+
+/** Third-party token risk verdict the desk BUYS over x402 (Bankr x402 Cloud honeypot-check, paid by the Dynamic agent wallet
+ *  in real USDC on Base mainnet, even in DEMO_FORK). verdict null = not purchased; `note` says why. Never synthesized. */
+export type RiskVerdict = "SAFE" | "SUSPICIOUS" | "HONEYPOT";
+export type RiskPayment = {
+  service: string; amountRaw: string; amountUsd: number; asset: Address; network: "eip155:8453"; payTo: Address;
+  payer: Address; txHash: Hex | null; settlement: unknown;
+};
+export type RiskCheck = { token: Address; verdict: RiskVerdict | null; note: string; raw: unknown; paid: RiskPayment | null; checkedAt: string; cached: boolean };
 
 // ─── DTOs ───
 export type ApiError = { error: string };
@@ -518,50 +529,98 @@ export type MirrorSubmit = {
   bracketPermitSignature?: Hex;
 };
 
-// ─── Flynet dine-on-credit ───
-export type Recommendation = {
-  locationId: string;
+// ─── Flynet dining concierge (read-only Flynet: the app has no write:rewards / payment scopes, so nothing is paid or drawn) ───
+/** One Blackbird venue (a Flynet `location`; the brand is its `restaurant`). Trimmed from live `GET /locations`. */
+export type DinePlace = {
+  id: string; // Flynet location id
   restaurantId: string;
-  name: string;
+  name: string; // restaurant (brand) name
+  branch: string; // location name (often the street address)
+  slug: string;
+  cuisine: string[];
+  cohort: string; // fsr (full service) | qsr (quick service) | bar
+  price: number | null; // Flynet price level 1..4
+  neighborhood: string | null;
+  region: string | null; // e.g. "New York, NY"
   address: string;
+  lat: number | null;
+  lng: number | null;
+  timeZone: string;
+  image: string | null;
+  website: string | null;
+  mapsUrl: string | null; // Google Maps link from Flynet's google_place_id
   reservationUrl: string | null;
-  openNow: boolean | null;
-  specials: string[];
-  reason: string; // Bankr LLM one-liner
+  reservationsEnabled: boolean;
+  paymentsEnabled: boolean; // Blackbird Pay accepted at the venue (member pays in the Blackbird app)
+  isClub: boolean;
 };
-export type DineMember = { name: string | null; flyBalanceWei: string; flyBalanceUsdCents: number; spendingWallet: Address | null };
-export type Draw = {
-  id: number;
-  loanId: number;
-  amountRaw: string; // USDC debt added on-chain via FeeVault.addDraw
-  flyWei: string; // FLY issued via Flynet issue_reward
-  locationId: string | null;
-  flynetRewardId: string | null;
-  txHash: Hex | null;
-  status: "pending" | "recorded" | "issued" | "failed"; // pending: addDraw sent; recorded: debt on-chain, FLY not yet issued
-  error: string | null;
-  createdAt: string;
-};
+export type DineHour = { day: string; open: string; close: string };
+export type DineSpecial = { label: string; description: string; emoji: string; flyRewardBips: number | null; checkInThreshold: number | null };
+export type DineChallenge = { title: string; description: string; flyReward: string | null; endTime: string | null };
+/** Where a Flynet list came from: live now, or the agent's cache (and how old). */
+export type DineSource = { fetchedAt: string; stale: boolean };
+export type DinePlaceList = { places: DinePlace[]; total: number; page: number; pageSize: number; regions: string[]; cuisines: string[]; source: DineSource };
+export type DinePlaceDetail = { place: DinePlace; hours: DineHour[] | null; openNow: boolean | null; specials: DineSpecial[]; challenges: DineChallenge[]; siblings: DinePlace[]; source: DineSource; errors: string[] };
+
+export type DinePayments = { enabled: false; reason: string };
+export type DineMemberLogin = { available: boolean; reason: string | null };
+export type FlynetStatus = { env: string; appName: string | null; allowedScopes: string[]; catalog: { count: number; fetchedAt: string | null }; memberLogin: DineMemberLogin; payments: DinePayments };
+/** GET /api/loans/:id/dine */
 export type DineState = {
   loanId: number;
-  linked: boolean;
-  member: DineMember | null;
-  drawLimitRaw: string;
-  drawnRaw: string;
-  draws: Draw[];
+  symbol: string;
+  loanStatus: LoanStatus;
+  budgetRaw: string; // the loan's drawLimit (USDC raw): a planning budget, nothing is disbursed
+  linked: boolean; // a Blackbird member is linked to this loan (OAuth)
+  memberLogin: DineMemberLogin;
+  payments: DinePayments;
 };
-/** Borrower personal_signs this to consent to one draw; FeeVault.addDraw re-derives it on-chain (FeeVault.drawMessage) and
- *  checks the signature (EIP-191 EOA or EIP-1271). Byte-identical to the Solidity string; nonce = vault.drawNonce(). */
-export const drawMessage = (vault: Address, chainId: number, usdcRaw: bigint | string, nonce: bigint | string, deadline: bigint | string) =>
-  `Gadai dining draw\nVault: ${vault.toLowerCase()}\nChain: ${chainId}\nAmount (USDC raw): ${usdcRaw}\nNonce: ${nonce}\nDeadline: ${deadline}`;
-/** GET /api/loans/:id/dine/draw-message?amountUsdCents=N: the exact text to sign (read from the vault) + the fields it covers. */
-export type DrawQuote = { message: string; amountUsdCents: number; amountRaw: string; nonce: string; deadline: string };
-/** Borrower signs this EIP-191 message to settle unused dining FLY (off-chain auth, checked by the agent). */
-export const diningSettleMessage = (loanId: number, nonce: string) => `Gadai dining settle\nLoan: ${loanId}\nNonce: ${nonce}`;
+/** POST /api/loans/:id/dine/plan */
+export type DinePlanRequest = { request: string; partySize: number; time?: string; near?: { lat: number; lng: number } };
+export type DinePick = {
+  place: DinePlace;
+  reasons: string[];
+  openAtTime: boolean | null; // null = Flynet publishes no hours for this venue
+  hoursToday: string | null; // "17:00–23:00"
+  estCostUsd: number | null; // party × per-head estimate from the price level (Flynet has no menu prices)
+  fitsBudget: boolean | null;
+  distanceKm: number | null;
+  specials: DineSpecial[];
+  challenges: DineChallenge[];
+  visits: number | null; // the linked member's check-ins here (only with the member session)
+};
+export type DinePlan = {
+  loanId: number;
+  request: string;
+  partySize: number;
+  at: string; // what "time" was resolved to
+  budgetRaw: string;
+  understood: string[]; // the cues the concierge read from the request
+  ranker: "bankr-llm" | "deterministic";
+  rankerNote: string;
+  considered: number;
+  picks: DinePick[];
+  notes: string[];
+  personalized: boolean;
+  source: DineSource;
+};
+/** GET /api/loans/:id/dine/passport (member session token). */
+export type DinePassport = {
+  firstName: string;
+  tier: string | null;
+  flyBalanceWei: string;
+  flyBalanceUsdCents: number;
+  wallets: { type: string; address: string }[];
+  checkIns: { placeId: string; name: string; neighborhood: string | null; region: string | null; at: string }[];
+  placesVisited: number;
+  gapsNearby: DinePlace[]; // Blackbird venues in the member's neighborhoods they have not checked in at
+};
 export const flynetLinkMessage = (loanId: number, nonce: string) =>
   `Gadai: link my Blackbird account to loan ${loanId}\nNonce: ${nonce}`;
-/** POST /api/loans/:id/dine/draw: nonce/deadline are the DrawQuote values the signature covers. */
-export type DrawRequest = { amountUsdCents: number; locationId?: string; nonce: string; deadline: string; signature: Hex };
+/** Borrower personal_signs this to consent to one draw; FeeVault.addDraw re-derives it on-chain (FeeVault.drawMessage).
+ *  Unused by the agent since dining draws are disabled (no Flynet payout scope); kept byte-identical to the Solidity string. */
+export const drawMessage = (vault: Address, chainId: number, usdcRaw: bigint | string, nonce: bigint | string, deadline: bigint | string) =>
+  `Gadai dining draw\nVault: ${vault.toLowerCase()}\nChain: ${chainId}\nAmount (USDC raw): ${usdcRaw}\nNonce: ${nonce}\nDeadline: ${deadline}`;
 
 /** Documented Bankr chat phrase for pledging (docs.bankr.bot fee-splitting.md). */
 export const pledgeChatText = (token: Address, vault: Address) =>

@@ -102,6 +102,10 @@ contract FeeVault is ReentrancyGuard {
     /// @dev Max Chainlink answer age, set by the desk (1h on mainnet; 1 day on a DEMO_FORK whose feed is frozen).
     uint256 public immutable maxOracleAge;
     bool public immutable keeperTokenCustody;
+    /// @notice Borrower's FeesManager shares when the loan was created (what the keeper underwrote). confirmPledge
+    ///         requires the vault to hold at least this many: shares are additive, so dust pledged by another
+    ///         beneficiary while the borrower parks its own shares elsewhere must not count as the pledge.
+    uint256 public immutable pledgeShares;
 
     Status public status;
     uint64 public pledgedAt;
@@ -166,6 +170,7 @@ contract FeeVault is ReentrancyGuard {
         drawLimit = p.drawLimit;
         maxOracleAge = maxOracleAge_;
         keeperTokenCustody = p.keeperTokenCustody;
+        pledgeShares = IFeesManager(p.feesManager).getShares(p.poolId, p.borrower);
         if (p.keeperTokenCustody) emit KeeperTokenCustodyEnabled(IFeeDeskView(msg.sender).keeper());
         wethIsToken0 = WETH < p.creatorToken; // v4 orders currency0 < currency1
         // The pool must be creatorToken/WETH, otherwise fees would land in a token this vault never forwards.
@@ -238,12 +243,13 @@ contract FeeVault is ReentrancyGuard {
 
     // ───────────────────────────── lifecycle ─────────────────────────────
 
-    /// @notice Anyone. After the borrower called FeesManager.updateBeneficiary(poolId, vault) for ALL its shares.
+    /// @notice Anyone. After the borrower called FeesManager.updateBeneficiary(poolId, vault) for ALL its shares
+    ///         (the vault must hold >= pledgeShares; pledgeShares > 0 is enforced by FeeDesk.createLoan).
     function confirmPledge() external {
         if (status != Status.Created) revert BadStatus(status);
         IFeesManager fm = IFeesManager(feesManager);
         uint256 shares = fm.getShares(poolId, address(this));
-        if (shares == 0 || fm.getShares(poolId, borrower) != 0) revert NotPledged();
+        if (shares < pledgeShares || fm.getShares(poolId, borrower) != 0) revert NotPledged();
         status = Status.Pledged;
         pledgedAt = uint64(block.timestamp);
         emit Pledged(borrower, shares);

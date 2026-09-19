@@ -136,6 +136,8 @@ async function apply(ctx: Ctx, req: ApplyRequest): Promise<ApplyResponse> {
     feesManager: inp.feesManager, terms: approved ? u.terms : u.quote.terms, quote: u.quote, leadMemo: u.lead,
   });
   db.addEvent(ctx.db, id, "applied", null, { via, formula: u.quote.formula });
+  // x402 risk verdict (bought or skipped with a reason). txHash stays null: the settlement is on Base MAINNET, not the desk chain.
+  db.addEvent(ctx.db, id, "risk_check", null, u.risk);
   if (agentId !== undefined) await (await mod<Erc8004>("erc8004")).setBorrowerAgentId(ctx, id, agentId);
   for (const m of u.memos) {
     db.insertMemo(ctx.db, id, m, u.rawText[m.personaId] ?? null);

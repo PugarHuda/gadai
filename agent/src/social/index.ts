@@ -130,7 +130,118 @@ export async function leaderboard(ctx: Ctx): Promise<LeaderboardRow[]> {
   return lbCache.rows;
 }
 
+// ─── shareable signal cards ───
+/** A signal plus what a share card needs: who wrote it (LLM or rules), whether it binds, and what actually happened. */
+export type SignalCard = SignalRow & {
+  personaName: string;
+  model: string | null; // model that wrote the memo (null: memo row missing)
+  llm: boolean; // false = rule-based memo, no LLM review
+  lead: boolean; // lead persona: its decision binds the loan
+  loan: { status: string; repaidPct: number | null } | null; // repaidPct: on-chain senior note repaid (null: not funded / unreadable)
+  mirrors: { total: number; placed: number; filled: number; spentUsdc: number; pnlUsd: number | null };
+};
+
+const notFound = (what: string) => Object.assign(new Error(`${what} not found`), { status: 404 });
+const signalRow = (ctx: Ctx, id: number) => {
+  const r = ctx.db.prepare("SELECT * FROM signals WHERE id = ?").get(id) as R | undefined;
+  if (!r) throw notFound("signal");
+  return toSignal(r);
+};
+
+export async function signalCard(ctx: Ctx, id: number): Promise<SignalCard> {
+  const s = signalRow(ctx, id);
+  const memo = ctx.db.prepare("SELECT model FROM memos WHERE loan_id = ? AND persona_id = ? ORDER BY id DESC LIMIT 1").get(s.loanId, s.personaId) as R | undefined;
+  const loan = getLoan(ctx.db, s.loanId);
+  let repaidPct: number | null = loan?.status === "RELEASED" ? 100 : null;
+  if (loan?.status === "ACTIVE" && loan.vault) {
+    try {
+      const [face, debt, draw] = await Promise.all((["faceValue", "debtOutstanding", "drawDebt"] as const).map((fn) =>
+        ctx.pub.readContract({ address: loan.vault!, abi: vaultAbi, functionName: fn }) as Promise<bigint>));
+      const owed = noteOutstanding(debt!, draw!);
+      if (face! > 0n) repaidPct = Number(((face! - (owed > face! ? face! : owed)) * 10_000n) / face!) / 100;
+    } catch (e) { ctx.log("social", `signal ${id}: vault ${loan.vault} unreadable: ${(e as Error).message}`); }
+  }
+  const ms = ctx.db.prepare("SELECT status, flash_order_id, pnl_usd, quote_json FROM mirror_orders WHERE signal_id = ?").all(id) as R[];
+  const priced = ms.filter((m) => m.pnl_usd != null);
+  return {
+    ...s,
+    personaName: PERSONAS.find((p) => p.id === s.personaId)?.name ?? s.personaId,
+    model: memo?.model ?? null,
+    llm: memo ? writtenByLlm({ model: memo.model }) : false,
+    lead: s.personaId === PERSONAS[0]!.id,
+    loan: loan ? { status: loan.status, repaidPct } : null,
+    mirrors: {
+      total: ms.length,
+      placed: ms.filter((m) => m.flash_order_id).length,
+      filled: ms.filter((m) => m.status === "filled" || m.status === "partially_filled").length,
+      spentUsdc: priced.reduce((a, m) => a + (JSON.parse(m.quote_json).fill?.spentUsdc ?? 0), 0),
+      pnlUsd: priced.length ? Math.round(priced.reduce((a, m) => a + m.pnl_usd, 0) * 100) / 100 : null,
+    },
+  };
+}
+
+/** Live Flash /quote (no order) for the bracket a mirror of this signal would place. */
+export type SignalFlashQuote = {
+  signalId: number; token: Address; symbol: string; funder: Address;
+  sizeUsdc: number; tpPct: number; slPct: number;
+  spotUsd: number; riskFlagged: boolean; tpPriceUsd: number; slPriceUsd: number;
+  estTokenOut: string; estOutUsd: number; estFeeUsd: number; priceImpactPct: number; withinImpactGate: boolean;
+  integratorFeeBps: number; quoteId: string; quotedAt: string;
+};
+const sfqCache = new Map<string, { at: number; v: SignalFlashQuote }>();
+
+export async function signalFlashQuote(ctx: Ctx, id: number, q: { sizeUsdc?: string; tpPct?: string; slPct?: string; funder?: string }): Promise<SignalFlashQuote> {
+  const s = signalRow(ctx, id);
+  if (s.decision !== "approve") throw Object.assign(new Error("declined signal: there is no mirror order to quote"), { status: 409 });
+  const funder = q.funder ?? process.env.AGENT_WALLET_ADDRESS;
+  if (!funder) throw Object.assign(new Error("pass funder=0x… (Flash needs a funder to quote a bracket) or set AGENT_WALLET_ADDRESS"), { status: 400 });
+  // Same bounds as a follow; defaults = the /desk follow form defaults.
+  const f = validateFollow({ follower: funder, personaId: s.personaId, mode: "bracket", sizeUsdc: q.sizeUsdc ?? 5, tpPct: q.tpPct ?? 50, slPct: q.slPct ?? 20 });
+  const key = [id, s.token, f.sizeUsdc, f.tpPct, f.slPct, f.follower.toLowerCase()].join(":");
+  const hit = sfqCache.get(key);
+  if (hit && Date.now() - hit.at < 30_000) return hit.v; // ponytail: public route, 30s cache keeps us inside Flash's 5 req/s
+  try {
+    const asset = await searchToken(s.token);
+    const order = bracketBuy(s.token, f.sizeUsdc, f.follower, asset.priceUsd, f.tpPct, f.slPct);
+    const fq = await flash("/quote", order);
+    const impact = Math.abs(Number(fq.estimatedPriceImpact ?? 0));
+    const v: SignalFlashQuote = {
+      signalId: id, token: s.token, symbol: s.symbol, funder: f.follower, sizeUsdc: f.sizeUsdc, tpPct: f.tpPct, slPct: f.slPct,
+      spotUsd: asset.priceUsd, riskFlagged: asset.riskFlagged,
+      tpPriceUsd: Number(order.attachedBracket.takeProfit.notionalPrice), slPriceUsd: Number(order.attachedBracket.stopLoss.notionalPrice),
+      estTokenOut: fq.to?.amount ?? "0", estOutUsd: Number(fq.to?.notional ?? 0), estFeeUsd: Number(fq.fees?.estimatedFeeNotional ?? 0),
+      priceImpactPct: impact * 100, withinImpactGate: impact <= MAX_IMPACT && !asset.riskFlagged,
+      integratorFeeBps: integratorFeeBps(), quoteId: fq.quoteId, quotedAt: new Date().toISOString(),
+    };
+    sfqCache.set(key, { at: Date.now(), v });
+    return v;
+  } catch (e) {
+    throw Object.assign(new Error((e as Error).message), { status: 502 });
+  }
+}
+
+const integratorFeeBps = () => Number(feeFields().flashIntegratorFeeBps ?? 0) || 0;
+
+/** What /desk needs to explain mirror execution honestly: fee setting and whether any mirror has ever hit Flash. */
+export function flashInfo(ctx: Ctx) {
+  const c = ctx.db.prepare(`SELECT COUNT(*) total, COUNT(flash_order_id) placed,
+    SUM(CASE WHEN status IN ('filled','partially_filled') THEN 1 ELSE 0 END) filled FROM mirror_orders`).get() as R;
+  return {
+    integratorFeeBps: integratorFeeBps(), integratorFeeSet: !!process.env.FLASH_INTEGRATOR_FEE_BPS,
+    mainnetOnly: true, demoFork: !!ctx.demoFork, maxPriceImpactPct: MAX_IMPACT * 100,
+    mirrors: { total: Number(c.total), placed: Number(c.placed), filled: Number(c.filled ?? 0) },
+  };
+}
+
 // ─── mirror orders (Flash) ───
+const buy = (token: string, sizeUsdc: number, funder: string): R => ({
+  targetChain: "base", contraChain: "base", targetAsset: token, contraAsset: ADDR.USDC, side: "buy", qty: String(sizeUsdc), funderAddress: funder, ...feeFields(),
+});
+/** The order a bracket mirror places: Flash market entry + attached Bracket (TP/SL notional prices off the Flash spot). */
+export const bracketBuy = (token: string, sizeUsdc: number, funder: string, px: number, tpPct: number, slPct: number): R => ({
+  ...buy(token, sizeUsdc, funder), orderType: "market",
+  attachedBracket: { takeProfit: { notionalPrice: decStr(px * (1 + tpPct / 100)) }, stopLoss: { notionalPrice: decStr(px * (1 - slPct / 100)) } },
+});
 const txReq = (to: Address, data: Hex, label: string): TxRequest => ({ to, data, value: "0", chainId: CHAIN_ID_BASE, label });
 
 /** Approvals the follower still needs for one Flash order: Flash's approveTx (to the settlement) and/or ERC20→Permit2 for a permit. */
@@ -160,13 +271,8 @@ export async function quoteMirror(ctx: Ctx, id: number): Promise<MirrorQuote> {
   const asset = await searchToken(m.token);
   if (asset.riskFlagged) { setMirror(ctx, id, { error: "Flash /search riskFlagged this token (re-quote later)" }); throw Object.assign(new Error("token is riskFlagged by Flash"), { status: 409 }); }
   const px = asset.priceUsd;
-  const order: R = {
-    targetChain: "base", contraChain: "base", targetAsset: m.token, contraAsset: ADDR.USDC, side: "buy", qty: String(m.size_usdc),
-    funderAddress: m.follower, ...feeFields(),
-    ...(m.mode === "bracket"
-      ? { orderType: "market", attachedBracket: { takeProfit: { notionalPrice: decStr(px * (1 + f.tp_pct / 100)) }, stopLoss: { notionalPrice: decStr(px * (1 - f.sl_pct / 100)) } } }
-      : { orderType: "twap", twapBucketCount: Number(f.dca_days) }),
-  };
+  const order: R = m.mode === "bracket" ? bracketBuy(m.token, m.size_usdc, m.follower, px, f.tp_pct, f.sl_pct)
+    : { ...buy(m.token, m.size_usdc, m.follower), orderType: "twap", twapBucketCount: Number(f.dca_days) };
   const q = await flash("/quote", m.mode === "dca" ? { ...order, durationSeconds: Number(f.dca_days) * 86_400 } : order);
   const impact = Math.abs(Number(q.estimatedPriceImpact ?? 0));
   if (impact > MAX_IMPACT) {
@@ -344,6 +450,16 @@ export function register(app: Hono, ctx: Ctx) {
       : ctx.db.prepare("SELECT * FROM signals ORDER BY id DESC LIMIT ?").all(limit)) as R[];
     return c.json(rows.map(toSignal));
   });
+
+  app.get("/api/signals/:id", wrap(async (c) => c.json(await signalCard(ctx, posInt(c.req.param("id"), "signal id")))));
+
+  app.get("/api/signals/:id/flash-quote", wrap(async (c) => {
+    const id = posInt(c.req.param("id"), "signal id");
+    const { sizeUsdc, tpPct, slPct, funder } = c.req.query();
+    return c.json(await signalFlashQuote(ctx, id, { sizeUsdc, tpPct, slPct, funder }));
+  }));
+
+  app.get("/api/flash/info", (c) => c.json(flashInfo(ctx)));
 
   app.get("/api/leaderboard", async (c) => c.json(await leaderboard(ctx)));
 

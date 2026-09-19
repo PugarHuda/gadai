@@ -1,0 +1,184 @@
+{
+ "days": 30,
+ "totals": {
+  "totalRequests": 137,
+  "totalTokens": 12594470,
+  "totalInputTokens": 8434473,
+  "totalOutputTokens": 119334,
+  "successRate": 100,
+  "avgLatencyMs": 35724
+ },
+ "byModel": [
+  {
+   "requests": 117,
+   "totalTokens": 10338156,
+   "model": "gpt-5.6-terra",
+   "successRate": 100,
+   "avgLatencyMs": 36969
+  },
+  {
+   "requests": 20,
+   "totalTokens": 2256314,
+   "model": "gpt-5.6-luna",
+   "successRate": 100,
+   "avgLatencyMs": 28438
+  }
+ ],
+ "daily": [
+  {
+   "requests": 20,
+   "totalTokens": 1423511,
+   "date": "2026-08-20"
+  },
+  {
+   "requests": 13,
+   "totalTokens": 827280,
+   "date": "2026-08-21"
+  },
+  {
+   "requests": 6,
+   "totalTokens": 422685,
+   "date": "2026-08-22"
+  },
+  {
+   "requests": 7,
+   "totalTokens": 766300,
+   "date": "2026-08-23"
+  },
+  {
+   "requests": 11,
+   "totalTokens": 1610933,
+   "date": "2026-08-24"
+  },
+  {
+   "requests": 13,
+   "totalTokens": 1467251,
+   "date": "2026-08-25"
+  },
+  {
+   "requests": 11,
+   "totalTokens": 1053632,
+   "date": "2026-08-26"
+  },
+  {
+   "requests": 4,
+   "totalTokens": 328676,
+   "date": "2026-08-27"
+  },
+  {
+   "requests": 3,
+   "totalTokens": 233931,
+   "date": "2026-08-28"
+  },
+  {
+   "requests": 2,
+   "totalTokens": 213824,
+   "date": "2026-08-29"
+  },
+  {
+   "requests": 4,
+   "totalTokens": 845563,
+   "date": "2026-08-30"
+  },
+  {
+   "requests": 5,
+   "totalTokens": 517828,
+   "date": "2026-08-31"
+  },
+  {
+   "requests": 2,
+   "totalTokens": 200605,
+   "date": "2026-09-01"
+  },
+  {
+   "requests": 3,
+   "totalTokens": 390476,
+   "date": "2026-09-02"
+  },
+  {
+   "requests": 2,
+   "totalTokens": 311581,
+   "date": "2026-09-03"
+  },
+  {
+   "requests": 2,
+   "totalTokens": 96726,
+   "date": "2026-09-04"
+  },
+  {
+   "requests": 3,
+   "totalTokens": 185448,
+   "date": "2026-09-05"
+  },
+  {
+   "requests": 2,
+   "totalTokens": 120852,
+   "date": "2026-09-06"
+  },
+  {
+   "requests": 8,
+   "totalTokens": 728872,
+   "date": "2026-09-07"
+  },
+  {
+   "requests": 2,
+   "totalTokens": 169913,
+   "date": "2026-09-08"
+  },
+  {
+   "requests": 2,
+   "totalTokens": 120670,
+   "date": "2026-09-09"
+  },
+  {
+   "requests": 2,
+   "totalTokens": 79650,
+   "date": "2026-09-10"
+  },
+  {
+   "requests": 1,
+   "totalTokens": 40652,
+   "date": "2026-09-11"
+  },
+  {
+   "requests": 1,
+   "totalTokens": 40045,
+   "date": "2026-09-12"
+  },
+  {
+   "requests": 1,
+   "totalTokens": 40035,
+   "date": "2026-09-13"
+  },
+  {
+   "requests": 1,
+   "totalTokens": 39789,
+   "date": "2026-09-14"
+  },
+  {
+   "requests": 1,
+   "totalTokens": 39851,
+   "date": "2026-09-15"
+  },
+  {
+   "requests": 1,
+   "totalTokens": 39617,
+   "date": "2026-09-16"
+  },
+  {
+   "requests": 1,
+   "totalTokens": 40565,
+   "date": "2026-09-17"
+  },
+  {
+   "requests": 2,
+   "totalTokens": 157176,
+   "date": "2026-09-18"
+  },
+  {
+   "requests": 1,
+   "totalTokens": 40533,
+   "date": "2026-09-19"
+  }
+ ]
+}

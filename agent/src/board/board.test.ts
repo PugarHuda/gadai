@@ -4,7 +4,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import type { TokenFees } from "../bankr/index.ts";
-import { aggregate, buildRow, dust, type AgentProfile, type LlmUsage, type ProfilesPage } from "./index.ts";
+import {
+  INDICATIVE, RH_WETH, aggregate, buildRobinhoodRow, buildRow, dust, quotePx,
+  type AgentProfile, type LlmUsage, type ProfilesPage, type QuotePx, type QuoteToken, type UniQuote,
+} from "./index.ts";
 
 const ETH_USD = 2637.958232;
 const CAP = 250;
@@ -62,7 +65,80 @@ test("aggregate: totals are row sums, failures counted not dropped, sorted by cr
   assert.equal(b.totals.nonBase, 1);
 });
 
-test("non-Base profiles exist in the live page (filtered before fetching)", () => {
+test("non-Base profiles in the live page are Robinhood Chain", () => {
   const p: AgentProfile | undefined = page.profiles.find((x) => x.tokenChainId !== "base");
   assert.ok(p, "expected at least one non-Base profile in the captured page");
+  assert.ok(page.profiles.filter((x) => x.tokenChainId !== "base").every((x) => x.tokenChainId === "robinhood"));
+});
+
+// ─── Robinhood Chain: fees in tokenized stocks. Uniswap quotes + quote-tokens captured live 2026-09-19. ───
+const RH_ETH_USD = Number(fx<UniQuote>("uniswap-quote-8453-weth-usdc").quote.output.amount) / 1e6; // 1 WETH → USDC on Base
+const LIST = fx<{ quoteTokens: QuoteToken[] }>("quote-tokens-robinhood").quoteTokens;
+const addr = (sym: string) => LIST.find((q) => q.symbol === sym)!.address.toLowerCase();
+const PRICES = new Map<string, QuotePx | Error>([
+  ...["SPY", "TSLA", "MSTR"].map((s) => [addr(s), quotePx(addr(s), LIST, RH_ETH_USD, fx<UniQuote>(`uniswap-quote-4663-${s}-weth`))] as const),
+  [RH_WETH, quotePx(RH_WETH, LIST, RH_ETH_USD)],
+]);
+const rh = (slug: string, prices = PRICES) => buildRobinhoodRow(profile(slug), fx<TokenFees>(`fees-${slug}`), fx<LlmUsage>(`llm-usage-${slug}`), prices, CAP);
+
+test("quote prices: stock → WETH on chain 4663 × ETH/USD; WETH is ETH/USD", () => {
+  const spy = PRICES.get(addr("SPY")) as QuotePx;
+  assert.equal(spy.symbol, "SPY");
+  assert.equal(spy.stock, true);
+  assert.ok(spy.wethPerUnit > 0.2 && spy.wethPerUnit < 0.4, `SPY ${spy.wethPerUnit} WETH`); // live: 0.28902
+  assert.ok(Math.abs(spy.usd - spy.wethPerUnit * RH_ETH_USD) < 1e-3);
+  const w = PRICES.get(RH_WETH) as QuotePx;
+  assert.deepEqual([w.symbol, w.stock, w.usd], ["WETH", false, RH_ETH_USD]);
+  assert.throws(() => quotePx(addr("SPY"), LIST, RH_ETH_USD), /no Uniswap quote for SPY/);
+});
+
+test("EARN (fees in SPY): same engine in shares, indicative line, never lendable", () => {
+  const r = rh("earn");
+  assert.equal(r.quote?.symbol, "SPY");
+  assert.equal(r.eligible, false);
+  assert.equal(r.maxLoanUsdc, 0);
+  assert.equal(r.reason, INDICATIVE);
+  assert.equal(r.claimableQuote, 1.755627); // SPY, straight from the API's quote-side claimable
+  assert.ok(r.indicativeUsdc >= 1 && r.indicativeUsdc <= CAP);
+  assert.ok(r.feeRatePct! > 5 && r.feeRatePct! <= 17.7);
+  assert.ok(Math.abs(r.usdPerDay! - r.ratePerDayQuote! * r.quote!.usd) < 0.01 + r.quote!.usd * 1e-6);
+  // Bankr's "weth" series is a WETH-equivalent; converted back to shares it must be near the 31.747529 + 1.755627 SPY the
+  // beneficiary actually claimed + can claim. Skipping the conversion would give ~12.4 (the WETH-equivalent), outside this band.
+  const ownSpy = 31.747529 + 1.755627;
+  assert.ok(r.lifetimeQuote! > 0.5 * ownSpy && r.lifetimeQuote! < 3 * ownSpy, `lifetime ${r.lifetimeQuote} SPY`);
+});
+
+test("other equity rows run the engine and give a reason; WETH-quoted Robinhood rows are not equities", () => {
+  for (const [slug, sym] of [["teslr", "TSLA"], ["based-mining-co", "MSTR"]] as const) {
+    const r = rh(slug);
+    assert.equal(r.quote?.symbol, sym);
+    assert.equal(r.eligible, false);
+    assert.ok(r.reason === INDICATIVE || /^not eligible: /.test(r.reason!), r.reason!);
+    assert.ok(Number.isFinite(r.lifetimeQuote) && Number.isFinite(r.claimableQuote), `${slug} has NaN`);
+  }
+  const q = rh("quotient");
+  assert.deepEqual([q.quote?.symbol, q.quote?.stock], ["WETH", false]);
+  assert.equal(q.claimableQuote, 0.044358);
+});
+
+test("a failed quote price is an error row, not a silent zero", () => {
+  const r = rh("earn", new Map([[addr("SPY"), new Error("uniswap /quote 404: NoRouteFoundError")]]));
+  assert.equal(r.indicativeUsdc, 0);
+  assert.equal(r.reason, "quote token price unavailable");
+  assert.match(r.error!, /quote price: uniswap \/quote 404/);
+});
+
+test("aggregate: equity totals cover stock-quoted Robinhood rows only and never add to lendable credit", () => {
+  const base = SLUGS.map(row);
+  const rhs = ["earn", "teslr", "based-mining-co", "quotient"].map((s) => rh(s));
+  const b = aggregate(base, RH_ETH_USD, 4, "2026-09-19T00:00:00.000Z", rhs);
+  const eq = rhs.filter((r) => r.quote?.stock);
+  assert.equal(b.totals.equityAgents, 3);
+  assert.equal(b.totals.robinhoodAgents, 4);
+  assert.equal(b.totals.indicativeEquityCreditUsdc, Number(eq.reduce((s, r) => s + r.indicativeUsdc, 0).toFixed(2)));
+  assert.equal(b.totals.equityFeesUsd, Number(eq.reduce((s, r) => s + r.lifetimeQuote! * r.quote!.usd, 0).toFixed(2)));
+  assert.ok(b.totals.equityFeesUsd > 0);
+  assert.equal(b.totals.totalCreditUsdc, Number(base.reduce((s, r) => s + r.maxLoanUsdc, 0).toFixed(2)));
+  assert.equal(b.totals.agents, base.length);
+  for (let i = 1; i < b.robinhood.length; i++) assert.ok(b.robinhood[i - 1]!.indicativeUsdc >= b.robinhood[i]!.indicativeUsdc);
 });

@@ -133,3 +133,63 @@ test("quoteMirror: a failed risk gate is recorded but not terminal (unauthentica
     if (realKey === undefined) delete process.env.FLASH_API_KEY; else process.env.FLASH_API_KEY = realKey;
   }
 });
+
+test("GET /api/signals/:id and /flash-quote: validation → 400, missing → 404, declines → 409, card fields", async () => {
+  const { Hono } = await import("hono");
+  const { register } = await import("./index.ts");
+  const ctx = mkCtx(), app = new Hono();
+  register(app, ctx);
+  const loanId = insertLoan(ctx.db, { status: "APPROVED", borrower: VAULT as any, token: TOKEN as any, symbol: "GITLAWB", poolId: "0x01" as any, feesManager: VAULT as any });
+  ctx.db.prepare(`INSERT INTO memos (loan_id,persona_id,model,decision,principal_raw,max_note_price,confidence,rationale,risks_json,created_at)
+    VALUES (?,'prudent',?,'approve','5000000',0.9,0.7,'r','[]','t')`).run(loanId, RULES_MODEL);
+  const m = (personaId: string, decision: "approve" | "decline"): Memo => ({ personaId, model: RULES_MODEL, decision, principalRaw: "5000000", maxNotePrice: 0.9, confidence: 0.7, rationale: "r", risks: [] });
+  const [a, d] = publishSignals(ctx, loanId, [m("prudent", "approve"), m("skeptic", "decline")], { inputs: { token: TOKEN, symbol: "GITLAWB" } } as unknown as Quote);
+  const get = async (p: string) => { const r = await app.request(p); return { status: r.status, body: await r.json() as any }; };
+
+  for (const p of ["/api/signals/abc", "/api/signals/0", `/api/signals/abc/flash-quote`]) assert.equal((await get(p)).status, 400, p);
+  for (const q of ["sizeUsdc=0", "sizeUsdc=x", "tpPct=0", "slPct=100"]) assert.equal((await get(`/api/signals/${a!.id}/flash-quote?funder=${VAULT}&${q}`)).status, 400, q);
+  assert.equal((await get(`/api/signals/${a!.id}/flash-quote?funder=nope`)).status, 400);
+  assert.equal((await get("/api/signals/999")).status, 404);
+  assert.equal((await get("/api/signals/999/flash-quote")).status, 404);
+  assert.equal((await get(`/api/signals/${d!.id}/flash-quote?funder=${VAULT}`)).status, 409);
+
+  const card = (await get(`/api/signals/${a!.id}`)).body;
+  assert.equal(card.personaName, "Prudent");
+  assert.equal(card.lead, true);
+  assert.equal(card.llm, false); // rules memo: labeled, never passed off as LLM
+  assert.equal(card.model, RULES_MODEL);
+  assert.deepEqual(card.loan, { status: "APPROVED", repaidPct: null });
+  assert.deepEqual(card.mirrors, { total: 0, placed: 0, filled: 0, spentUsdc: 0, pnlUsd: null });
+});
+
+test("signalFlashQuote: quotes the mirror's bracket (TP/SL off Flash spot), never places an order, caches 30s", async () => {
+  const { signalFlashQuote } = await import("./index.ts");
+  const ctx = mkCtx(), realFetch = globalThis.fetch, realKey = process.env.FLASH_API_KEY;
+  process.env.FLASH_API_KEY ||= "dpka_test";
+  const loanId = insertLoan(ctx.db, { status: "APPROVED", borrower: VAULT as any, token: TOKEN as any, symbol: "GITLAWB", poolId: "0x01" as any, feesManager: VAULT as any });
+  const memo: Memo = { personaId: "prudent", model: "m", decision: "approve", principalRaw: "1", maxNotePrice: 0.9, confidence: 0.7, rationale: "r", risks: [] };
+  const [s] = publishSignals(ctx, loanId, [memo], { inputs: { token: TOKEN, symbol: "GITLAWB" } } as unknown as Quote);
+  const calls: { url: string; body: any }[] = [];
+  globalThis.fetch = (async (url: string, init?: RequestInit) => {
+    calls.push({ url: String(url), body: init?.body ? JSON.parse(String(init.body)) : null });
+    return String(url).includes("/search") ? Response.json({ assets: [{ address: TOKEN, price: "0.002", riskFlagged: false, decimals: 18, symbol: "G", liquidity: "1" }] })
+      : Response.json({ quoteId: "q1", to: { amount: "2400", notional: "4.9" }, fees: { estimatedFeeNotional: "0.08" }, estimatedPriceImpact: "-0.012" });
+  }) as typeof fetch;
+  try {
+    const q = await signalFlashQuote(ctx, s!.id, { funder: VAULT, sizeUsdc: "5", tpPct: "50", slPct: "20" });
+    const quote = calls.find((c) => c.url.endsWith("/quote"))!;
+    assert.ok(!calls.some((c) => c.url.endsWith("/order")));
+    assert.equal(quote.body.orderType, "market");
+    assert.equal(quote.body.funderAddress, VAULT);
+    assert.deepEqual(quote.body.attachedBracket, { takeProfit: { notionalPrice: "0.003" }, stopLoss: { notionalPrice: "0.0016" } });
+    assert.equal(q.tpPriceUsd, 0.003);
+    assert.equal(q.priceImpactPct, 1.2);
+    assert.equal(q.withinImpactGate, true);
+    const n = calls.length;
+    await signalFlashQuote(ctx, s!.id, { funder: VAULT, sizeUsdc: "5", tpPct: "50", slPct: "20" });
+    assert.equal(calls.length, n); // cached
+  } finally {
+    globalThis.fetch = realFetch;
+    if (realKey === undefined) delete process.env.FLASH_API_KEY; else process.env.FLASH_API_KEY = realKey;
+  }
+});

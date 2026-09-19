@@ -1,0 +1,48 @@
+{
+ "captured_on": "2026-09-19",
+ "source": "GET https://api.blackbird.xyz/flynet/v1/locations/019bcedb-7be0-4cac-b0b0-c96249c05f2f/open_hours (production)",
+ "open_hours": [
+  {
+   "object": "open_hour",
+   "day_of_week": "sunday",
+   "open_time": "12:00",
+   "close_time": "22:00"
+  },
+  {
+   "object": "open_hour",
+   "day_of_week": "monday",
+   "open_time": "12:00",
+   "close_time": "22:00"
+  },
+  {
+   "object": "open_hour",
+   "day_of_week": "tuesday",
+   "open_time": "12:00",
+   "close_time": "00:00"
+  },
+  {
+   "object": "open_hour",
+   "day_of_week": "wednesday",
+   "open_time": "12:00",
+   "close_time": "00:00"
+  },
+  {
+   "object": "open_hour",
+   "day_of_week": "thursday",
+   "open_time": "12:00",
+   "close_time": "00:00"
+  },
+  {
+   "object": "open_hour",
+   "day_of_week": "friday",
+   "open_time": "12:00",
+   "close_time": "02:30"
+  },
+  {
+   "object": "open_hour",
+   "day_of_week": "saturday",
+   "open_time": "12:00",
+   "close_time": "02:30"
+  }
+ ]
+}

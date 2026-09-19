@@ -21,6 +21,9 @@
     "@feedesk/shared": "workspace:*",
     "@flynetdev/core": "0.8.1",
     "@hono/node-server": "^2.1.1",
+    "@x402/core": "2.26.0",
+    "@x402/evm": "2.26.0",
+    "@x402/fetch": "2.26.0",
     "hono": "^4.13.8",
     "ox": "^1.7.5",
     "viem": "^2.56.8"

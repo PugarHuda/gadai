@@ -12,7 +12,8 @@ const A = "agent/src/", V = "contracts/src/FeeVault.sol";
 const launchAnchor = [A + "cca/index.ts", /^export const launchAuction\b/, /^async function placeAnchorBidOnce\b/];
 const settle = [A + "cca/index.ts", /^export async function settleOnce\b/];
 const auctionPanel = ["web/components/auction.tsx", /^export function AuctionPanel\b/];
-const recommend = [A + "flynet/index.ts", /^export function recommend\b/, /^async function recommendFresh\b/];
+const F = A + "flynet/index.ts";
+const llmRank = [F, /^async function llmRank\b/];
 const SPECS = [
   [A + "bankr/index.ts", /^export const tokenFees\b/, /^export async function llmChat\b/],
   [A + "underwriter/index.ts", /^export async function quote\b/],
@@ -25,7 +26,7 @@ const SPECS = [
   [V, /function confirmPledge\(/],
   [V, /function release\(/],
   [V, /function _returnLien\(/],
-  recommend,
+  llmRank,
   [A + "wallet/index.ts", /^export async function signInAgent\b/],
   [A + "wallet/index.ts", /^export async function getAgentWallet\b/],
   [A + "keeper/index.ts", /^export async function createLoanOnchain\b/],
@@ -64,11 +65,12 @@ const SPECS = [
   [A + "social/index.ts", /^export async function quoteMirror\b/],
   [A + "social/index.ts", /^export async function submitMirror\b/],
   ["web/app/desk/page.tsx", /^export default function Desk\b/],
-  recommend,
-  [A + "flynet/index.ts", /^async function memberWallets\b/, /^export async function dineState\b/],
-  [A + "flynet/index.ts", /^export async function draw\b/, /^async function issueDrawFly\b/],
-  [A + "flynet/index.ts", /^export async function settle\b/],
-  [V, /function addDraw\(/, /function payDesk\(/],
+  [F, /^export async function cached\b/, /^async function catalog\b/],
+  [F, /^export function parseRequest\b/, /^export function prefilter\b/],
+  [F, /^async function planFresh\b/],
+  llmRank,
+  [F, /^const memberLogin\b/, /^export async function passport\b/],
+  [F, /^export function register\b/],
 ];
 
 const find = (lines, re, from, file) => {

@@ -1,201 +1,231 @@
 "use client";
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { diningSettleMessage, drawMessage, flynetLinkMessage, type DineState, type Draw, type DrawQuote, type LoanDetail, type Recommendation } from "@feedesk/shared";
+import { flynetLinkMessage, type DinePassport, type DinePlan, type DineState, type FlynetStatus } from "@feedesk/shared";
 import { api } from "@/lib/api";
 import { ENV } from "@/lib/env";
 import { useSigner } from "@/lib/wallet";
-import { Btn, Card, Loading, Tx, ago, usd, usdcRaw, useLoad } from "@/components/ui";
+import { Btn, Card, Empty, Err, Loading, Pill, ago, usd, usdcRaw, useLoad } from "@/components/ui";
+import { FlynetNotes, PickCard, PlaceCard, PlaceLinks, SourceLine } from "@/components/dine";
 
-export default function Dine({ params }: { params: Promise<{ id: string }> }) {
+const EXAMPLES = ["somewhere in NYC for four, open late, burgers", "cheap drinks in SF", "Italian in Denver, takes reservations", "coffee in the Financial District"];
+const skey = (id: number) => `gadai:flynet-session:${id}`;
+const store = {
+  get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k: string, v: string | null) => { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch { /* private mode */ } },
+};
+
+export default function DinePlanner({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   if (!/^[1-9]\d{0,14}$/.test(id)) notFound(); // /dine/abc is a 404, never "loan #NaN"
   const loanId = Number(id);
   const s = useSigner();
-  const loan = useLoad(() => api<LoanDetail>(`/api/loans/${loanId}`), [loanId]);
   const st = useLoad(() => api<DineState>(`/api/loans/${loanId}/dine`), [loanId]);
-  const linked = !!st.data?.linked;
-  const recs = useLoad(async () => (linked ? api<Recommendation[]>(`/api/flynet/restaurants?loanId=${loanId}`) : []), [loanId, linked]);
-  const [pick, setPick] = useState<string | null>(null);
-  const [amount, setAmount] = useState("20");
+  const fs = useLoad(() => api<FlynetStatus>("/api/flynet/status"), []);
+
+  // member session: the OAuth callback lands on #member=<token> (or #member-error=...)
+  const [session, setSession] = useState<string | null>(null);
+  const [memberErr, setMemberErr] = useState<string | null>(null);
+  useEffect(() => {
+    const h = new URLSearchParams(window.location.hash.slice(1));
+    if (h.get("member")) store.set(skey(loanId), h.get("member"));
+    if (h.get("member-error")) setMemberErr(`Blackbird login did not finish: ${h.get("member-error")}`);
+    if (h.size) history.replaceState(null, "", window.location.pathname);
+    setSession(store.get(skey(loanId)));
+  }, [loanId]);
+  const sq = session ? `?session=${encodeURIComponent(session)}` : ""; // query, not a header: the agent CORS allowlist has no custom headers
+  const pass = useLoad(async () => {
+    if (!session) return null;
+    try {
+      return await api<DinePassport>(`/api/loans/${loanId}/dine/passport${sq}`);
+    } catch (e) {
+      if (/session required/.test((e as Error).message)) (store.set(skey(loanId), null), setSession(null));
+      throw e;
+    }
+  }, [loanId, session]);
 
   const connect = async () => {
     const nonce = crypto.randomUUID();
     const sig = await s.signMessage(flynetLinkMessage(loanId, nonce));
     window.location.href = `${ENV.AGENT_URL}/api/flynet/connect?loanId=${loanId}&nonce=${nonce}&sig=${sig}`;
   };
-  const draw = async () => {
-    const cents = Math.round(Number(amount) * 100);
-    if (!(cents > 0)) throw new Error("Amount must be > 0");
-    // The vault's own drawMessage (current drawNonce + deadline); FeeVault.addDraw re-checks this exact signature on-chain.
-    const q = await api<DrawQuote>(`/api/loans/${loanId}/dine/draw-message?amountUsdCents=${cents}`);
-    const vault = loan.data?.vault;
-    if (!vault || q.message !== drawMessage(vault, 8453, q.amountRaw, q.nonce, q.deadline))
-      throw new Error("Agent returned an unexpected draw message; not signing");
-    const signature = await s.signMessage(q.message);
-    await api<Draw>(`/api/loans/${loanId}/dine/draw`, { body: { amountUsdCents: cents, locationId: pick ?? undefined, nonce: q.nonce, deadline: q.deadline, signature } });
-    st.reload();
+  const logout = async () => {
+    await api(`/api/loans/${loanId}/dine/member${sq}`, { method: "DELETE" });
+    store.set(skey(loanId), null);
+    setSession(null);
   };
-  const settle = async () => {
-    const nonce = crypto.randomUUID();
-    const signature = await s.signMessage(diningSettleMessage(loanId, nonce));
-    await api<DineState>(`/api/loans/${loanId}/dine/settle`, { body: { nonce, signature } });
-    st.reload();
+
+  const [req, setReq] = useState(EXAMPLES[0]!);
+  const [party, setParty] = useState("4");
+  const [time, setTime] = useState("");
+  const [useLoc, setUseLoc] = useState(false);
+  const [plan, setPlan] = useState<DinePlan | null>(null);
+  const ask = async () => {
+    let near: { lat: number; lng: number } | undefined;
+    if (useLoc)
+      near = await new Promise((ok, no) =>
+        navigator.geolocation.getCurrentPosition((p) => ok({ lat: p.coords.latitude, lng: p.coords.longitude }), () => no(new Error("Location permission denied; untick “near me” or allow it")), { timeout: 10_000 }),
+      );
+    setPlan(await api<DinePlan>(`/api/loans/${loanId}/dine/plan${sq}`, { body: { request: req, partySize: Number(party), time: time || undefined, near } }));
   };
 
   const d = st.data;
-  const limit = Number(d?.drawLimitRaw ?? 0),
-    drawn = Number(d?.drawnRaw ?? 0);
-
+  const budget = d ? Number(BigInt(d.budgetRaw)) / 1e6 : 0;
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="h1">Dine on {loan.data ? `$${loan.data.symbol}` : "your"} fees</h1>
-          <p className="mt-2 text-sm text-mute">Blackbird Flynet dining line on loan #{loanId}</p>
+          <h1 className="h1">Dine on {d ? `$${d.symbol}` : "your"} fees</h1>
+          <p className="mt-2 text-sm text-mute">Blackbird Flynet dining concierge for loan #{loanId}</p>
         </div>
         <Link href={`/loans/${loanId}`} className="link text-sm">
           Back to loan #{loanId}
         </Link>
       </header>
 
-      <Loading l={st.loading} e={st.error} retry={st.reload} what="this dining line">
+      <Loading l={st.loading} e={st.error} retry={st.reload} what="this loan's dining budget">
         {d && (
-          <div className="grid gap-6 md:grid-cols-[1fr_1.5fr]">
+          <div className="grid gap-6 lg:grid-cols-[1fr_2fr]">
             <div className="space-y-6">
-              <Card title="Member passport">
-                {!linked ? (
-                  <div>
-                    <p className="text-sm">Link your Blackbird account (Flynet OAuth: profile, wallets, check-ins, memberships). Sign with the borrower or controller wallet.</p>
-                    <div className="mt-3">
-                      <Btn onClick={connect}>{s.connected ? "Connect Blackbird" : "Log in first"}</Btn>
-                    </div>
-                  </div>
-                ) : (
-                  <dl className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="col-span-2">
-                      <dt className="label">member</dt>
-                      <dd className="font-display text-2xl">{d.member?.name ?? "Blackbird member"}</dd>
-                    </div>
-                    <div>
-                      <dt className="label">FLY balance</dt>
-                      <dd className="num">{(Number(d.member?.flyBalanceWei ?? 0) / 1e18).toFixed(2)}</dd>
-                    </div>
-                    <div>
-                      <dt className="label">≈ USD</dt>
-                      <dd className="num">{usd((d.member?.flyBalanceUsdCents ?? 0) / 100)}</dd>
-                    </div>
-                    <div className="col-span-2">
-                      <dt className="label">spending wallet</dt>
-                      <dd className="break-all font-mono text-xs">{d.member?.spendingWallet ?? "—"}</dd>
-                    </div>
-                  </dl>
-                )}
-              </Card>
-
-              <Card title="Dining line">
-                <div className="flex h-2.5 bg-rule/60">
-                  <div className="bg-amber" style={{ width: `${limit ? Math.min(100, (drawn / limit) * 100) : 0}%` }} />
-                </div>
-                <p className="num mt-1 text-xs">
-                  {usdcRaw(d.drawnRaw)} drawn of {usdcRaw(d.drawLimitRaw)} · repaid from fees after FeeNotes (junior)
+              <Card title="Dining budget" right={<Pill s={d.loanStatus} />}>
+                <p className="num font-display text-3xl">{usdcRaw(d.budgetRaw)}</p>
+                <p className="mt-1 text-xs text-mute">
+                  The loan&apos;s <span className="num">drawLimit</span> from underwriting, backed by the pledged creator-fee rights. The concierge plans inside it
+                  {d.loanStatus !== "ACTIVE" && `; the loan is ${d.loanStatus}, so this is a plan only`}.
                 </p>
-                {linked && (
-                  <div className="mt-4 space-y-2">
-                    <label className="block">
-                      <span className="label">draw (USD)</span>
-                      <input className="input mt-1" value={amount} onChange={(e) => setAmount(e.target.value)} />
-                    </label>
-                    <p className="text-xs text-mute">{pick ? `for ${recs.data?.find((r) => r.locationId === pick)?.name ?? pick}` : "pick a restaurant (optional)"}</p>
-                    <Btn onClick={draw}>Sign & draw FLY</Btn>
-                    <p className="text-[11px] text-mute">
-                      Issues FLY to your Blackbird wallet (Flynet issue_reward) and records the debt on-chain (FeeVault.addDraw). Pay in the Blackbird app.
-                    </p>
-                    <div className="border-t border-rule pt-3">
-                      <Btn kind="ghost" onClick={settle}>
-                        Return unused FLY
-                      </Btn>
-                      <p className="mt-1 text-[11px] text-mute">Pulls leftover FLY back via a Flynet payment intent; the desk credits the equivalent USDC to your vault.</p>
-                    </div>
-                  </div>
-                )}
+                <div className="mt-3 rounded-[3px] border border-stamp/30 bg-stamp/5 px-3 py-2 text-xs">
+                  <b className="text-stamp">Payment: not enabled.</b> {d.payments.reason}
+                </div>
               </Card>
-            </div>
 
-            <div className="space-y-6">
-              <Card title="Where to eat · desk agent picks (Bankr LLM over Flynet data)">
-                {!linked ? (
-                  <p className="text-sm text-mute">Link Blackbird to get picks based on your check-ins and memberships.</p>
+              <Card title="Blackbird passport" right="Flynet OAuth + PKCE">
+                <Err e={memberErr} />
+                {!d.memberLogin.available ? (
+                  <Empty title="Blackbird login is not available yet">
+                    {d.memberLogin.reason} Until then the concierge still works on public Flynet data, just without your check-in history.
+                  </Empty>
+                ) : !session ? (
+                  <div className="space-y-2 text-sm">
+                    <p>Log in with Blackbird to read your profile, FLY balance and check-ins (read-only). The concierge then knows where you have eaten and can suggest somewhere new.</p>
+                    <Btn onClick={s.connected ? connect : s.login}>{s.connected ? "Log in with Blackbird" : "Log in with Dynamic first"}</Btn>
+                    <p className="text-[11px] text-mute">You sign one message with the loan&apos;s borrower wallet so the login binds to this loan.</p>
+                  </div>
                 ) : (
-                  <Loading l={recs.loading} e={recs.error} retry={recs.reload} what="restaurant picks">
-                    <ul className="space-y-3">
-                      {recs.data?.map((r, i) => (
-                        <li key={r.locationId}>
-                          <div
-                            role="button"
-                            aria-pressed={pick === r.locationId}
-                            tabIndex={0}
-                            onClick={() => setPick(pick === r.locationId ? null : r.locationId)}
-                            onKeyDown={(e) => e.key === "Enter" && setPick(pick === r.locationId ? null : r.locationId)}
-                            className={`w-full cursor-pointer rounded-[3px] border p-3 text-left transition-colors ${pick === r.locationId ? "border-violet bg-violet-tint ring-1 ring-violet" : "border-rule bg-paper hover:border-mute"}`}
-                          >
-                            <div className="flex items-baseline justify-between gap-2">
-                              <span className="font-display text-lg leading-tight">
-                                <span className="num mr-2 text-base text-mute">{i + 1}</span>
-                                {r.name}
-                              </span>
-                              {r.openNow != null && <span className={`tag ${r.openNow ? "text-desk" : "text-stamp"}`}>{r.openNow ? "open" : "closed"}</span>}
-                            </div>
-                            <p className="mt-1 text-xs text-mute">{r.address}</p>
-                            <p className="mt-2 text-sm">{r.reason}</p>
-                            {r.specials.length > 0 && <p className="mt-1 text-xs">specials: {r.specials.join(" · ")}</p>}
-                            {r.reservationUrl && (
-                              <a className="link mt-1 inline-block text-xs" href={r.reservationUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
-                                Reserve
-                              </a>
-                            )}
+                  <Loading l={pass.loading} e={pass.error} retry={pass.reload} what="your Blackbird passport">
+                    {pass.data && (
+                      <div className="space-y-3 text-sm">
+                        <div className="flex items-baseline justify-between">
+                          <span className="font-display text-2xl">{pass.data.firstName || "Blackbird member"}</span>
+                          {pass.data.tier && <span className="tag text-violet">{pass.data.tier}</span>}
+                        </div>
+                        <dl className="grid grid-cols-2 gap-2">
+                          <div>
+                            <dt className="label">FLY balance</dt>
+                            <dd className="num">{(Number(BigInt(pass.data.flyBalanceWei) / 10n ** 14n) / 1e4).toFixed(2)}</dd>
                           </div>
-                        </li>
-                      ))}
-                      {recs.data?.length === 0 && <li className="text-sm text-mute">No payment-enabled Flynet locations found.</li>}
-                    </ul>
+                          <div>
+                            <dt className="label">≈ USD</dt>
+                            <dd className="num">{usd(pass.data.flyBalanceUsdCents / 100)}</dd>
+                          </div>
+                          <div>
+                            <dt className="label">places visited</dt>
+                            <dd className="num">{pass.data.placesVisited}</dd>
+                          </div>
+                          <div>
+                            <dt className="label">check-ins</dt>
+                            <dd className="num">{pass.data.checkIns.length}</dd>
+                          </div>
+                        </dl>
+                        {pass.data.checkIns.length > 0 && (
+                          <ul className="max-h-48 space-y-1 overflow-auto text-xs">
+                            {pass.data.checkIns.map((c, i) => (
+                              <li key={i} className="flex justify-between gap-2">
+                                <Link className="link" href={`/dine/r/${c.placeId}`}>
+                                  {c.name}
+                                </Link>
+                                <span className="text-mute">
+                                  {c.neighborhood ?? ""} · {ago(c.at)}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        {pass.data.checkIns.length === 0 && <p className="text-xs text-mute">No check-ins yet on this Blackbird account.</p>}
+                        <Btn kind="ghost" onClick={logout}>
+                          Log out of Blackbird
+                        </Btn>
+                      </div>
+                    )}
                   </Loading>
                 )}
               </Card>
-              <Card title="Draws">
-                {d.draws.length === 0 ? (
-                  <p className="text-sm text-mute">No draws yet.</p>
-                ) : (
-                  <table className="tbl">
-                    <thead>
-                      <tr>
-                        <th>#</th>
-                        <th className="text-right">USDC</th>
-                        <th className="text-right">FLY</th>
-                        <th>status</th>
-                        <th>addDraw</th>
-                        <th />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {d.draws.map((x) => (
-                        <tr key={x.id}>
-                          <td className="num">{x.id}</td>
-                          <td className="num text-right">{usdcRaw(x.amountRaw)}</td>
-                          <td className="num text-right">{(Number(x.flyWei) / 1e18).toFixed(2)}</td>
-                          <td className={x.status === "failed" ? "text-stamp" : ""}>
-                            {x.status}
-                            {x.error && <span className="block text-[11px]">{x.error}</span>}
-                          </td>
-                          <td>{x.txHash ? <Tx h={x.txHash} /> : <span className="text-xs text-mute">pending retry</span>}</td>
-                          <td className="text-xs text-mute">{ago(x.createdAt)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
+              <FlynetNotes st={fs.data} />
+            </div>
+
+            <div className="space-y-6">
+              <Card title="Ask the concierge" right={`budget ${usd(budget)} · ~${usd(budget / Math.max(1, Number(party) || 1), 0)} a head`}>
+                <label className="block">
+                  <span className="label">what are you after?</span>
+                  <textarea className="input mt-1 min-h-20 w-full py-2" maxLength={500} value={req} onChange={(e) => setReq(e.target.value)} />
+                </label>
+                <div className="mt-1 flex flex-wrap gap-2 text-xs">
+                  {EXAMPLES.map((x) => (
+                    <button key={x} className="link" onClick={() => setReq(x)}>
+                      {x}
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-3 flex flex-wrap items-end gap-3">
+                  <label>
+                    <span className="label">party</span>
+                    <input className="input mt-1 w-20" type="number" min={1} max={20} value={party} onChange={(e) => setParty(e.target.value)} />
+                  </label>
+                  <label>
+                    <span className="label">time (venue-local)</span>
+                    <input className="input mt-1" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+                  </label>
+                  <label className="flex items-center gap-2 pb-2 text-sm">
+                    <input type="checkbox" checked={useLoc} onChange={(e) => setUseLoc(e.target.checked)} /> near me
+                  </label>
+                  <Btn onClick={ask}>Find a table</Btn>
+                </div>
+                <p className="mt-2 text-[11px] text-mute">Leave time empty for “now”. Location is sent once for distance and is not stored.</p>
               </Card>
+
+              {plan && (
+                <Card title={`Shortlist for “${plan.request}”`} right={<SourceLine s={plan.source} />}>
+                  <p className="text-xs">
+                    <span className={`tag mr-2 ${plan.ranker === "bankr-llm" ? "text-violet" : "text-mute"}`}>{plan.ranker === "bankr-llm" ? "Bankr LLM" : "deterministic ranker"}</span>
+                    <span className="text-mute">{plan.rankerNote}</span>
+                  </p>
+                  <p className="mt-2 text-xs text-mute">
+                    Read as: {plan.understood.join(" · ")} · {plan.considered} Blackbird venues matched{plan.personalized ? " · personalized with your check-ins" : ""}
+                  </p>
+                  {plan.notes.map((n) => (
+                    <p key={n} className="mt-2 rounded-[3px] border border-amber/50 bg-amber/10 px-3 py-1.5 text-xs text-amber-ink">
+                      {n}
+                    </p>
+                  ))}
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    {plan.picks.map((x, i) => (
+                      <PickCard key={x.place.id} x={x} rank={i + 1} />
+                    ))}
+                  </div>
+                </Card>
+              )}
+
+              {pass.data && pass.data.gapsNearby.length > 0 && (
+                <Card title="Gaps in your passport" right="Blackbird venues in your neighborhoods you have not checked in at">
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    {pass.data.gapsNearby.map((p) => (
+                      <PlaceCard key={p.id} p={p}>
+                        <PlaceLinks p={p} />
+                      </PlaceCard>
+                    ))}
+                  </div>
+                </Card>
+              )}
             </div>
           </div>
         )}

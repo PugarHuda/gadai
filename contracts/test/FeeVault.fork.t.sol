@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {Test} from "forge-std/Test.sol";
+import {Test, stdStorage, StdStorage} from "forge-std/Test.sol";
 import {FeeDesk} from "../src/FeeDesk.sol";
 import {FeeVault, CreateLoanParams, FlashOrder, IChainlinkFeed} from "../src/FeeVault.sol";
 import {FeeNote} from "../src/FeeNote.sol";
@@ -36,6 +36,8 @@ interface IPermit2 {
 /// Runs against a Base mainnet fork with the real GITLAWB Doppler pool (shared TEST_POOL):
 ///   forge test --fork-url $BASE_RPC_URL   (or just `forge test`, which forks BASE_RPC_URL / publicnode itself)
 contract FeeVaultForkTest is Test {
+    using stdStorage for StdStorage;
+
     address constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
     address constant WETH = 0x4200000000000000000000000000000000000006;
     address constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
@@ -682,5 +684,24 @@ contract FeeVaultForkTest is Test {
         emit FeeVault.TokenLegSent(keeper, GITLAWB, 1e18);
         vm.prank(keeper);
         v.sendTokenLegToKeeper(GITLAWB, 1e18);
+    }
+
+    // ───────────── audit ─────────────
+
+    /// FeesManager.updateBeneficiary ADDS shares and moves all of msg.sender's. A borrower who controls a second
+    /// (dust) beneficiary could park its underwritten shares elsewhere, pledge only the dust, and still confirm.
+    function test_audit_confirmPledge_rejectsDustSwap() public {
+        FeeVault v = _createLoan();
+        assertEq(v.pledgeShares(), borrowerShares);
+        address colluder = makeAddr("feedesk.colluder");
+        vm.deal(colluder, 1 ether);
+        stdstore.target(FM).sig("getShares(bytes32,address)").with_key(POOL).with_key(colluder).checked_write(uint256(1));
+        vm.prank(BORROWER);
+        fm.updateBeneficiary(POOL, makeAddr("feedesk.borrower.alt")); // underwritten shares parked, not pledged
+        vm.prank(colluder);
+        fm.updateBeneficiary(POOL, address(v)); // 1 wei of shares pledged instead
+        assertEq(fm.getShares(POOL, BORROWER), 0);
+        vm.expectRevert(FeeVault.NotPledged.selector);
+        v.confirmPledge();
     }
 }

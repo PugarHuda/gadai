@@ -1,0 +1,19 @@
+{
+ "captured_on": "2026-09-19",
+ "source": "GET https://api.blackbird.xyz/flynet/v1/app (account + merchant id stripped) (production)",
+ "id": "f6b4e775-dc14-4eff-a8cf-44e2fdb2cba4",
+ "object": "app",
+ "name": "hackathon",
+ "allowed_scopes": [
+  "read:profile",
+  "read:wallets",
+  "read:user_checkins",
+  "read:checkins",
+  "read:app",
+  "read:balance",
+  "read:restaurant_specials",
+  "read:restaurant_challenges"
+ ],
+ "active": true,
+ "created_at": "2026-09-19T15:11:27.344004Z"
+}

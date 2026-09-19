@@ -46,7 +46,7 @@ The DEMO_FORK needs an archive-capable RPC for anvil. publicnode refuses histori
 
 - **Owner** (FeeDesk deployer): can only `setKeeper`, `setTreasury` and `setOwner`. It cannot touch vault funds. Replacing the keeper hands every keeper power below, in all vaults, to the new address. Redirecting the treasury redirects future `payDesk` payments.
 - **Keeper** (the Dynamic agent wallet): creates loans and picks their terms, `maxOracleAge` excepted (it is fixed per desk at deploy). It starts auctions within the bounds above, disburses first, cancels before an auction, and services the vault. It can move WETH only through the oracle-floored `swapWethToUsdc`. It can authorize Flash orders for the creator token that pay USDC back to the vault, and those authorizations stop validating (`isValidSignature` fails) once the vault is Released or Cancelled. It books dining draws only with a fresh borrower signature (below), up to `drawLimit`, payable to `treasury`. It can take the creator token into its own custody (`sendTokenLegToKeeper`) only in vaults created with `keeperTokenCustody = true`. That flag is immutable, emitted as `KeeperTokenCustodyEnabled` at creation, and readable before the borrower pledges. There, a leaked keeper key can take the token leg. That is the one custodial path.
-- **Borrower**: consents twice. First by pledging, after it can read the vault's terms and `keeperTokenCustody`. Then per dining draw, by personal-signing (EIP-191 for an EOA, EIP-1271 for a contract wallet) `drawMessage(amount, drawNonce, deadline)`, lines joined by `\n`, no trailing newline:
+- **Borrower**: consents twice. First by pledging ALL the FeesManager shares it held at `createLoan` (recorded as `pledgeShares`; `confirmPledge` needs `getShares(vault) >= pledgeShares` and `getShares(borrower) == 0`), after it can read the vault's terms and `keeperTokenCustody`. Then per dining draw, by personal-signing (EIP-191 for an EOA, EIP-1271 for a contract wallet) `drawMessage(amount, drawNonce, deadline)`, lines joined by `\n`, no trailing newline:
   ```
   Gadai dining draw
   Vault: <vault, lowercase 0x hex>
@@ -57,3 +57,17 @@ The DEMO_FORK needs an archive-capable RPC for anvil. publicnode refuses histori
   ```
   The nonce is per vault and increments on every draw, so a signature books at most one draw. The borrower gets the lien and all surplus back at `release()` (anyone can call it once debt is covered), and through `cancel` / `returnStrayShares`.
 - **Noteholders**: senior claim. They can `redeem` 1:1 against USDC in the vault while it is Active or Released, first come first served. Draws are paid only from USDC above outstanding notes. They depend on the keeper only for conversion speed: `collect`, `payDesk`, `release` and the post-grace `disburse` are permissionless.
+
+## Known limitations
+
+Accepted design limits from the [audit] pass (2026-09-19). None lets anyone take noteholder USDC or return the lien early.
+
+- **Non-borrower shares follow the lien.** `updateBeneficiary` adds shares and always moves all of `msg.sender`'s. Anything another beneficiary sends to the vault goes to the borrower on `release`, `cancel` or `returnStrayShares`.
+- **CCA dust is locked.** Bidders' `claimTokens` rounds down, so a few raw notes (≤ ~10 raw, < 0.0001 USDC) can stay inside the auction forever. They count in `noteSupply`, so their USDC backing stays in the vault after release.
+- **CCA protocol fee.** `sweepCurrency` deducts the Uniswap CCA protocol fee (when the fee controller sets one for USDC). The borrower then receives `raised - fee`, while the note face stays `notes sold`. Graduation is checked on the gross amount raised.
+- **Lenders can overpay.** CCA bids above 1.00 USDC per note are valid, and a lender who pays more than face loses the difference. The web UI should cap `maxPrice` at `100 · tick`.
+- **Blacklist and paused-token DoS.** `release`, `cancel` and `disburse` push USDC, WETH and the creator token to the borrower (and USDC to `treasury`). If Circle blacklists the borrower or the treasury, or the creator token blocks transfers to the borrower, those calls revert. The lien stays locked until the block lifts. Noteholders can still `redeem` in Active. A vault stuck in Auction because disburse reverts also blocks noteholder redemption. The owner must never set a blacklisted treasury.
+- **No L2 sequencer-uptime check.** `oracleMinUsdcOut` checks only the Chainlink answer and its age (`maxOracleAge`). The feed is a floor on a trusted keeper, not a price source, so a stale-but-in-age round after a sequencer outage can loosen that floor by at most the price move inside `maxOracleAge`.
+- **Flash orders carry no on-chain min-out.** `authorizeFlashOrder` pins the token, recipient and output currency, but the fill price is whatever Flash's TWAP gets. A leaked keeper key can therefore sell the creator-token leg at whatever price Flash fills.
+- **The FeesManager is keeper-chosen.** The vault trusts `feesManager` for `getShares`, `collectFees` and `updateBeneficiary`. Lenders and the UI must check it is the Doppler initializer/hook for `poolId` (`LoanCreated.feesManager`).
+- **Redemption is first come, first served.** Nothing is pro-rata, and there is no maturity (see "Loan terms").

@@ -1,0 +1,12 @@
+{
+ "captured_on": "2026-09-19",
+ "source": "GET https://api.blackbird.xyz/flynet/v1/challenges?restaurant=a53dd63e-69d6-457a-bc72-891ec96fb4fb (production)",
+ "challenges": [],
+ "pagination": {
+  "total_count": 0,
+  "total_pages": 0,
+  "current_page": 0,
+  "next_page": null,
+  "page_size": 50
+ }
+}

@@ -147,7 +147,7 @@ test("malformed or non-object JSON bodies → 400 {error} on every POST route, n
   for (const m of [cca, flynet, keeper, social]) m.register(all, ctx);
   const id = db.insertLoan(ctx.db, { borrower: borrower.address, token, symbol: "G", poolId: TEST_POOL.poolId, feesManager: TEST_POOL.feesManager, status: "AUCTION", vault: VAULT, auction: VAULT });
   const routes = ["/api/loans", `/api/loans/${id}/pledge`, `/api/loans/${id}/auction/bid-plan`, `/api/loans/${id}/auction/exit-plan`,
-    `/api/loans/${id}/dine/draw`, `/api/loans/${id}/dine/settle`, "/api/admin/keeper/run", "/api/follows", "/api/mirrors/1/submit", "/api/mirrors/1/cancel"];
+    `/api/loans/${id}/dine/plan`, "/api/admin/keeper/run", "/api/follows", "/api/mirrors/1/submit", "/api/mirrors/1/cancel"];
   ctx.db.prepare(`INSERT INTO follows (id,follower,persona_id,mode,size_usdc,tp_pct,sl_pct,dca_days,auto,active,created_at) VALUES (1,'0x01','prudent','bracket',5,50,20,0,0,1,'t')`).run();
   ctx.db.prepare(`INSERT INTO mirror_orders (id,follow_id,signal_id,follower,token,symbol,mode,size_usdc,status,flash_order_id,created_at,updated_at)
     VALUES (1,1,1,'0x01',?,'G','bracket',5,'pending_signature','f1','t','t')`).run(token);

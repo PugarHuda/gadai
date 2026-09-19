@@ -1,72 +1,111 @@
+// Fixtures in ./fixtures are REAL Flynet production responses captured 2026-09-19 (see each file's captured_on/source).
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isOpenNow } from "./index.ts";
-
-const h = (dayOfWeek: string, openTime: string, closeTime: string) => ({ object: "open_hour", dayOfWeek, openTime, closeTime }) as any;
-
-test("isOpenNow: same-day, overnight spill, no hours", () => {
-  const tz = "America/New_York";
-  const fri2000 = new Date("2026-09-18T20:00:00-04:00"); // Friday 20:00 NY
-  const sat0100 = new Date("2026-09-19T01:00:00-04:00"); // Saturday 01:00 NY
-  assert.equal(isOpenNow([h("friday", "17:00", "22:00")], tz, fri2000), true);
-  assert.equal(isOpenNow([h("friday", "11:00", "15:00")], tz, fri2000), false);
-  assert.equal(isOpenNow([h("friday", "18:00:00", "02:00:00")], tz, sat0100), true); // closes past midnight
-  assert.equal(isOpenNow([h("friday", "18:00", "00:30")], tz, sat0100), false);
-  assert.equal(isOpenNow([], tz, fri2000), null);
-});
-
+import { readFileSync } from "node:fs";
 import { openDb } from "../db/index.ts";
-import { isRevert, priceOf, reconcilePending, settleAmounts } from "./index.ts";
 import type { Ctx } from "../ctx.ts";
+import {
+  cached, describeCues, isOpenNow, listPlaces, openAt, parseRequest, prefilter, toChallenges, toHours, toPlace, toSpecials, validatePlan,
+} from "./index.ts";
 
-const bal = (wei: bigint, usd: number) => ({ balance: { value: wei.toString() }, balanceUsd: { value: usd } }) as any;
+const fx = (n: string) => JSON.parse(readFileSync(new URL(`./fixtures/${n}.json`, import.meta.url), "utf8"));
+const places = (fx("locations").locations as Record<string, unknown>[]).map(toPlace);
 
-test("priceOf: needs >= $1 of FLY so cent rounding can't skew the rate", () => {
-  assert.equal(priceOf(bal(10n ** 18n, 1.49)), null); // 1.49 cents would round to 1: rejected
-  assert.equal(priceOf(bal(0n, 500)), null);
-  assert.deepEqual(priceOf(bal(10n ** 20n, 250.4)), { wei: 10n ** 20n, cents: 250n });
+test("fixtures are labelled captures", () => {
+  for (const n of ["locations", "open_hours", "specials", "challenges", "app"]) assert.equal(fx(n).captured_on, "2026-09-19");
+  assert.ok(!fx("app").allowed_scopes.includes("write:rewards")); // why payments are off
 });
 
-test("settleAmounts: at draw rate, capped by lent-unsettled FLY, member balance and draw debt", () => {
-  const issued = [{ flyWei: "1000", amountRaw: "100" }, { flyWei: "1000", amountRaw: "100" }]; // 10 fly wei per usdc raw
-  assert.deepEqual(settleAmounts(issued, 0n, 5000n, 1000n), { pull: 2000n, usdcRaw: 200n }); // cap: lent FLY
-  assert.deepEqual(settleAmounts(issued, 1500n, 5000n, 1000n), { pull: 500n, usdcRaw: 50n }); // minus already settled
-  assert.deepEqual(settleAmounts(issued, 0n, 300n, 1000n), { pull: 300n, usdcRaw: 30n }); // member balance
-  assert.deepEqual(settleAmounts(issued, 0n, 5000n, 70n), { pull: 700n, usdcRaw: 70n }); // never more than the debt
-  assert.deepEqual(settleAmounts([], 0n, 5000n, 70n), { pull: 0n, usdcRaw: 0n });
+test("toPlace: brand name over street-address location name, {0,0} coordinate → null, maps link", () => {
+  const p = places.find((x) => x.id === "aec582dc-5f47-40c3-ab10-1da436d69e2e")!;
+  assert.equal(p.name, "Bareburger");
+  assert.equal(p.region, "New York, NY");
+  assert.ok(p.image?.startsWith("https://images.blackbird.xyz/"));
+  assert.ok(p.mapsUrl?.includes("place_id:"));
+  const zero = (fx("locations").locations as any[]).find((l) => !l.coordinate?.latitude);
+  assert.equal(toPlace(zero).lat, null);
+  assert.ok(places.every((x) => !x.cuisine.includes("10X Coffee Club"))); // loyalty tag, not a cuisine
 });
 
-test("isRevert: clean reverts are final, timeouts are not", () => {
-  assert.equal(isRevert(new Error('The contract function "addDraw" reverted with the following reason: OverDrawLimit()')), true);
-  assert.equal(isRevert(new Error("tx 0xabc reverted")), true);
-  assert.equal(isRevert(new Error("Timed out while waiting for transaction with hash 0xabc to be confirmed.")), false);
-  assert.equal(isRevert(new Error("fetch failed")), false);
+test("open hours: real overnight close (Fri 12:00–02:30) and same-day windows", () => {
+  const h = toHours(fx("open_hours"));
+  assert.equal(h.length, 7);
+  assert.equal(openAt(h, "friday", "23:30"), true);
+  assert.equal(openAt(h, "saturday", "02:00"), true); // Friday spill
+  assert.equal(openAt(h, "saturday", "03:00"), false);
+  assert.equal(openAt(h, "monday", "22:30"), false); // Sunday closes 22:00, no spill
+  assert.equal(openAt([], "monday", "12:00"), null);
+  assert.equal(isOpenNow(h, "America/New_York", new Date("2026-09-19T01:00:00-04:00")), true); // Sat 01:00 NY
 });
 
-test("reconcilePending: decided by vault.drawNonce + deadline; a landed draw is booked once, never re-sent", async () => {
-  const db = openDb(":memory:");
-  const ctx = { db, log: () => {} } as unknown as Ctx;
-  const ins = (nonce: number, deadline: number, ageMin: number) =>
-    Number(db.prepare("INSERT INTO draws (loan_id,amount_raw,fly_wei,status,draw_nonce,deadline,borrower_sig,created_at) VALUES (1,'50','50','pending',?,?,'0x01',?)")
-      .run(String(nonce), String(deadline), new Date(Date.now() - ageMin * 60_000).toISOString()).lastInsertRowid);
-  const st = (id: number) => (db.prepare("SELECT status FROM draws WHERE id = ?").get(id) as { status: string }).status;
-  const resent: number[] = [];
-  const resend = async (_: Ctx, id: number) => void resent.push(id);
+test("specials dedupe (Flynet returns the same special twice); empty challenges parse", () => {
+  const s = toSpecials(fx("specials"));
+  assert.equal(fx("specials").specials.length, 2);
+  assert.equal(s.length, 1);
+  assert.equal(s[0]!.label, "Earn 10X back in Fly");
+  assert.deepEqual(toChallenges(fx("challenges")), []);
+});
 
-  const p = ins(0, 1000, 10);
-  await reconcilePending(ctx, 1, { drawNonce: 1n, now: 500n }, resend); // nonce 0 consumed on-chain → recorded, no resend
-  assert.equal(st(p), "recorded");
-  await reconcilePending(ctx, 1, { drawNonce: 1n, now: 500n }, resend); // idempotent
-  assert.deepEqual(resent, []);
-  assert.equal(db.prepare("SELECT COUNT(*) n FROM loan_events WHERE kind = 'draw'").get()!.n, 1);
+test("parseRequest reads city, cuisine, late, party cues", () => {
+  const c = parseRequest("somewhere in NYC for four, open late, burgers", places);
+  assert.equal(c.region, "New York, NY");
+  assert.ok(c.cuisines.includes("Burgers"));
+  assert.equal(c.late, true);
+  assert.equal(parseRequest("cheap drinks in SF", places).maxPrice, 2);
+  assert.equal(parseRequest("a table in la for a birthday", places).region, "Los Angeles, CA");
+  assert.equal(parseRequest("a place for salad", places).region, null); // "la" inside words must not match
+  assert.ok(describeCues(c, 4).includes("party of 4"));
+});
 
-  const q = ins(1, 1000, 1); // young & nonce unused: wait
-  await reconcilePending(ctx, 1, { drawNonce: 1n, now: 500n }, resend);
-  assert.equal(st(q), "pending");
-  db.prepare("UPDATE draws SET created_at = ? WHERE id = ?").run(new Date(Date.now() - 6 * 60_000).toISOString(), q);
-  await reconcilePending(ctx, 1, { drawNonce: 1n, now: 500n }, resend); // 6 min & nonce unused: dropped → resend same signed args
-  assert.deepEqual(resent, [q]);
-  await reconcilePending(ctx, 1, { drawNonce: 1n, now: 1001n }, resend); // past its deadline: can never land → failed
-  assert.equal(st(q), "failed");
-  assert.deepEqual(resent, [q]);
+test("prefilter: region + cuisine filters, one venue per brand, budget fit", () => {
+  const c = parseRequest("burgers in NYC", places);
+  const r = prefilter(places, c, { partySize: 4, budgetUsd: 100 });
+  assert.ok(r.candidates.length > 0);
+  assert.ok(r.candidates.every((s) => s.p.region === "New York, NY" && s.p.cuisine.includes("Burgers")));
+  const brands = r.candidates.map((s) => s.p.restaurantId);
+  assert.equal(new Set(brands).size, brands.length); // Bareburger appears once, not 4×
+  const two = r.candidates.find((s) => s.p.price === 2);
+  if (two) assert.equal(two.fits, false); // $35 × 4 = $140 > $100
+  const none = prefilter(places, parseRequest("ethiopian in Denver", places), { partySize: 2, budgetUsd: 100 });
+  assert.ok(none.candidates.every((s) => s.p.region === "Denver, CO"));
+});
+
+test("prefilter personalization: 'somewhere new' demotes visited venues", () => {
+  const c = parseRequest("burgers in NYC, somewhere new", places);
+  const first = prefilter(places, parseRequest("burgers in NYC", places), { partySize: 1, budgetUsd: 1000 }).candidates[0]!;
+  const visits = new Map([[first.p.id, 3]]);
+  const r = prefilter(places, c, { partySize: 1, budgetUsd: 1000, visits });
+  assert.notEqual(r.candidates[0]!.p.id, first.p.id);
+});
+
+test("listPlaces: search, filters, pagination, facet lists", () => {
+  const all = listPlaces(places, { page: 0 }, 10);
+  assert.equal(all.total, places.length);
+  assert.equal(all.places.length, 10);
+  assert.ok(all.regions.includes("New York, NY"));
+  const q = listPlaces(places, { query: "bareburger", page: 0 });
+  assert.ok(q.total >= 1 && q.places.every((p) => p.name === "Bareburger"));
+  assert.equal(listPlaces(places, { region: "Denver, CO", price: 4, page: 0 }).places.every((p) => p.price === 4), true);
+});
+
+test("validatePlan: 400s on bad input", () => {
+  const bad = (b: object) => assert.throws(() => validatePlan(b as any), (e: any) => e.status === 400);
+  bad({});
+  bad({ request: "x".repeat(501) });
+  bad({ request: "tacos", partySize: 0 });
+  bad({ request: "tacos", partySize: 2.5 });
+  bad({ request: "tacos", time: "25:00" });
+  bad({ request: "tacos", near: { lat: 200, lng: 0 } });
+  assert.deepEqual(validatePlan({ request: " tacos ", partySize: 4, time: "21:30" }), { request: "tacos", partySize: 4, time: "21:30", near: undefined });
+});
+
+test("cached: TTL, kv persistence, stale copy when Flynet fails", async () => {
+  const ctx = { db: openDb(":memory:"), log: () => {} } as unknown as Ctx;
+  let calls = 0;
+  const a = await cached(ctx, "t1", 60_000, async () => ++calls);
+  const b = await cached(ctx, "t1", 60_000, async () => ++calls);
+  assert.equal(a.v, 1); assert.equal(b.v, 1); assert.equal(calls, 1);
+  const s = await cached(ctx, "t1", 0, async () => { throw new Error("Flynet down"); });
+  assert.equal(s.stale, true); assert.equal(s.v, 1);
+  await assert.rejects(cached(ctx, "t2", 0, async () => { throw new Error("Flynet down"); }), /Flynet down/);
 });

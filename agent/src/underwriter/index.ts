@@ -7,6 +7,7 @@ import { ADDR, ERC20_ABI, FEE_DESK_ABI } from "@feedesk/shared";
 import type { Ctx } from "../ctx.ts";
 import { opt } from "../ctx.ts";
 import { claimableFees, dust, llmChat, LlmNoCredits, tokenFees } from "../bankr/index.ts";
+import { buyRiskVerdict, riskFactor } from "../risk/index.ts";
 import { HORIZON_DAYS, MIN_HISTORY_DAYS, RULES_MODEL, beneficiaryFactor, computeTerms, parseMemo, reputationFactor, ruleMemo, type Reputation, type TermsResult } from "./engine.ts";
 
 export const PERSONAS: Persona[] = [
@@ -126,7 +127,8 @@ export async function runPersona(p: Persona, q: Quote): Promise<MemoRun | null> 
 export async function underwrite(ctx: Ctx, token: Address, borrower: Address, opts: { erc8004AgentId?: bigint } = {}) {
   const q = await quote(ctx, token, borrower);
   if (!q.eligible) throw new HTTPException(422, { message: `not eligible: ${q.reasons.join("; ")}` });
-  const runs = await Promise.allSettled(PERSONAS.map((p) => runPersona(p, q)));
+  // x402: the Dynamic wallet buys a third-party honeypot verdict (real Base mainnet USDC) while the memos are written.
+  const [runs, risk] = await Promise.all([Promise.allSettled(PERSONAS.map((p) => runPersona(p, q))), buyRiskVerdict(ctx, token)]);
   const leadRun = runs[0]!;
   if (leadRun.status === "rejected") throw new HTTPException(502, { message: `lead memo (${lead.id}/${lead.model}) failed: ${leadRun.reason?.message ?? leadRun.reason}` });
   if (!leadRun.value) throw new HTTPException(502, { message: "lead persona produced no terms" });
@@ -135,6 +137,12 @@ export async function underwrite(ctx: Ctx, token: Address, borrower: Address, op
     if (r.status === "fulfilled" && r.value) ok.push(r.value);
     else if (r.status === "rejected") ctx.log("underwriter", `persona ${PERSONAS[i]!.id} memo skipped`, String(r.reason?.message ?? r.reason));
   });
+  {
+    // Paid risk verdict may only LOWER: HONEYPOT declines every memo, SUSPICIOUS halves, SAFE / not purchased = no change.
+    const { factor, note } = riskFactor(risk);
+    q.formula = `${q.formula}; ${note}`;
+    if (factor < 1) for (const run of ok) lowerRun(run, q, factor, note);
+  }
   if (opts.erc8004AgentId !== undefined) {
     // ERC-8004: what this desk said on-chain about the borrower's agent. May only LOWER (or decline), never raise.
     const rep = await readReputation(ctx, opts.erc8004AgentId);
@@ -147,6 +155,7 @@ export async function underwrite(ctx: Ctx, token: Address, borrower: Address, op
     memos: ok.map((r) => r.memo),
     lead: leadRun.value.memo,
     terms: leadRun.value.terms,
+    risk,
     rawText: Object.fromEntries(ok.map((r) => [r.memo.personaId, r.raw])) as Record<string, string>,
   };
 }
@@ -159,15 +168,15 @@ async function readReputation(ctx: Ctx, agentId: bigint): Promise<Reputation> {
   return m.borrowerReputation(ctx, agentId, deskWallet); // throws → apply fails (fail closed: never skip a named reputation)
 }
 
-/** Scale an approved memo's principal by the reputation factor (floor to cents); under $1 (or factor 0) it declines. */
-function lowerRun(run: MemoRun, q: Quote, factor: number, note: string) {
+/** Scale an approved memo's principal by a factor ≤ 1 (floor to cents); under $1 (or factor 0) it declines. Never raises. */
+export function lowerRun(run: MemoRun, q: Quote, factor: number, note: string) {
   const m = run.memo;
   if (m.decision !== "approve") return;
   const p = PERSONAS.find((x) => x.id === m.personaId)!;
-  const cents = Math.floor((Number(m.principalRaw) / 1e6) * factor * 100);
+  const cents = Math.floor((Number(m.principalRaw) / 1e6) * Math.min(1, Math.max(0, factor)) * 100);
   const r = cents >= 100 ? computeTerms(q.inputs!, p.advanceRatePct, capUsdc(), cents / 100) : null;
   if (!r || isErr(r)) {
-    Object.assign(m, { decision: "decline", principalRaw: "0", rationale: `${m.rationale} Declined by ${note} (< $1).` });
+    Object.assign(m, { decision: "decline", principalRaw: "0", rationale: `${m.rationale} Declined by ${note}${factor > 0 ? " (< $1)" : ""}.` });
     return;
   }
   run.terms = r.terms;

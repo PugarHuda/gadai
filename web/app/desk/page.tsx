@@ -21,6 +21,7 @@ import { ENV } from "@/lib/env";
 import { useSigner } from "@/lib/wallet";
 import { Addr, Btn, Card, Empty, Loading, Pill, ago, pct, usd, usdcRaw, useLoad } from "@/components/ui";
 import { MirrorTag } from "@/components/memo";
+import { ShareOnX, SITE, leaderboardText, signalText, signalUrl, type FlashInfo } from "@/components/share";
 
 export default function Desk() {
   const s = useSigner();
@@ -30,6 +31,7 @@ export default function Desk() {
   const sig = useLoad(() => api<Signal[]>(`/api/signals?limit=60${persona ? `&personaId=${persona}` : ""}`), [persona], 30_000);
   const follows = useLoad(async () => (s.address ? api<Follow[]>(`/api/follows?follower=${s.address}`) : []), [s.address]);
   const mirrors = useLoad(async () => (s.address ? api<MirrorOrder[]>(`/api/mirrors?follower=${s.address}`) : []), [s.address], 20_000);
+  const fi = useLoad(() => api<FlashInfo>("/api/flash/info"), [], 60_000);
   const name = (id: string) => lb.data?.find((r) => r.personaId === id)?.name ?? desk.data?.personas.find((p) => p.id === id)?.name ?? id;
 
   return (
@@ -44,7 +46,7 @@ export default function Desk() {
         {ENV.DEMO_FORK && <p className="mt-3 max-w-[68ch] rounded-[3px] border border-dashed border-amber-ink/50 px-3 py-2 text-sm text-amber-ink">Flash: mainnet only. This is a DEMO_FORK build, so one-click mirror signing is disabled here (approvals would land on the fork while Flash settles on mainnet). Follows and signals still work.</p>}
       </header>
 
-      <Card title="Leaderboard" right={<span>score = 60·repaid + 40·follower PnL</span>}>
+      <Card title="Leaderboard" right={<span className="flex flex-wrap items-center gap-3"><span>score = 60·repaid + 40·follower PnL</span>{lb.data && <ShareOnX text={leaderboardText(lb.data)} url={`${SITE}/desk`} label="Share leaderboard" />}</span>}>
         <Loading l={lb.loading} e={lb.error} retry={lb.reload} what="the underwriter leaderboard">
           {lb.data?.length === 0 ? (
             <Empty title="No underwriters ranked yet">Underwriters appear here after they write their first credit memo.</Empty>
@@ -81,6 +83,8 @@ export default function Desk() {
         </Loading>
       </Card>
 
+      <FlashExplainer info={fi.data} error={fi.error} />
+
       <div className="grid gap-6 md:grid-cols-[1fr_1.1fr]">
         <FollowForm personas={(lb.data ?? []).map((r) => ({ id: r.personaId, name: r.name }))} initial={persona} onDone={() => (follows.reload(), lb.reload())} />
         <Card title={persona ? `Signals · ${name(persona)}` : "Signal feed"} right={persona && <button className="link" onClick={() => setPersona(null)}>all</button>}>
@@ -95,6 +99,10 @@ export default function Desk() {
                   <p className="mt-1 text-xs">{g.rationale}</p>
                   <p className="mt-1 text-[11px] text-mute num">principal {usdcRaw(g.principalRaw)} · note px {g.maxNotePrice.toFixed(2)} · {ago(g.createdAt)}</p>
                   <MirrorTag s={g} />
+                  <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
+                    <Link className="link" href={`/signals/${g.id}`}>signal card{g.decision === "approve" ? " · live Flash quote" : ""}</Link>
+                    <ShareOnX url={signalUrl(g.id)} text={signalText({ ...g, personaName: name(g.personaId) })} />
+                  </div>
                 </li>
               ))}
               {sig.data?.length === 0 && <li><Empty title="No signals yet">Each credit memo becomes a public signal here: approve or decline, a score, and the rationale.</Empty></li>}
@@ -145,6 +153,49 @@ export default function Desk() {
         </div>
       )}
     </div>
+  );
+}
+
+/** How a mirror executes on Flash, what it costs, how followers are scored, and where it stands. Numbers come from /api/flash/info. */
+function FlashExplainer({ info, error }: { info: FlashInfo | null; error: unknown }) {
+  return (
+    <Card title="How a mirror trades on Definitive Flash" right={<span>@DefinitiveFi</span>}>
+      <div className="rounded-[3px] border border-dashed border-amber-ink/50 px-3 py-2 text-sm text-amber-ink">
+        <b>Mainnet only{!info || info.mirrors.placed === 0 ? ", currently unfunded" : ""}.</b> Mirror orders are real Flash orders on Base mainnet, paid from the follower&apos;s own USDC
+        (the follower is the Flash funder; the desk never fronts it).{" "}
+        {!info ? null : info.mirrors.placed === 0 ? (
+          <>No follower wallet has been funded yet: {info.mirrors.total} mirror order{info.mirrors.total === 1 ? "" : "s"} queued, none placed on Flash, so follower PnL is $0 and scores rest on repayment alone.</>
+        ) : (
+          <>{info.mirrors.placed} of {info.mirrors.total} queued mirror orders were placed on Flash, {info.mirrors.filled} filled.</>
+        )}
+        {ENV.DEMO_FORK && " This DEMO_FORK build cannot sign mirror orders at all."} Each signal card shows a live Flash quote for the exact order.
+      </div>
+      <div className="mt-4 grid gap-px border border-rule bg-rule md:grid-cols-3">
+        <div className="bg-card px-4 py-3 text-sm">
+          <div className="label">Bracket mode</div>
+          <p className="mt-1">One Flash <b>market</b> buy of your USDC size, with an attached <b>Bracket</b> advanced order: a take-profit and a stop-loss at notional prices set from the Flash spot at quote time (+TP%, −SL%). You sign both legs up front; the bracket arms when the entry fills and exits to USDC on whichever trigger hits first.</p>
+        </div>
+        <div className="bg-card px-4 py-3 text-sm">
+          <div className="label">DCA mode</div>
+          <p className="mt-1">One Flash <b>TWAP</b> order: <span className="font-mono">twapBucketCount</span> = your DCA days, <span className="font-mono">durationSeconds</span> = days × 86,400, so one slice buys each day. No exit leg. Both modes are refused while Flash flags the token or quotes price impact above {info?.maxPriceImpactPct ?? 3}%.</p>
+        </div>
+        <div className="bg-card px-4 py-3 text-sm">
+          <div className="label">Integrator fee · FLASH_INTEGRATOR_FEE_BPS</div>
+          {info ? (
+            info.integratorFeeSet ? (
+              <p className="mt-1"><span className="num text-lg">{info.integratorFeeBps} bps</span> ({(info.integratorFeeBps / 100).toFixed(2)}%) of each mirror&apos;s notional goes to Gadai, sent as <span className="font-mono">flashIntegratorFeeBps</span> on the quote and the order.</p>
+            ) : (
+              <p className="mt-1"><span className="num text-lg">0 bps</span>, not set. Gadai earns nothing on mirrors today. Setting it adds <span className="font-mono">flashIntegratorFeeBps</span> to every mirror&apos;s quote and order, on top of Flash&apos;s own fee.</p>
+            )
+          ) : (
+            <p className="mt-1 text-mute">{error ? "Fee setting unavailable (agent unreachable)." : "Loading…"}</p>
+          )}
+        </div>
+      </div>
+      <p className="mt-3 max-w-[68ch] text-xs text-mute">
+        <b className="text-ink">Follower PnL scoring.</b> For every filled mirror: tokens still held × current Flash price + bracket exit USDC − USDC spent, re-marked every 30s from Flash order fills. A persona&apos;s score = 60 × share of its approved debt repaid on-chain + 40 × clamp(0.5 + follower PnL ÷ spent, 0, 1). Rule-based memos (no LLM review) publish signals but never trigger mirrors.
+      </p>
+    </Card>
   );
 }
 
