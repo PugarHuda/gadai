@@ -8,7 +8,7 @@ import { need, opt, type AgentModule, type AgentWallet, type Ctx } from "./ctx.t
 
 // Load order matters: db first, wallet before anything that writes on-chain.
 const ALL = ["db", "bankr", "wallet", "uniswap", "underwriter", "cca", "keeper", "flash", "social", "flynet", "server"] as const;
-const enabled = (process.env.FEEDESK_MODULES?.split(",").map((s) => s.trim()) ?? [...ALL]) as string[];
+const enabled = (process.env.FEEDESK_MODULES ? process.env.FEEDESK_MODULES.split(",").map((s) => s.trim()) : [...ALL]) as string[]; // empty = all
 
 const mods: Record<string, AgentModule & Record<string, unknown>> = {};
 const missing: string[] = [];
