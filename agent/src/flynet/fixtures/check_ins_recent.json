@@ -1,0 +1,3707 @@
+{
+ "captured_on": "2026-09-19",
+ "source": "GET https://api.blackbird.xyz/flynet/v1/check_ins?page_size=500 (production), first 60 of 500 kept; pagination as returned",
+ "check_ins": [
+  {
+   "id": "1a46a594-2eba-45ef-bba1-203cc73ab11a",
+   "object": "check_in",
+   "location": {
+    "id": "ceabf735-999f-4275-a776-ef1bb7019cff",
+    "object": "location",
+    "name": "Brentwood",
+    "restaurant": {
+     "id": "e30edfe4-075d-4167-86a4-fba4fbb9df98",
+     "object": "restaurant",
+     "name": "Layla Bagels",
+     "cuisine": [
+      "10X Coffee Club",
+      "Bagel Shop"
+     ],
+     "cohort": "qsr",
+     "price": 1,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/4e3783f2-4635-4656-8bd7-d59404ef084e/1x.png?v=1768241836",
+      "web_2x": "https://images.blackbird.xyz/4e3783f2-4635-4656-8bd7-d59404ef084e/2x.png?v=1768241837",
+      "full_3x": "https://images.blackbird.xyz/4e3783f2-4635-4656-8bd7-d59404ef084e/3x.png?v=1768241837"
+     },
+     "website_url": "https://www.laylabagels.com/",
+     "instagram_url": null,
+     "created_at": "2026-01-10T01:21:00.148776Z",
+     "updated_at": "2026-02-04T09:01:42.41826Z"
+    },
+    "neighborhood": {
+     "id": "1d7a9c96-f9c0-4a55-95c0-be0706ad439c",
+     "object": "neighborhood",
+     "name": "Brentwood",
+     "region": "Los Angeles, CA"
+    },
+    "slug": "layla-bagels-brentwood",
+    "address": {
+     "street": "908 S Barrington Ave",
+     "street2": "",
+     "city": "Los Angeles",
+     "state": "CA",
+     "zipcode": "90049",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 34.0532148,
+     "longitude": -118.4649076
+    },
+    "phone_number": "(424) 209-2063",
+    "time_zone": "America/Los_Angeles",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJt99RiV-7woARlgt5fzJhNPc",
+    "created_at": "2026-06-23T21:25:03.590218Z",
+    "updated_at": "2026-09-08T15:48:55.56585Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:01:42.872942Z",
+   "ended_at": null,
+   "square_qr": null
+  },
+  {
+   "id": "e6128081-11d5-436f-b7d4-b263728b047b",
+   "object": "check_in",
+   "location": {
+    "id": "9701cf31-7f62-4b5d-98d2-b222be199941",
+    "object": "location",
+    "name": "Upper West Side",
+    "restaurant": {
+     "id": "57a87ef6-1fc0-4161-b3a8-b8bdd95f6d51",
+     "object": "restaurant",
+     "name": "HARVEST KITCHEN",
+     "cuisine": [
+      "American"
+     ],
+     "cohort": "fsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/63e38f7d-1b70-4416-a1bf-d003cd858a1f/1x.png?v=1771878938",
+      "web_2x": "https://images.blackbird.xyz/63e38f7d-1b70-4416-a1bf-d003cd858a1f/2x.png?v=1771878938",
+      "full_3x": "https://images.blackbird.xyz/63e38f7d-1b70-4416-a1bf-d003cd858a1f/3x.png?v=1771878939"
+     },
+     "website_url": "http://www.harvestkitchennyc.com/",
+     "instagram_url": null,
+     "created_at": "2026-02-23T20:05:25.685722Z",
+     "updated_at": "2026-02-23T20:35:39.10688Z"
+    },
+    "neighborhood": {
+     "id": "1ecbf9c6-cefb-4acf-9855-e4e9bd254c3e",
+     "object": "neighborhood",
+     "name": "Upper West Side",
+     "region": "New York, NY"
+    },
+    "slug": "harvest-kitchen-upper-west-side",
+    "address": {
+     "street": "269 Columbus Ave",
+     "street2": "",
+     "city": "New York",
+     "state": "NY",
+     "zipcode": "10023",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.7778053,
+     "longitude": -73.97820039999999
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJR3VvyQhZwokRjaNBDvAcCOc",
+    "created_at": "2026-02-23T20:11:28.678033Z",
+    "updated_at": "2026-09-18T04:01:50.168097Z"
+   },
+   "blackbird_pay_enabled": false,
+   "created_at": "2026-09-19T16:01:38.709082Z",
+   "ended_at": "2026-09-19T16:01:38.707213Z",
+   "square_qr": null
+  },
+  {
+   "id": "a973aeb9-a3c2-4ad8-82b7-e8e3abfa3be4",
+   "object": "check_in",
+   "location": {
+    "id": "d3181d7b-e623-4ca4-9577-30918898fe06",
+    "object": "location",
+    "name": "Avondale",
+    "restaurant": {
+     "id": "dde66a49-1671-44a5-96a5-73b1f8c6cac1",
+     "object": "restaurant",
+     "name": "Verde",
+     "cuisine": [
+      "Salads & Wraps"
+     ],
+     "cohort": "qsr",
+     "price": 1,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/34275d9d-1cc9-4fcc-b264-023e454a9a3a/1x.png",
+      "web_2x": "https://images.blackbird.xyz/34275d9d-1cc9-4fcc-b264-023e454a9a3a/2x.png",
+      "full_3x": "https://images.blackbird.xyz/34275d9d-1cc9-4fcc-b264-023e454a9a3a/3x.png"
+     },
+     "website_url": "https://www.eatatverde.com/",
+     "instagram_url": null,
+     "created_at": "2024-10-16T18:17:25.084202Z",
+     "updated_at": "2026-02-04T09:00:57.599569Z"
+    },
+    "neighborhood": {
+     "id": "7a924389-1ff0-4ead-9da5-c3f712dc6e82",
+     "object": "neighborhood",
+     "name": "Avondale",
+     "region": "Charleston, SC"
+    },
+    "slug": "verde-avondale",
+    "address": {
+     "street": "13 Magnolia Rd",
+     "street2": "",
+     "city": "Charleston",
+     "state": "SC",
+     "zipcode": "29407",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 32.782366,
+     "longitude": -79.985958
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJGXy4c8J7_ogR3zm4tOX3Bc4",
+    "created_at": "2025-01-16T21:15:28.404336Z",
+    "updated_at": "2026-09-18T04:02:02.676181Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:01:34.790724Z",
+   "ended_at": "2026-09-19T16:01:38.569853Z",
+   "square_qr": null
+  },
+  {
+   "id": "467bcb70-3a1e-4555-8cca-4d56326131c2",
+   "object": "check_in",
+   "location": {
+    "id": "1fdf329e-9780-40b4-8a43-784865b404f1",
+    "object": "location",
+    "name": "Upper West Side",
+    "restaurant": {
+     "id": "6b46f002-cb72-45d4-99a3-c84bdd701029",
+     "object": "restaurant",
+     "name": "Jacob's Pickles",
+     "cuisine": [
+      "Southern",
+      "American"
+     ],
+     "cohort": "fsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/9877509c-8938-45fc-bc9d-028b508705ed/1x.png",
+      "web_2x": "https://images.blackbird.xyz/9877509c-8938-45fc-bc9d-028b508705ed/2x.png",
+      "full_3x": "https://images.blackbird.xyz/9877509c-8938-45fc-bc9d-028b508705ed/3x.png"
+     },
+     "website_url": "https://www.jacobspickles.com/",
+     "instagram_url": null,
+     "created_at": "2025-05-27T19:56:31.532371Z",
+     "updated_at": "2026-02-04T09:01:19.596438Z"
+    },
+    "neighborhood": {
+     "id": "1ecbf9c6-cefb-4acf-9855-e4e9bd254c3e",
+     "object": "neighborhood",
+     "name": "Upper West Side",
+     "region": "New York, NY"
+    },
+    "slug": "jacobs-pickles-upper-west-side",
+    "address": {
+     "street": "680 Columbus Ave",
+     "street2": "",
+     "city": "New York",
+     "state": "NY",
+     "zipcode": "10025",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.7911551,
+     "longitude": -73.9690457
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": "https://resy.com/cities/new-york-ny/venues/jacobs-pickles?d=&seats=2&date=2025-05-27",
+    "reservations_enabled": true,
+    "google_place_id": "ChIJCehOSIRYwokRs4ijKsy1oiI",
+    "created_at": "2025-05-28T20:43:15.225074Z",
+    "updated_at": "2026-09-18T04:03:57.160974Z"
+   },
+   "blackbird_pay_enabled": false,
+   "created_at": "2026-09-19T16:01:34.482375Z",
+   "ended_at": "2026-09-19T16:01:34.480475Z",
+   "square_qr": null
+  },
+  {
+   "id": "a1ca3299-7bd2-4a6e-849c-e73d2f5770f8",
+   "object": "check_in",
+   "location": {
+    "id": "e34876c4-c406-43ad-bd7a-2c24d467c7f5",
+    "object": "location",
+    "name": "Playa Vista",
+    "restaurant": {
+     "id": "62478d84-7ebe-46d4-9566-9c8bd7c71512",
+     "object": "restaurant",
+     "name": "Cafe Ruisseau",
+     "cuisine": [
+      "Coffee Shop",
+      "10X Coffee Club"
+     ],
+     "cohort": "qsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/d653a4a9-87e5-4671-ae2f-d9fde818be5c/1x.png?v=1760711822",
+      "web_2x": "https://images.blackbird.xyz/d653a4a9-87e5-4671-ae2f-d9fde818be5c/2x.png?v=1760711822",
+      "full_3x": "https://images.blackbird.xyz/d653a4a9-87e5-4671-ae2f-d9fde818be5c/3x.png?v=1760711822"
+     },
+     "website_url": "http://caferuisseau.com/",
+     "instagram_url": null,
+     "created_at": "2025-10-08T01:43:18.582495Z",
+     "updated_at": "2026-02-04T09:01:35.870357Z"
+    },
+    "neighborhood": {
+     "id": "cff75882-1aa1-4e1f-bbe8-de362a3457f8",
+     "object": "neighborhood",
+     "name": "Playa Vista",
+     "region": "Los Angeles, CA"
+    },
+    "slug": "cafe-ruisseau-playa-vista",
+    "address": {
+     "street": "12150 Millennium Dr",
+     "street2": "",
+     "city": "Los Angeles",
+     "state": "CA",
+     "zipcode": "90094",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 33.9793581,
+     "longitude": -118.4067248
+    },
+    "phone_number": null,
+    "time_zone": "America/Los_Angeles",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJDTl7_ZSxwoARLlOfaOkaxNk",
+    "created_at": "2025-10-08T01:45:20.687229Z",
+    "updated_at": "2026-09-18T04:02:40.668106Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:01:26.317949Z",
+   "ended_at": "2026-09-19T16:01:31.702226Z",
+   "square_qr": null
+  },
+  {
+   "id": "d3d4d9c3-8507-4f30-86c5-1b5b51001386",
+   "object": "check_in",
+   "location": {
+    "id": "5ed7b63c-a0ab-4903-862e-29b30218c724",
+    "object": "location",
+    "name": "Outer Richmond",
+    "restaurant": {
+     "id": "0df9022e-2409-4f9e-a7dc-6ee190ec53a8",
+     "object": "restaurant",
+     "name": "Aziza",
+     "cuisine": [
+      "Moroccan"
+     ],
+     "cohort": "fsr",
+     "price": 3,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/98ec71fa-7e82-4f3a-853b-c488c458f72f/1x.png?v=1787690140",
+      "web_2x": "https://images.blackbird.xyz/98ec71fa-7e82-4f3a-853b-c488c458f72f/2x.png?v=1787690140",
+      "full_3x": "https://images.blackbird.xyz/98ec71fa-7e82-4f3a-853b-c488c458f72f/3x.png?v=1787690141"
+     },
+     "website_url": "http://www.azizasf.com/",
+     "instagram_url": null,
+     "created_at": "2026-07-27T17:43:14.691544Z",
+     "updated_at": "2026-08-25T20:35:41.229799Z"
+    },
+    "neighborhood": {
+     "id": "a62083ac-c816-4111-b2cf-7dbe66235b96",
+     "object": "neighborhood",
+     "name": "Outer Richmond",
+     "region": "San Francisco, CA"
+    },
+    "slug": "aziza-outer-richmond",
+    "address": {
+     "street": "5800 Geary Blvd",
+     "street2": "",
+     "city": "San Francisco",
+     "state": "CA",
+     "zipcode": "94121",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 37.7804334,
+     "longitude": -122.481706
+    },
+    "phone_number": null,
+    "time_zone": "America/Los_Angeles",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJb-KW6Q-HhYAR4NlucuMP_HE",
+    "created_at": "2026-07-27T17:43:44.79335Z",
+    "updated_at": "2026-09-18T04:01:49.169143Z"
+   },
+   "blackbird_pay_enabled": false,
+   "created_at": "2026-09-19T16:01:25.623724Z",
+   "ended_at": "2026-09-19T16:01:25.621233Z",
+   "square_qr": null
+  },
+  {
+   "id": "a6eb4432-264f-4115-92fc-1dce26ca605c",
+   "object": "check_in",
+   "location": {
+    "id": "560b4e15-0243-4bc6-aeda-f11bb154ad37",
+    "object": "location",
+    "name": "Downtown Charleston",
+    "restaurant": {
+     "id": "afed496c-fef0-4412-be07-d41184aa3867",
+     "object": "restaurant",
+     "name": "Leon's Oyster Shop",
+     "cuisine": [
+      "Oyster bar"
+     ],
+     "cohort": "fsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/ca9a68c4-ee1e-471f-bf6b-5a32f8cb8e54/1x.png",
+      "web_2x": "https://images.blackbird.xyz/ca9a68c4-ee1e-471f-bf6b-5a32f8cb8e54/2x.png",
+      "full_3x": "https://images.blackbird.xyz/ca9a68c4-ee1e-471f-bf6b-5a32f8cb8e54/3x.png"
+     },
+     "website_url": "https://leonsoystershop.com/",
+     "instagram_url": null,
+     "created_at": "2024-01-23T02:28:02.561689Z",
+     "updated_at": "2026-02-04T09:00:47.195988Z"
+    },
+    "neighborhood": {
+     "id": "aebbc0ed-d24a-4ab0-9e9c-5d807404e0f9",
+     "object": "neighborhood",
+     "name": "Downtown Charleston",
+     "region": "Charleston, SC"
+    },
+    "slug": "leons-oyster-shop-downtown-charleston",
+    "address": {
+     "street": "698 King St",
+     "street2": "",
+     "city": "Charleston",
+     "state": "SC",
+     "zipcode": "29403",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 32.79851396889914,
+     "longitude": -79.94605135060357
+    },
+    "phone_number": "4144090351",
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": true,
+    "reservation_url": "https://resy.com/cities/charleston-sc/venues/leons-oyster-shop?date=2024-06-06&seats=2",
+    "reservations_enabled": true,
+    "google_place_id": "ChIJ180tuFx6_ogRLrajxAiAgYQ",
+    "created_at": "2024-02-16T20:36:21.738423Z",
+    "updated_at": "2026-09-18T04:03:43.524256Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:01:16.540779Z",
+   "ended_at": "2026-09-19T16:01:20.154389Z",
+   "square_qr": null
+  },
+  {
+   "id": "3f5baa09-22dc-4fff-8b1a-aa4b4dab58dd",
+   "object": "check_in",
+   "location": {
+    "id": "1cb5c564-11c0-4826-878c-9198c913304e",
+    "object": "location",
+    "name": "SoHo",
+    "restaurant": {
+     "id": "7bad96fe-cc91-4aab-ab2c-60bfbe091260",
+     "object": "restaurant",
+     "name": "Seventy Seven Alley",
+     "cuisine": [
+      "American"
+     ],
+     "cohort": "fsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/e8880caa-0b5c-452f-9caf-eb32db33298f/1x.png?v=1772739127",
+      "web_2x": "https://images.blackbird.xyz/e8880caa-0b5c-452f-9caf-eb32db33298f/2x.png?v=1772739127",
+      "full_3x": "https://images.blackbird.xyz/e8880caa-0b5c-452f-9caf-eb32db33298f/3x.png?v=1772739127"
+     },
+     "website_url": "https://77alley.com/",
+     "instagram_url": null,
+     "created_at": "2026-02-20T20:23:08.585416Z",
+     "updated_at": "2026-03-05T19:32:07.773241Z"
+    },
+    "neighborhood": {
+     "id": "eb8fd275-0123-4d8c-a522-6a0a7581f7e4",
+     "object": "neighborhood",
+     "name": "SoHo",
+     "region": "New York, NY"
+    },
+    "slug": "seventy-seven-alley-soho",
+    "address": {
+     "street": "28 Cortlandt Alley",
+     "street2": "",
+     "city": "New York",
+     "state": "NY",
+     "zipcode": "10013",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.7181589,
+     "longitude": -74.0020193
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": "https://resy.com/cities/new-york-ny/venues/seventy-seven-alley",
+    "reservations_enabled": true,
+    "google_place_id": "ChIJUWcQ5rNbwokR28CGB_Lw_JI",
+    "created_at": "2026-02-20T20:24:47.543062Z",
+    "updated_at": "2026-09-18T04:00:47.15085Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:01:14.695511Z",
+   "ended_at": "2026-09-19T16:01:17.784052Z",
+   "square_qr": null
+  },
+  {
+   "id": "bd7ad1ee-a736-408e-8dfd-cd2074194ec1",
+   "object": "check_in",
+   "location": {
+    "id": "8c248c8e-8bbe-4a65-a33b-45711811695a",
+    "object": "location",
+    "name": "Park Circle - Charleston",
+    "restaurant": {
+     "id": "68a713b3-0f32-4555-890f-74d5eabe0290",
+     "object": "restaurant",
+     "name": "Katsubō",
+     "cuisine": [
+      "Ramen"
+     ],
+     "cohort": "fsr",
+     "price": 1,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/83dc5a01-58f6-4fe9-881c-ceb7c83abab2/1x.png?v=1759146701",
+      "web_2x": "https://images.blackbird.xyz/83dc5a01-58f6-4fe9-881c-ceb7c83abab2/2x.png?v=1759146701",
+      "full_3x": "https://images.blackbird.xyz/83dc5a01-58f6-4fe9-881c-ceb7c83abab2/3x.png?v=1759146702"
+     },
+     "website_url": "http://www.katsuboeats.com/",
+     "instagram_url": null,
+     "created_at": "2025-06-11T19:34:45.626199Z",
+     "updated_at": "2026-02-04T09:01:22.810392Z"
+    },
+    "neighborhood": {
+     "id": "72209223-67d2-430c-b448-d71de035cfd9",
+     "object": "neighborhood",
+     "name": "Park Circle",
+     "region": "Charleston, SC"
+    },
+    "slug": "katsubo-park-circle---charleston",
+    "address": {
+     "street": "4628 Spruill Ave Suite 101",
+     "street2": "",
+     "city": "North Charleston",
+     "state": "SC",
+     "zipcode": "29405",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 32.8792875,
+     "longitude": -79.97993699999999
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": "https://resy.com/cities/charleston-sc/venues/katsubo?date=2026-03-30&seats=2",
+    "reservations_enabled": true,
+    "google_place_id": "ChIJMTWHOFRl_ogRfc9Npjg4vOc",
+    "created_at": "2025-06-16T19:08:30.707615Z",
+    "updated_at": "2026-09-18T04:03:37.680049Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:01:13.932485Z",
+   "ended_at": "2026-09-19T16:01:17.305041Z",
+   "square_qr": null
+  },
+  {
+   "id": "9695ac00-ef5e-418e-89ea-31b33e8c3424",
+   "object": "check_in",
+   "location": {
+    "id": "7d684efd-8e2b-40e8-a380-942fcc8287a5",
+    "object": "location",
+    "name": "Avondale",
+    "restaurant": {
+     "id": "44fc6b93-069c-47a1-81b1-94817b80c258",
+     "object": "restaurant",
+     "name": "Poke Burri",
+     "cuisine": [
+      "Japanese"
+     ],
+     "cohort": "qsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/e0cc0c80-67a8-430c-a44d-3624576aac6d/1x.png?v=1785345535",
+      "web_2x": "https://images.blackbird.xyz/e0cc0c80-67a8-430c-a44d-3624576aac6d/2x.png?v=1785345536",
+      "full_3x": "https://images.blackbird.xyz/e0cc0c80-67a8-430c-a44d-3624576aac6d/3x.png?v=1785345536"
+     },
+     "website_url": "http://www.pokeburri.com/",
+     "instagram_url": null,
+     "created_at": "2026-07-27T15:14:39.342759Z",
+     "updated_at": "2026-07-29T17:18:56.347052Z"
+    },
+    "neighborhood": {
+     "id": "7a924389-1ff0-4ead-9da5-c3f712dc6e82",
+     "object": "neighborhood",
+     "name": "Avondale",
+     "region": "Charleston, SC"
+    },
+    "slug": "poke-burri-avondale",
+    "address": {
+     "street": "835 Savannah Hwy",
+     "street2": "",
+     "city": "Charleston",
+     "state": "SC",
+     "zipcode": "29407",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 32.7820763,
+     "longitude": -79.987062
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJU7Naqgp7_ogRNb3DDAXl-4I",
+    "created_at": "2026-07-27T15:15:26.009555Z",
+    "updated_at": "2026-09-18T04:01:35.545018Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:01:10.816161Z",
+   "ended_at": "2026-09-19T16:01:15.834749Z",
+   "square_qr": null
+  },
+  {
+   "id": "9da51b81-8d24-42d0-9711-e33f2bd157ab",
+   "object": "check_in",
+   "location": {
+    "id": "0330ac3c-a16d-4f83-93f3-0370263dc222",
+    "object": "location",
+    "name": "SoHo",
+    "restaurant": {
+     "id": "6206ace3-cca9-49ae-a824-f864a4d42017",
+     "object": "restaurant",
+     "name": "Deploy Coffee",
+     "cuisine": [
+      "10X Coffee Club",
+      "Coffee Shop"
+     ],
+     "cohort": "qsr",
+     "price": 1,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/719e7d75-c0ed-4220-bdea-fcf6a5459c1d/1x.png?v=1785957941",
+      "web_2x": "https://images.blackbird.xyz/719e7d75-c0ed-4220-bdea-fcf6a5459c1d/2x.png?v=1785957942",
+      "full_3x": "https://images.blackbird.xyz/719e7d75-c0ed-4220-bdea-fcf6a5459c1d/3x.png?v=1785957942"
+     },
+     "website_url": "https://www.deploycoffee.com/",
+     "instagram_url": null,
+     "created_at": "2026-08-05T14:07:26.383051Z",
+     "updated_at": "2026-08-05T19:25:42.57428Z"
+    },
+    "neighborhood": {
+     "id": "eb8fd275-0123-4d8c-a522-6a0a7581f7e4",
+     "object": "neighborhood",
+     "name": "SoHo",
+     "region": "New York, NY"
+    },
+    "slug": "deploy-coffee-soho",
+    "address": {
+     "street": "120 Lafayette St",
+     "street2": "",
+     "city": "New York",
+     "state": "NY",
+     "zipcode": "10013",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.718729599999996,
+     "longitude": -74.0004836
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJP4iljmdZwokRLeRXAYpvze0",
+    "created_at": "2026-08-05T14:08:57.80694Z",
+    "updated_at": "2026-09-18T04:00:58.72023Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:01:09.213805Z",
+   "ended_at": "2026-09-19T16:01:12.184706Z",
+   "square_qr": null
+  },
+  {
+   "id": "c9559b2e-7198-403e-99e5-30e138873df7",
+   "object": "check_in",
+   "location": {
+    "id": "88ce6983-1746-4dd2-b493-cb1329678222",
+    "object": "location",
+    "name": "Beverly Hills",
+    "restaurant": {
+     "id": "eab7bec4-5348-4aa9-ab7d-d898cbd0590c",
+     "object": "restaurant",
+     "name": "Clark Street Bakery",
+     "cuisine": [
+      "Bakery",
+      "10X Coffee Club"
+     ],
+     "cohort": "qsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/9739e75f-2b45-488e-9a07-c56172643230/1x.png?v=1775190674",
+      "web_2x": "https://images.blackbird.xyz/9739e75f-2b45-488e-9a07-c56172643230/2x.png?v=1775190674",
+      "full_3x": "https://images.blackbird.xyz/9739e75f-2b45-488e-9a07-c56172643230/3x.png?v=1775190674"
+     },
+     "website_url": "https://clarkstreetbakery.com/",
+     "instagram_url": null,
+     "created_at": "2026-04-03T04:17:25.271993Z",
+     "updated_at": "2026-04-06T23:52:20.6202Z"
+    },
+    "neighborhood": {
+     "id": "d90312a9-0e49-467b-b0d8-85e32798a86a",
+     "object": "neighborhood",
+     "name": "Beverly Hills",
+     "region": "Los Angeles, CA"
+    },
+    "slug": "clark-street-bakery-beverly-hills",
+    "address": {
+     "street": "9123 W Olympic Blvd",
+     "street2": "",
+     "city": "Beverly Hills",
+     "state": "CA",
+     "zipcode": "90212",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 34.0598035,
+     "longitude": -118.3905716
+    },
+    "phone_number": "(424) 313-8018",
+    "time_zone": "America/Los_Angeles",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJ62owfAC5woARBNE5tH0AEZI",
+    "created_at": "2026-06-04T02:58:24.937837Z",
+    "updated_at": "2026-09-18T04:01:34.812926Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:01:07.532584Z",
+   "ended_at": "2026-09-19T16:01:23.074345Z",
+   "square_qr": null
+  },
+  {
+   "id": "2257e1dd-bf2b-40a1-9f87-c1abbe59137c",
+   "object": "check_in",
+   "location": {
+    "id": "a4d5180d-72ff-4b90-aea6-f1826e7e7bca",
+    "object": "location",
+    "name": "Upper East Side",
+    "restaurant": {
+     "id": "b1cf9fef-26fc-4748-8672-d4d6d5434220",
+     "object": "restaurant",
+     "name": "Flex Mussels",
+     "cuisine": [
+      "Seafood"
+     ],
+     "cohort": "fsr",
+     "price": 3,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/7722e5e0-c986-4a92-84ec-fb19f601f4c1/1x.png?v=1755033188",
+      "web_2x": "https://images.blackbird.xyz/7722e5e0-c986-4a92-84ec-fb19f601f4c1/2x.png?v=1755033189",
+      "full_3x": "https://images.blackbird.xyz/7722e5e0-c986-4a92-84ec-fb19f601f4c1/3x.png?v=1755033191"
+     },
+     "website_url": "http://www.flexmussels.com/",
+     "instagram_url": null,
+     "created_at": "2025-08-12T21:08:02.041434Z",
+     "updated_at": "2026-02-04T09:01:27.331068Z"
+    },
+    "neighborhood": {
+     "id": "ced02784-be1c-434a-9878-d26c2caa5ccf",
+     "object": "neighborhood",
+     "name": "Upper East Side",
+     "region": "New York, NY"
+    },
+    "slug": "flex-mussels-upper-east-side",
+    "address": {
+     "street": "1431 3rd Ave",
+     "street2": "",
+     "city": "New York",
+     "state": "NY",
+     "zipcode": "10028",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.7753804,
+     "longitude": -73.9561648
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": "https://www.opentable.com/restref/client/?lang=en-US&ot_source=Restaurant%20website&restref=30211&corrid=c19d294a-a214-495c-a27c-3729ce656ba3",
+    "reservations_enabled": true,
+    "google_place_id": "ChIJt901K7xYwokRDN0HETz2x3s",
+    "created_at": "2025-08-12T21:11:46.261459Z",
+    "updated_at": "2026-09-18T04:03:50.186877Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:01:03.830688Z",
+   "ended_at": "2026-09-19T16:01:11.228438Z",
+   "square_qr": null
+  },
+  {
+   "id": "e4edfa15-9ee8-4979-978e-b33a051a332d",
+   "object": "check_in",
+   "location": {
+    "id": "5604f29a-64bb-4048-8210-4bdb6d42e0a6",
+    "object": "location",
+    "name": "Lower East Side",
+    "restaurant": {
+     "id": "770f950a-8c20-421b-a67b-62d531df0c1a",
+     "object": "restaurant",
+     "name": "FifthSip.",
+     "cuisine": [
+      "10X Coffee Club",
+      "Vietnamese",
+      "Cafe"
+     ],
+     "cohort": "qsr",
+     "price": 1,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/c7daf2b9-6865-43d4-83c8-8b747d368eec/1x.png?v=1777998517",
+      "web_2x": "https://images.blackbird.xyz/c7daf2b9-6865-43d4-83c8-8b747d368eec/2x.png?v=1777998518",
+      "full_3x": "https://images.blackbird.xyz/c7daf2b9-6865-43d4-83c8-8b747d368eec/3x.png?v=1777998518"
+     },
+     "website_url": "http://fifthsip.com/",
+     "instagram_url": null,
+     "created_at": "2026-04-23T17:09:47.041758Z",
+     "updated_at": "2026-05-05T16:28:38.50061Z"
+    },
+    "neighborhood": {
+     "id": "ffb7f4d6-64f4-49bf-983f-aab1e1cab22e",
+     "object": "neighborhood",
+     "name": "Lower East Side",
+     "region": "New York, NY"
+    },
+    "slug": "fifthsip-lower-east-side",
+    "address": {
+     "street": "229 Mott St",
+     "street2": "",
+     "city": "New York",
+     "state": "NY",
+     "zipcode": "10012",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.722558,
+     "longitude": -73.9953132
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJTSMGZHxZwokRm09isnto2eg",
+    "created_at": "2026-04-23T17:13:56.01087Z",
+    "updated_at": "2026-09-18T04:03:00.985197Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:01:02.355946Z",
+   "ended_at": "2026-09-19T16:01:05.149821Z",
+   "square_qr": null
+  },
+  {
+   "id": "776a8c68-f318-4e48-9fcc-1b86e50d0681",
+   "object": "check_in",
+   "location": {
+    "id": "a4d5180d-72ff-4b90-aea6-f1826e7e7bca",
+    "object": "location",
+    "name": "Upper East Side",
+    "restaurant": {
+     "id": "b1cf9fef-26fc-4748-8672-d4d6d5434220",
+     "object": "restaurant",
+     "name": "Flex Mussels",
+     "cuisine": [
+      "Seafood"
+     ],
+     "cohort": "fsr",
+     "price": 3,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/7722e5e0-c986-4a92-84ec-fb19f601f4c1/1x.png?v=1755033188",
+      "web_2x": "https://images.blackbird.xyz/7722e5e0-c986-4a92-84ec-fb19f601f4c1/2x.png?v=1755033189",
+      "full_3x": "https://images.blackbird.xyz/7722e5e0-c986-4a92-84ec-fb19f601f4c1/3x.png?v=1755033191"
+     },
+     "website_url": "http://www.flexmussels.com/",
+     "instagram_url": null,
+     "created_at": "2025-08-12T21:08:02.041434Z",
+     "updated_at": "2026-02-04T09:01:27.331068Z"
+    },
+    "neighborhood": {
+     "id": "ced02784-be1c-434a-9878-d26c2caa5ccf",
+     "object": "neighborhood",
+     "name": "Upper East Side",
+     "region": "New York, NY"
+    },
+    "slug": "flex-mussels-upper-east-side",
+    "address": {
+     "street": "1431 3rd Ave",
+     "street2": "",
+     "city": "New York",
+     "state": "NY",
+     "zipcode": "10028",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.7753804,
+     "longitude": -73.9561648
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": "https://www.opentable.com/restref/client/?lang=en-US&ot_source=Restaurant%20website&restref=30211&corrid=c19d294a-a214-495c-a27c-3729ce656ba3",
+    "reservations_enabled": true,
+    "google_place_id": "ChIJt901K7xYwokRDN0HETz2x3s",
+    "created_at": "2025-08-12T21:11:46.261459Z",
+    "updated_at": "2026-09-18T04:03:50.186877Z"
+   },
+   "blackbird_pay_enabled": false,
+   "created_at": "2026-09-19T16:01:00.284927Z",
+   "ended_at": "2026-09-19T16:01:00.282343Z",
+   "square_qr": null
+  },
+  {
+   "id": "36fee760-bbaf-4e33-be53-cda291a4dcb7",
+   "object": "check_in",
+   "location": {
+    "id": "9b7b333f-da89-4920-9896-3edaf1447cd7",
+    "object": "location",
+    "name": "SoHo",
+    "restaurant": {
+     "id": "2ee3a98e-7dd4-4aed-a676-d6d63af96105",
+     "object": "restaurant",
+     "name": "5ive Spice",
+     "cuisine": [
+      "Vietnamese"
+     ],
+     "cohort": "fsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/538e0d3f-55bc-4e31-8777-cd29e428c1d5/1x.png",
+      "web_2x": "https://images.blackbird.xyz/538e0d3f-55bc-4e31-8777-cd29e428c1d5/2x.png",
+      "full_3x": "https://images.blackbird.xyz/538e0d3f-55bc-4e31-8777-cd29e428c1d5/3x.png"
+     },
+     "website_url": "https://5ivespice.com/",
+     "instagram_url": null,
+     "created_at": "2025-02-19T16:46:29.430962Z",
+     "updated_at": "2026-02-04T09:01:13.025245Z"
+    },
+    "neighborhood": {
+     "id": "eb8fd275-0123-4d8c-a522-6a0a7581f7e4",
+     "object": "neighborhood",
+     "name": "SoHo",
+     "region": "New York, NY"
+    },
+    "slug": "2dfa02ed-cb60-464e-93cd-8ad63ff774df",
+    "address": {
+     "street": "227 Mulberry St",
+     "street2": "",
+     "city": "New York",
+     "state": "NY",
+     "zipcode": "10012",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.72258310000001,
+     "longitude": -73.9962714
+    },
+    "phone_number": "(414) 946-6707",
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJO1_22AhZwokRm6t3InR_YCQ",
+    "created_at": "2025-06-16T19:16:20.389263Z",
+    "updated_at": "2026-09-18T04:03:00.631032Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:00:56.807644Z",
+   "ended_at": "2026-09-19T16:00:59.529391Z",
+   "square_qr": null
+  },
+  {
+   "id": "6d63561f-dc9c-4241-b957-96bf676d9c73",
+   "object": "check_in",
+   "location": {
+    "id": "a8481bfa-196c-4e96-9041-738529ab80be",
+    "object": "location",
+    "name": "Park Circle",
+    "restaurant": {
+     "id": "dd513438-d13d-4fa9-84ea-65c9f2f96fa3",
+     "object": "restaurant",
+     "name": "Paddock & Whisky",
+     "cuisine": [
+      "Bar"
+     ],
+     "cohort": "fsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/4da668a8-6f56-4145-a25e-b128ad501ad6/1x.png?v=1770153583",
+      "web_2x": "https://images.blackbird.xyz/4da668a8-6f56-4145-a25e-b128ad501ad6/2x.png?v=1770153583",
+      "full_3x": "https://images.blackbird.xyz/4da668a8-6f56-4145-a25e-b128ad501ad6/3x.png?v=1770153584"
+     },
+     "website_url": "https://paddockandwhisky.com/",
+     "instagram_url": null,
+     "created_at": "2026-02-03T21:11:28.614705Z",
+     "updated_at": "2026-02-03T21:19:44.411115Z"
+    },
+    "neighborhood": {
+     "id": "72209223-67d2-430c-b448-d71de035cfd9",
+     "object": "neighborhood",
+     "name": "Park Circle",
+     "region": "Charleston, SC"
+    },
+    "slug": "paddock--whisky-park-circle",
+    "address": {
+     "street": "1074 E Montague Ave Unit A",
+     "street2": "",
+     "city": "North Charleston",
+     "state": "SC",
+     "zipcode": "29405",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 32.8817633,
+     "longitude": -79.97666319999999
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJneVNCsFl_ogRuVFUtzsn-Qs",
+    "created_at": "2026-02-03T21:17:53.844007Z",
+    "updated_at": "2026-09-18T04:02:58.071356Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:00:54.122396Z",
+   "ended_at": "2026-09-19T16:00:58.650597Z",
+   "square_qr": null
+  },
+  {
+   "id": "34266410-0c47-495e-a9ec-f76b991c677e",
+   "object": "check_in",
+   "location": {
+    "id": "29c3fb8e-f910-4bb5-8ba0-999042275d57",
+    "object": "location",
+    "name": "Inner Sunset",
+    "restaurant": {
+     "id": "a0899ca8-9a0b-4b7e-ba31-e4fa1ae9864e",
+     "object": "restaurant",
+     "name": "Morning Vibes Cafe",
+     "cuisine": [
+      "Coffee Shop",
+      "10X Coffee Club"
+     ],
+     "cohort": "qsr",
+     "price": 1,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/826bd027-84d4-4701-8ac3-6935f11b267a/1x.png?v=1764779401",
+      "web_2x": "https://images.blackbird.xyz/826bd027-84d4-4701-8ac3-6935f11b267a/2x.png?v=1764779401",
+      "full_3x": "https://images.blackbird.xyz/826bd027-84d4-4701-8ac3-6935f11b267a/3x.png?v=1764779402"
+     },
+     "website_url": "https://www.antiguacompany.com/about-1",
+     "instagram_url": null,
+     "created_at": "2025-08-22T20:22:58.540736Z",
+     "updated_at": "2026-02-04T09:01:31.896468Z"
+    },
+    "neighborhood": {
+     "id": "5009e35b-5fdf-4058-82cb-04f7ffdd31f2",
+     "object": "neighborhood",
+     "name": "Inner Sunset",
+     "region": "San Francisco, CA"
+    },
+    "slug": "morning-vibes-cafe-inner-sunset",
+    "address": {
+     "street": "1392 9th Ave",
+     "street2": "",
+     "city": "San Francisco",
+     "state": "CA",
+     "zipcode": "94122",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 37.7623855,
+     "longitude": -122.4659596
+    },
+    "phone_number": null,
+    "time_zone": "America/Los_Angeles",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJ73HszTSHhYARe50_Dy9rsAQ",
+    "created_at": "2025-08-22T20:24:42.290677Z",
+    "updated_at": "2026-09-18T04:01:47.36328Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:00:52.055143Z",
+   "ended_at": null,
+   "square_qr": null
+  },
+  {
+   "id": "7a428f0b-114e-463b-9eca-f9987750f4ba",
+   "object": "check_in",
+   "location": {
+    "id": "dc246c46-7611-40e0-93ac-c5970bd066e1",
+    "object": "location",
+    "name": "SoHo",
+    "restaurant": {
+     "id": "480790b6-58b6-4782-9868-db510a127de3",
+     "object": "restaurant",
+     "name": "Momoya",
+     "cuisine": [
+      "Japanese",
+      "Sushi"
+     ],
+     "cohort": "fsr",
+     "price": 3,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/a79b27f3-c0b1-4120-95f0-24ac891b24a3/1x.png",
+      "web_2x": "https://images.blackbird.xyz/a79b27f3-c0b1-4120-95f0-24ac891b24a3/2x.png",
+      "full_3x": "https://images.blackbird.xyz/a79b27f3-c0b1-4120-95f0-24ac891b24a3/3x.png"
+     },
+     "website_url": "https://momoyanyc.com/",
+     "instagram_url": null,
+     "created_at": "2025-04-24T16:00:31.225612Z",
+     "updated_at": "2026-02-04T09:01:16.510792Z"
+    },
+    "neighborhood": {
+     "id": "eb8fd275-0123-4d8c-a522-6a0a7581f7e4",
+     "object": "neighborhood",
+     "name": "SoHo",
+     "region": "New York, NY"
+    },
+    "slug": "momoya-soho",
+    "address": {
+     "street": "47 Prince St",
+     "street2": "",
+     "city": "New York",
+     "state": "NY",
+     "zipcode": "10012",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.72365246872557,
+     "longitude": -73.99576930674665
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": "https://www.opentable.com/r/momoya-soho-new-york",
+    "reservations_enabled": true,
+    "google_place_id": "ChIJ4Rw7sVhZwokRJuSZSI0jb4A",
+    "created_at": "2025-04-24T19:23:39.402155Z",
+    "updated_at": "2026-09-18T04:03:31.500155Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:00:51.312255Z",
+   "ended_at": "2026-09-19T16:00:54.064468Z",
+   "square_qr": null
+  },
+  {
+   "id": "567335ae-8f42-4ca3-ad19-8d402d929ea7",
+   "object": "check_in",
+   "location": {
+    "id": "d3f8e4a5-0e39-4bfd-94df-312f24e6102c",
+    "object": "location",
+    "name": "Downtown",
+    "restaurant": {
+     "id": "7bca934c-6934-40d1-8b8d-eece287cfba3",
+     "object": "restaurant",
+     "name": "Little Palm",
+     "cuisine": [
+      "10X Coffee Club",
+      "New American"
+     ],
+     "cohort": "fsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/f5dcbe04-ecb5-4544-9dc4-1672e317b7ba/1x.png",
+      "web_2x": "https://images.blackbird.xyz/f5dcbe04-ecb5-4544-9dc4-1672e317b7ba/2x.png",
+      "full_3x": "https://images.blackbird.xyz/f5dcbe04-ecb5-4544-9dc4-1672e317b7ba/3x.png"
+     },
+     "website_url": "https://www.littlepalmbar.com/",
+     "instagram_url": null,
+     "created_at": "2024-10-23T17:55:08.654533Z",
+     "updated_at": "2026-02-04T09:00:57.600642Z"
+    },
+    "neighborhood": {
+     "id": "de14ccce-4c8e-4dfa-b682-e668332e7568",
+     "object": "neighborhood",
+     "name": "Radcliffborough",
+     "region": "Charleston, SC"
+    },
+    "slug": "little-palm-downtown",
+    "address": {
+     "street": "237 Meeting St",
+     "street2": "",
+     "city": "Charleston",
+     "state": "SC",
+     "zipcode": "29401",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 32.782769,
+     "longitude": -79.932076
+    },
+    "phone_number": "1414 710 9061",
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": "https://resy.com/cities/charleston-sc/venues/little-palm?date=2024-10-23&seats=2",
+    "reservations_enabled": true,
+    "google_place_id": "ChIJC4n-xyN7_ogRFpS2Bz2a7Wg",
+    "created_at": "2024-10-25T21:15:07.380586Z",
+    "updated_at": "2026-09-18T04:03:52.687165Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:00:48.134872Z",
+   "ended_at": null,
+   "square_qr": null
+  },
+  {
+   "id": "5d206f62-3638-4964-ada0-7521a6ac0f0a",
+   "object": "check_in",
+   "location": {
+    "id": "2359b49f-4970-450e-ab2f-c268a3a886cb",
+    "object": "location",
+    "name": "Downtown Charleston",
+    "restaurant": {
+     "id": "f649ca79-f27c-450f-a287-41b0af2b0a30",
+     "object": "restaurant",
+     "name": "Melfi's",
+     "cuisine": [
+      "Italian"
+     ],
+     "cohort": "fsr",
+     "price": 3,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/7758aa78-a853-4dbc-ac9a-89095ff5fd9e/1x.png",
+      "web_2x": "https://images.blackbird.xyz/7758aa78-a853-4dbc-ac9a-89095ff5fd9e/2x.png",
+      "full_3x": "https://images.blackbird.xyz/7758aa78-a853-4dbc-ac9a-89095ff5fd9e/3x.png"
+     },
+     "website_url": "https://eatatmelfis.com/",
+     "instagram_url": "https://www.instagram.com/melfischarleston/?hl=en",
+     "created_at": "2024-01-23T02:28:06.122902Z",
+     "updated_at": "2026-02-04T09:00:47.196112Z"
+    },
+    "neighborhood": {
+     "id": "aebbc0ed-d24a-4ab0-9e9c-5d807404e0f9",
+     "object": "neighborhood",
+     "name": "Downtown Charleston",
+     "region": "Charleston, SC"
+    },
+    "slug": "melfis-downtown-charleston",
+    "address": {
+     "street": "721 King St",
+     "street2": "",
+     "city": "Charleston",
+     "state": "SC",
+     "zipcode": "29403",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 32.798494166438296,
+     "longitude": -79.94658525377913
+    },
+    "phone_number": "4146006146",
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": true,
+    "reservation_url": "https://resy.com/cities/charleston-sc/venues/melfis?date=2024-06-06&seats=2",
+    "reservations_enabled": true,
+    "google_place_id": "ChIJ1-7uvCx7_ogRk997qqBzibY",
+    "created_at": "2024-02-15T15:13:55.409428Z",
+    "updated_at": "2026-09-18T04:03:45.856453Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:00:48.014751Z",
+   "ended_at": "2026-09-19T16:00:50.453906Z",
+   "square_qr": null
+  },
+  {
+   "id": "9a9f16e4-d0cb-48c4-b156-73edf763f7bd",
+   "object": "check_in",
+   "location": {
+    "id": "ab1f6314-4f14-44c6-a870-e263131bc22d",
+    "object": "location",
+    "name": "French Quarter",
+    "restaurant": {
+     "id": "7019f18b-b208-415a-87dd-58717756397f",
+     "object": "restaurant",
+     "name": "Kaminsky's Dessert Cafe",
+     "cuisine": [
+      "10X Coffee Club",
+      "Bakery",
+      "Cafe"
+     ],
+     "cohort": "fsr",
+     "price": 1,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/f08fe76e-f364-4f04-a5bc-ad675a718d72/1x.png?v=1767726606",
+      "web_2x": "https://images.blackbird.xyz/f08fe76e-f364-4f04-a5bc-ad675a718d72/2x.png?v=1767726606",
+      "full_3x": "https://images.blackbird.xyz/f08fe76e-f364-4f04-a5bc-ad675a718d72/3x.png?v=1767726606"
+     },
+     "website_url": "http://www.kaminskys.com/",
+     "instagram_url": null,
+     "created_at": "2026-01-06T19:04:59.184356Z",
+     "updated_at": "2026-02-04T09:01:42.40916Z"
+    },
+    "neighborhood": {
+     "id": "3f43db6b-5cf3-41de-a734-019298b22494",
+     "object": "neighborhood",
+     "name": "French Quarter",
+     "region": "Charleston, SC"
+    },
+    "slug": "kaminskys-dessert-c-french-quarter",
+    "address": {
+     "street": "78 N Market St",
+     "street2": "",
+     "city": "Charleston",
+     "state": "SC",
+     "zipcode": "29401",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 32.7811715,
+     "longitude": -79.9299745
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJK2E7jQ16_ogRVhKpxqt4vo4",
+    "created_at": "2026-01-06T19:07:49.359128Z",
+    "updated_at": "2026-09-18T04:02:36.138112Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:00:44.204441Z",
+   "ended_at": "2026-09-19T16:00:47.232966Z",
+   "square_qr": null
+  },
+  {
+   "id": "793203ce-08e5-4456-b2b1-94cecb99b95c",
+   "object": "check_in",
+   "location": {
+    "id": "7a996ed5-7fba-4d45-9803-c0e67378bb9b",
+    "object": "location",
+    "name": "Nolita",
+    "restaurant": {
+     "id": "198efc70-de8e-45a5-bafb-baa561cd870f",
+     "object": "restaurant",
+     "name": "Milk Bar",
+     "cuisine": [
+      "10X Coffee Club",
+      "Bakery"
+     ],
+     "cohort": "qsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/649e5421-b32b-4c26-a854-6b94d68a5bc2/1x.png",
+      "web_2x": "https://images.blackbird.xyz/649e5421-b32b-4c26-a854-6b94d68a5bc2/2x.png",
+      "full_3x": "https://images.blackbird.xyz/649e5421-b32b-4c26-a854-6b94d68a5bc2/3x.png"
+     },
+     "website_url": "https://www.milkbarstore.com/",
+     "instagram_url": null,
+     "created_at": "2025-07-28T17:31:35.941731Z",
+     "updated_at": "2026-02-04T09:01:27.329179Z"
+    },
+    "neighborhood": {
+     "id": "a0fd024d-f095-4349-82c3-42ede6f14b90",
+     "object": "neighborhood",
+     "name": "Nolita",
+     "region": "New York, NY"
+    },
+    "slug": "milk-bar-nolita",
+    "address": {
+     "street": "246 Mott St",
+     "street2": "",
+     "city": "New York",
+     "state": "NY",
+     "zipcode": "10012",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.72328479999999,
+     "longitude": -73.9946633
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJM7IS9YVZwokRRglCG_PV92E",
+    "created_at": "2025-07-28T17:54:24.478225Z",
+    "updated_at": "2026-09-18T04:02:43.786331Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:00:44.186391Z",
+   "ended_at": "2026-09-19T16:00:48.420187Z",
+   "square_qr": null
+  },
+  {
+   "id": "4285c88b-e1ea-4282-b8fe-0b7aae2e2268",
+   "object": "check_in",
+   "location": {
+    "id": "b1d7b0db-7ae3-450c-9eb9-decc5414c19c",
+    "object": "location",
+    "name": "Park Circle",
+    "restaurant": {
+     "id": "b1ef67fb-8cd9-4aeb-ade9-eed1fd6d0a70",
+     "object": "restaurant",
+     "name": "EVO Pizzeria",
+     "cuisine": [
+      "Pizza"
+     ],
+     "cohort": "fsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/b1a43bea-3bcb-49d8-8666-aa95f994afba/1x.png",
+      "web_2x": "https://images.blackbird.xyz/b1a43bea-3bcb-49d8-8666-aa95f994afba/2x.png",
+      "full_3x": "https://images.blackbird.xyz/b1a43bea-3bcb-49d8-8666-aa95f994afba/3x.png"
+     },
+     "website_url": "http://www.evopizza.com/",
+     "instagram_url": null,
+     "created_at": "2025-07-07T16:21:14.050376Z",
+     "updated_at": "2026-02-04T09:01:22.814147Z"
+    },
+    "neighborhood": {
+     "id": "72209223-67d2-430c-b448-d71de035cfd9",
+     "object": "neighborhood",
+     "name": "Park Circle",
+     "region": "Charleston, SC"
+    },
+    "slug": "evo-pizzeria-park-circle",
+    "address": {
+     "street": "1075 E Montague Ave",
+     "street2": "",
+     "city": "North Charleston",
+     "state": "SC",
+     "zipcode": "29405",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 32.88139819999999,
+     "longitude": -79.97696859999999
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJS79_9uhk_ogRXzmiDtLKcjo",
+    "created_at": "2025-07-07T16:27:04.978601Z",
+    "updated_at": "2026-09-18T04:02:13.031891Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:00:43.176984Z",
+   "ended_at": "2026-09-19T16:00:50.675953Z",
+   "square_qr": null
+  },
+  {
+   "id": "2305f420-c5b3-4036-8cdd-7b975c3efb20",
+   "object": "check_in",
+   "location": {
+    "id": "dc246c46-7611-40e0-93ac-c5970bd066e1",
+    "object": "location",
+    "name": "SoHo",
+    "restaurant": {
+     "id": "480790b6-58b6-4782-9868-db510a127de3",
+     "object": "restaurant",
+     "name": "Momoya",
+     "cuisine": [
+      "Japanese",
+      "Sushi"
+     ],
+     "cohort": "fsr",
+     "price": 3,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/a79b27f3-c0b1-4120-95f0-24ac891b24a3/1x.png",
+      "web_2x": "https://images.blackbird.xyz/a79b27f3-c0b1-4120-95f0-24ac891b24a3/2x.png",
+      "full_3x": "https://images.blackbird.xyz/a79b27f3-c0b1-4120-95f0-24ac891b24a3/3x.png"
+     },
+     "website_url": "https://momoyanyc.com/",
+     "instagram_url": null,
+     "created_at": "2025-04-24T16:00:31.225612Z",
+     "updated_at": "2026-02-04T09:01:16.510792Z"
+    },
+    "neighborhood": {
+     "id": "eb8fd275-0123-4d8c-a522-6a0a7581f7e4",
+     "object": "neighborhood",
+     "name": "SoHo",
+     "region": "New York, NY"
+    },
+    "slug": "momoya-soho",
+    "address": {
+     "street": "47 Prince St",
+     "street2": "",
+     "city": "New York",
+     "state": "NY",
+     "zipcode": "10012",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.72365246872557,
+     "longitude": -73.99576930674665
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": "https://www.opentable.com/r/momoya-soho-new-york",
+    "reservations_enabled": true,
+    "google_place_id": "ChIJ4Rw7sVhZwokRJuSZSI0jb4A",
+    "created_at": "2025-04-24T19:23:39.402155Z",
+    "updated_at": "2026-09-18T04:03:31.500155Z"
+   },
+   "blackbird_pay_enabled": false,
+   "created_at": "2026-09-19T16:00:38.878497Z",
+   "ended_at": "2026-09-19T16:00:38.875237Z",
+   "square_qr": null
+  },
+  {
+   "id": "6f6ecd64-d437-4170-a98e-c285ef04eb03",
+   "object": "check_in",
+   "location": {
+    "id": "9226cbb2-555a-419e-9618-205524ae5c27",
+    "object": "location",
+    "name": "French Quarter",
+    "restaurant": {
+     "id": "3af9a66d-b569-4df9-9e58-64554a23c9d3",
+     "object": "restaurant",
+     "name": "TBonz Gill & Grill (Downtown)",
+     "cuisine": [
+      "American"
+     ],
+     "cohort": "fsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/4708f7ef-7bcf-47df-8473-be94aa4fae31/1x.png?v=1767998686",
+      "web_2x": "https://images.blackbird.xyz/4708f7ef-7bcf-47df-8473-be94aa4fae31/2x.png?v=1767998686",
+      "full_3x": "https://images.blackbird.xyz/4708f7ef-7bcf-47df-8473-be94aa4fae31/3x.png?v=1767998686"
+     },
+     "website_url": "http://www.tbonzgillandgrill.com/",
+     "instagram_url": null,
+     "created_at": "2026-01-09T22:35:22.844294Z",
+     "updated_at": "2026-04-28T19:18:52.396939Z"
+    },
+    "neighborhood": {
+     "id": "3f43db6b-5cf3-41de-a734-019298b22494",
+     "object": "neighborhood",
+     "name": "French Quarter",
+     "region": "Charleston, SC"
+    },
+    "slug": "tbonz-gill--grill-french-quarter",
+    "address": {
+     "street": "80 N Market St",
+     "street2": "",
+     "city": "Charleston",
+     "state": "SC",
+     "zipcode": "29401",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 32.7810554,
+     "longitude": -79.9300308
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": "https://resy.com/cities/charleston-sc/venues/tbonz-charleston?",
+    "reservations_enabled": true,
+    "google_place_id": "ChIJ9xQpdRJ6_ogRqHYKNQ_VhDY",
+    "created_at": "2026-01-09T22:35:47.434218Z",
+    "updated_at": "2026-09-18T04:03:38.152492Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:00:38.814716Z",
+   "ended_at": "2026-09-19T16:00:41.943708Z",
+   "square_qr": null
+  },
+  {
+   "id": "31e5a5d1-4e2e-4fec-b270-05c2d9137eae",
+   "object": "check_in",
+   "location": {
+    "id": "30d84e03-2c3c-402d-9ee6-f443b0f5dfbc",
+    "object": "location",
+    "name": "Chinatown",
+    "restaurant": {
+     "id": "8da46023-a30c-4d13-a04c-5cc15a4808b1",
+     "object": "restaurant",
+     "name": "Moongate Lounge",
+     "cuisine": [
+      "Cocktail Bar"
+     ],
+     "cohort": "bar",
+     "price": 3,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/5eaca7d5-8830-4e71-bf1f-621133e20d7f/1x.png",
+      "web_2x": "https://images.blackbird.xyz/5eaca7d5-8830-4e71-bf1f-621133e20d7f/2x.png",
+      "full_3x": "https://images.blackbird.xyz/5eaca7d5-8830-4e71-bf1f-621133e20d7f/3x.png"
+     },
+     "website_url": "https://www.moongatelounge.com/",
+     "instagram_url": null,
+     "created_at": "2024-09-02T20:46:59.887875Z",
+     "updated_at": "2026-02-04T09:00:54.116211Z"
+    },
+    "neighborhood": {
+     "id": "9015bc1c-9784-4afd-bae2-05a7f0939a84",
+     "object": "neighborhood",
+     "name": "Chinatown",
+     "region": "San Francisco, CA"
+    },
+    "slug": "moongate-lounge-chinatown",
+    "address": {
+     "street": "28 Waverly Pl",
+     "street2": "",
+     "city": "San Francisco",
+     "state": "CA",
+     "zipcode": "94108",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 37.7938521107803,
+     "longitude": -122.4066859580061
+    },
+    "phone_number": "(414) 262-6077",
+    "time_zone": "America/Los_Angeles",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": "https://www.exploretock.com/moongate-lounge-san-francisco",
+    "reservations_enabled": true,
+    "google_place_id": "ChIJpUlYTNmBhYARE6fZdZBiKR4",
+    "created_at": "2024-09-24T23:19:01.245207Z",
+    "updated_at": "2026-09-18T04:03:59.392108Z"
+   },
+   "blackbird_pay_enabled": false,
+   "created_at": "2026-09-19T16:00:38.246105Z",
+   "ended_at": "2026-09-19T16:00:38.230723Z",
+   "square_qr": null
+  },
+  {
+   "id": "4fd1a9fc-bd2b-4b09-a1cf-41a558f35ba0",
+   "object": "check_in",
+   "location": {
+    "id": "884bc123-ce59-4ef6-bbe3-b469c5fd4f1b",
+    "object": "location",
+    "name": "Meeting Street",
+    "restaurant": {
+     "id": "141ecaba-aba6-4de2-a375-48c2b4bba4f4",
+     "object": "restaurant",
+     "name": "Callie's Hot Little Biscuit",
+     "cuisine": [
+      "Southern"
+     ],
+     "cohort": "qsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/d1c746e3-0077-44bd-ba8f-b52b67de6922/1x.png",
+      "web_2x": "https://images.blackbird.xyz/d1c746e3-0077-44bd-ba8f-b52b67de6922/2x.png",
+      "full_3x": "https://images.blackbird.xyz/d1c746e3-0077-44bd-ba8f-b52b67de6922/3x.png"
+     },
+     "website_url": "https://calliesbiscuits.com/",
+     "instagram_url": null,
+     "created_at": "2024-10-23T03:02:15.304227Z",
+     "updated_at": "2026-02-04T09:00:57.60034Z"
+    },
+    "neighborhood": {
+     "id": "3f43db6b-5cf3-41de-a734-019298b22494",
+     "object": "neighborhood",
+     "name": "French Quarter",
+     "region": "Charleston, SC"
+    },
+    "slug": "callies-hot-little-meeting-street",
+    "address": {
+     "street": "188 Meeting St",
+     "street2": "",
+     "city": "Charleston",
+     "state": "SC",
+     "zipcode": "29401",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 32.780816,
+     "longitude": -79.93036
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJdz9mtA16_ogRnHxmONzNzn4",
+    "created_at": "2024-10-23T16:39:32.307198Z",
+    "updated_at": "2026-09-18T04:02:40.820736Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:00:32.952062Z",
+   "ended_at": "2026-09-19T16:00:36.167994Z",
+   "square_qr": null
+  },
+  {
+   "id": "5974d227-3c3a-428d-9501-423792692273",
+   "object": "check_in",
+   "location": {
+    "id": "ad8fb9a8-71b3-4455-91a8-f0a16baf0c61",
+    "object": "location",
+    "name": "Midtown",
+    "restaurant": {
+     "id": "d1245bb7-2a72-40fb-b100-9a1781165090",
+     "object": "restaurant",
+     "name": "Patisserie Fouet",
+     "cuisine": [
+      "Bakery",
+      "10X Coffee Club"
+     ],
+     "cohort": "qsr",
+     "price": 1,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/e0d47971-986f-485b-82d3-6078a3783ee6/1x.png",
+      "web_2x": "https://images.blackbird.xyz/e0d47971-986f-485b-82d3-6078a3783ee6/2x.png",
+      "full_3x": "https://images.blackbird.xyz/e0d47971-986f-485b-82d3-6078a3783ee6/3x.png"
+     },
+     "website_url": "https://fouetnyc.com",
+     "instagram_url": null,
+     "created_at": "2024-03-29T19:26:29.517248Z",
+     "updated_at": "2026-02-04T09:00:49.778713Z"
+    },
+    "neighborhood": {
+     "id": "b63979fb-70a7-475b-b158-26541a330328",
+     "object": "neighborhood",
+     "name": "Midtown",
+     "region": "New York, NY"
+    },
+    "slug": "9c4247ff-0eb6-4ac7-81dc-490f6ea2979c",
+    "address": {
+     "street": "776 9th Ave",
+     "street2": "",
+     "city": "New York",
+     "state": "NY",
+     "zipcode": "10019",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.76444499999999,
+     "longitude": -73.987833
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJ3dmVegBZwokRz873kN52PUI",
+    "created_at": "2025-06-04T19:25:16.010621Z",
+    "updated_at": "2026-09-18T04:01:22.886881Z"
+   },
+   "blackbird_pay_enabled": false,
+   "created_at": "2026-09-19T16:00:32.492462Z",
+   "ended_at": "2026-09-19T16:00:32.479178Z",
+   "square_qr": null
+  },
+  {
+   "id": "2491d1ca-8ca6-40df-b6e6-90b7eab4da88",
+   "object": "check_in",
+   "location": {
+    "id": "00fc801c-3448-4c0f-b5b2-91259550f1a1",
+    "object": "location",
+    "name": "Russian Hill",
+    "restaurant": {
+     "id": "fe88d204-3237-42d1-b7b9-8941a296914b",
+     "object": "restaurant",
+     "name": "Seven Hills",
+     "cuisine": [
+      "Italian"
+     ],
+     "cohort": "fsr",
+     "price": 3,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/2de6d577-8ad5-42b4-a858-a12c22a64788/1x.png",
+      "web_2x": "https://images.blackbird.xyz/2de6d577-8ad5-42b4-a858-a12c22a64788/2x.png",
+      "full_3x": "https://images.blackbird.xyz/2de6d577-8ad5-42b4-a858-a12c22a64788/3x.png"
+     },
+     "website_url": "https://www.sevenhillssf.com/",
+     "instagram_url": null,
+     "created_at": "2024-08-27T20:07:48.43512Z",
+     "updated_at": "2026-02-03T09:00:54.288857Z"
+    },
+    "neighborhood": {
+     "id": "360e0772-f2c4-4637-b95a-501e140560f0",
+     "object": "neighborhood",
+     "name": "Russian Hill",
+     "region": "San Francisco, CA"
+    },
+    "slug": "seven-hills-russian-hill",
+    "address": {
+     "street": "1896 Hyde St",
+     "street2": "",
+     "city": "San Francisco",
+     "state": "CA",
+     "zipcode": "94109",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 37.79835765213066,
+     "longitude": -122.41867693587128
+    },
+    "phone_number": "+1(414) 360-8825",
+    "time_zone": "America/Los_Angeles",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": "https://www.opentable.com/restref/client/?rid=53791&restref=53791&corrid=18c9f9cc-18f2-4b6d-8589-cfe40048298f",
+    "reservations_enabled": true,
+    "google_place_id": "ChIJc1RqC-yAhYARWmmWMJ-xkDs",
+    "created_at": "2024-09-27T00:51:30.364122Z",
+    "updated_at": "2026-09-18T04:03:23.29618Z"
+   },
+   "blackbird_pay_enabled": false,
+   "created_at": "2026-09-19T16:00:31.180934Z",
+   "ended_at": "2026-09-19T16:00:31.178655Z",
+   "square_qr": null
+  },
+  {
+   "id": "e37becaa-a73e-4053-808e-5c24a83f3878",
+   "object": "check_in",
+   "location": {
+    "id": "4a9308e0-abc6-4e2d-bf7f-92c909ee6c2e",
+    "object": "location",
+    "name": "Eagle Rock",
+    "restaurant": {
+     "id": "85ac0d1e-9904-47ea-8e36-e91c3c71aa4f",
+     "object": "restaurant",
+     "name": "Little Ripper Brekkie",
+     "cuisine": [
+      "American",
+      "10X Coffee Club"
+     ],
+     "cohort": "qsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/124f02f4-a6f2-4240-bfea-1d8dabe55d94/1x.png?v=1778952264",
+      "web_2x": "https://images.blackbird.xyz/124f02f4-a6f2-4240-bfea-1d8dabe55d94/2x.png?v=1778952264",
+      "full_3x": "https://images.blackbird.xyz/124f02f4-a6f2-4240-bfea-1d8dabe55d94/3x.png?v=1778952264"
+     },
+     "website_url": "http://littleripper.la/",
+     "instagram_url": null,
+     "created_at": "2026-05-06T02:58:52.193341Z",
+     "updated_at": "2026-06-08T17:57:53.429035Z"
+    },
+    "neighborhood": {
+     "id": "3b39dad8-20ee-4cdc-bbc8-fd11bba925b7",
+     "object": "neighborhood",
+     "name": "Eagle Rock",
+     "region": "Los Angeles, CA"
+    },
+    "slug": "little-ripper-la-little-ripper-la",
+    "address": {
+     "street": "4155 Verdugo Rd",
+     "street2": "",
+     "city": "Los Angeles",
+     "state": "CA",
+     "zipcode": "90065",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 34.126542,
+     "longitude": -118.2322615
+    },
+    "phone_number": "(323) 739-0328",
+    "time_zone": "America/Los_Angeles",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": "https://www.sevenrooms.com/explore/littleripperla/reservations/create/search/",
+    "reservations_enabled": true,
+    "google_place_id": "ChIJeWYRKDnBwoARdn9PDGVvEQQ",
+    "created_at": "2026-05-06T03:02:54.541926Z",
+    "updated_at": "2026-09-08T15:48:55.56585Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:00:27.200238Z",
+   "ended_at": null,
+   "square_qr": null
+  },
+  {
+   "id": "6d6438ed-12f0-4a70-a147-41e91c4d9398",
+   "object": "check_in",
+   "location": {
+    "id": "d92c0928-f6d8-41e4-8558-7873745e8604",
+    "object": "location",
+    "name": "French Quarter",
+    "restaurant": {
+     "id": "44900cb4-df62-4183-9b4c-fc79a885a0eb",
+     "object": "restaurant",
+     "name": "The Coffee Counter",
+     "cuisine": [
+      "10X Coffee Club",
+      "Coffee Shop"
+     ],
+     "cohort": "qsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/7cf2d767-6dcd-4716-8ed0-ee1ba2b8fa09/1x.png",
+      "web_2x": "https://images.blackbird.xyz/7cf2d767-6dcd-4716-8ed0-ee1ba2b8fa09/2x.png",
+      "full_3x": "https://images.blackbird.xyz/7cf2d767-6dcd-4716-8ed0-ee1ba2b8fa09/3x.png"
+     },
+     "website_url": "https://www.theryderhotel.com/dine/coffee-counter/",
+     "instagram_url": null,
+     "created_at": "2024-10-24T14:39:36.539894Z",
+     "updated_at": "2026-06-18T14:02:10.70893Z"
+    },
+    "neighborhood": {
+     "id": "3f43db6b-5cf3-41de-a734-019298b22494",
+     "object": "neighborhood",
+     "name": "French Quarter",
+     "region": "Charleston, SC"
+    },
+    "slug": "the-coffee-counter-french-quarter",
+    "address": {
+     "street": "237 Meeting St",
+     "street2": "",
+     "city": "Charleston",
+     "state": "SC",
+     "zipcode": "29401",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 32.782769,
+     "longitude": -79.932075
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJU3WDczx7_ogR525G2DE5d8Q",
+    "created_at": "2024-12-03T21:15:47.449285Z",
+    "updated_at": "2026-09-18T04:03:02.268824Z"
+   },
+   "blackbird_pay_enabled": false,
+   "created_at": "2026-09-19T16:00:24.25851Z",
+   "ended_at": "2026-09-19T16:00:24.257101Z",
+   "square_qr": null
+  },
+  {
+   "id": "63b1f7fd-3d00-49d6-963d-cba8112f868f",
+   "object": "check_in",
+   "location": {
+    "id": "ad8fb9a8-71b3-4455-91a8-f0a16baf0c61",
+    "object": "location",
+    "name": "Midtown",
+    "restaurant": {
+     "id": "d1245bb7-2a72-40fb-b100-9a1781165090",
+     "object": "restaurant",
+     "name": "Patisserie Fouet",
+     "cuisine": [
+      "Bakery",
+      "10X Coffee Club"
+     ],
+     "cohort": "qsr",
+     "price": 1,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/e0d47971-986f-485b-82d3-6078a3783ee6/1x.png",
+      "web_2x": "https://images.blackbird.xyz/e0d47971-986f-485b-82d3-6078a3783ee6/2x.png",
+      "full_3x": "https://images.blackbird.xyz/e0d47971-986f-485b-82d3-6078a3783ee6/3x.png"
+     },
+     "website_url": "https://fouetnyc.com",
+     "instagram_url": null,
+     "created_at": "2024-03-29T19:26:29.517248Z",
+     "updated_at": "2026-02-04T09:00:49.778713Z"
+    },
+    "neighborhood": {
+     "id": "b63979fb-70a7-475b-b158-26541a330328",
+     "object": "neighborhood",
+     "name": "Midtown",
+     "region": "New York, NY"
+    },
+    "slug": "9c4247ff-0eb6-4ac7-81dc-490f6ea2979c",
+    "address": {
+     "street": "776 9th Ave",
+     "street2": "",
+     "city": "New York",
+     "state": "NY",
+     "zipcode": "10019",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.76444499999999,
+     "longitude": -73.987833
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJ3dmVegBZwokRz873kN52PUI",
+    "created_at": "2025-06-04T19:25:16.010621Z",
+    "updated_at": "2026-09-18T04:01:22.886881Z"
+   },
+   "blackbird_pay_enabled": false,
+   "created_at": "2026-09-19T16:00:22.275306Z",
+   "ended_at": "2026-09-19T16:00:22.258202Z",
+   "square_qr": null
+  },
+  {
+   "id": "6e32f792-c14b-40b8-83eb-4dca1b3f7287",
+   "object": "check_in",
+   "location": {
+    "id": "2357a2ac-d139-4944-b2e4-fea5c1b7de97",
+    "object": "location",
+    "name": "Williamsburg",
+    "restaurant": {
+     "id": "9b11b832-94e0-493d-8618-0c3a7ddc4e65",
+     "object": "restaurant",
+     "name": "Balera",
+     "cuisine": [
+      "Pasta",
+      "Pizza"
+     ],
+     "cohort": "fsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/c973eb03-7f79-4a03-b719-802f1171aeda/1x.png?v=1770141134",
+      "web_2x": "https://images.blackbird.xyz/c973eb03-7f79-4a03-b719-802f1171aeda/2x.png?v=1770141134",
+      "full_3x": "https://images.blackbird.xyz/c973eb03-7f79-4a03-b719-802f1171aeda/3x.png?v=1770141134"
+     },
+     "website_url": "https://www.balerabk.com/",
+     "instagram_url": null,
+     "created_at": "2026-02-03T17:37:33.669789Z",
+     "updated_at": "2026-02-03T17:52:14.870583Z"
+    },
+    "neighborhood": {
+     "id": "f702e1ef-3fb9-4449-81bb-3ebad5ea2311",
+     "object": "neighborhood",
+     "name": "Williamsburg",
+     "region": "New York, NY"
+    },
+    "slug": "balera-williamsburg",
+    "address": {
+     "street": "442 Graham Ave",
+     "street2": "",
+     "city": "Brooklyn",
+     "state": "NY",
+     "zipcode": "11211",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.7182797,
+     "longitude": -73.94464599999999
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJ6-9kbQBZwokR7RTDKFGG5Zc",
+    "created_at": "2026-02-03T17:38:33.23808Z",
+    "updated_at": "2026-09-18T04:00:06.588217Z"
+   },
+   "blackbird_pay_enabled": false,
+   "created_at": "2026-09-19T16:00:22.072524Z",
+   "ended_at": "2026-09-19T16:00:22.055957Z",
+   "square_qr": null
+  },
+  {
+   "id": "0e97bf77-ca8a-4d3c-ab92-ab25ed4fad93",
+   "object": "check_in",
+   "location": {
+    "id": "51381f78-62d1-4d93-a0c1-d0687af1989e",
+    "object": "location",
+    "name": "West Hollywood",
+    "restaurant": {
+     "id": "b8b025eb-4039-42cd-8e70-e821353ce31c",
+     "object": "restaurant",
+     "name": "Handles Coffee",
+     "cuisine": [
+      "10X Coffee Club",
+      "Coffee Shop"
+     ],
+     "cohort": "qsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/bbc3ded6-d04d-4f00-a081-27164722f052/1x.png?v=1779212040",
+      "web_2x": "https://images.blackbird.xyz/bbc3ded6-d04d-4f00-a081-27164722f052/2x.png?v=1779212040",
+      "full_3x": "https://images.blackbird.xyz/bbc3ded6-d04d-4f00-a081-27164722f052/3x.png?v=1779212040"
+     },
+     "website_url": "https://www.instagram.com/handlescoffee",
+     "instagram_url": null,
+     "created_at": "2026-05-13T04:49:50.105508Z",
+     "updated_at": "2026-06-09T12:29:20.226496Z"
+    },
+    "neighborhood": {
+     "id": "df65953b-e1eb-468f-a6f4-1f5fe0370eee",
+     "object": "neighborhood",
+     "name": "West Hollywood",
+     "region": "Los Angeles, CA"
+    },
+    "slug": "handles-weho-west-hollywood",
+    "address": {
+     "street": "8535 Sunset Blvd",
+     "street2": "",
+     "city": "West Hollywood",
+     "state": "CA",
+     "zipcode": "90069",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 34.0939418,
+     "longitude": -118.3775463
+    },
+    "phone_number": "2134341997",
+    "time_zone": "America/Los_Angeles",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJk9C9gDS_woARfSO93VhlcNk",
+    "created_at": "2026-05-13T04:52:08.040453Z",
+    "updated_at": "2026-09-18T04:00:06.471315Z"
+   },
+   "blackbird_pay_enabled": false,
+   "created_at": "2026-09-19T16:00:18.776506Z",
+   "ended_at": "2026-09-19T16:00:18.774987Z",
+   "square_qr": null
+  },
+  {
+   "id": "ca3a6a26-9175-4f2e-b641-a96ad588cef4",
+   "object": "check_in",
+   "location": {
+    "id": "7f15021c-9ed4-49b4-97ec-05a94308b35f",
+    "object": "location",
+    "name": "Radcliffborough",
+    "restaurant": {
+     "id": "47556a2a-1fe9-45da-9719-5c332b2b3609",
+     "object": "restaurant",
+     "name": "CO Restaurant",
+     "cuisine": [
+      "Asian"
+     ],
+     "cohort": "fsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/bab4b951-4d95-4b66-b076-d450fdbb39c0/1x.png?v=1757355396",
+      "web_2x": "https://images.blackbird.xyz/bab4b951-4d95-4b66-b076-d450fdbb39c0/2x.png?v=1757355397",
+      "full_3x": "https://images.blackbird.xyz/bab4b951-4d95-4b66-b076-d450fdbb39c0/3x.png?v=1757355397"
+     },
+     "website_url": "https://www.eatatco.com/location/charleston/",
+     "instagram_url": null,
+     "created_at": "2025-09-08T18:11:02.623725Z",
+     "updated_at": "2026-02-04T09:01:31.900944Z"
+    },
+    "neighborhood": {
+     "id": "de14ccce-4c8e-4dfa-b682-e668332e7568",
+     "object": "neighborhood",
+     "name": "Radcliffborough",
+     "region": "Charleston, SC"
+    },
+    "slug": "co-restaurant-radcliffborough",
+    "address": {
+     "street": "340 King St",
+     "street2": "",
+     "city": "Charleston",
+     "state": "SC",
+     "zipcode": "29401",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 32.7845993,
+     "longitude": -79.9353485
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJl0FEWxN6_ogRRaPPxX9-YHE",
+    "created_at": "2025-09-08T18:13:03.398319Z",
+    "updated_at": "2026-09-18T04:01:59.935244Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:00:18.207738Z",
+   "ended_at": "2026-09-19T16:00:21.612674Z",
+   "square_qr": null
+  },
+  {
+   "id": "1258ad64-7b2e-42cd-858e-05cdd6e631c6",
+   "object": "check_in",
+   "location": {
+    "id": "aec582dc-5f47-40c3-ab10-1da436d69e2e",
+    "object": "location",
+    "name": "Hell's Kitchen",
+    "restaurant": {
+     "id": "dbd98153-257f-4293-97b9-df3174fd2753",
+     "object": "restaurant",
+     "name": "Bareburger",
+     "cuisine": [
+      "Burgers"
+     ],
+     "cohort": "fsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/49e7bbc8-013b-4929-9ace-5d948d474653/1x.png?v=1761056405",
+      "web_2x": "https://images.blackbird.xyz/49e7bbc8-013b-4929-9ace-5d948d474653/2x.png?v=1761056405",
+      "full_3x": "https://images.blackbird.xyz/49e7bbc8-013b-4929-9ace-5d948d474653/3x.png?v=1761056406"
+     },
+     "website_url": "https://bareburger.com/",
+     "instagram_url": null,
+     "created_at": "2025-10-15T19:30:57.950477Z",
+     "updated_at": "2026-02-04T09:01:35.877371Z"
+    },
+    "neighborhood": {
+     "id": "37f3eac8-2fff-483e-affb-a8e4dbf5c2d3",
+     "object": "neighborhood",
+     "name": "Hell's Kitchen",
+     "region": "New York, NY"
+    },
+    "slug": "bareburger-bareburger",
+    "address": {
+     "street": "366 W 46th St",
+     "street2": "",
+     "city": "New York",
+     "state": "NY",
+     "zipcode": "10036",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.7606624,
+     "longitude": -73.9903131
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJhTdv51NYwokR7V105uVzf8g",
+    "created_at": "2025-10-15T19:32:59.5231Z",
+    "updated_at": "2026-09-18T04:02:16.567504Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:00:15.923497Z",
+   "ended_at": null,
+   "square_qr": null
+  },
+  {
+   "id": "fe7936ba-77be-46a7-bfb7-f3fe4248f65b",
+   "object": "check_in",
+   "location": {
+    "id": "55ca0a88-a7e9-4d86-9eff-750cf2eaf1bb",
+    "object": "location",
+    "name": "Midtown",
+    "restaurant": {
+     "id": "24f9d9fa-aaf9-4872-807a-134bc020e9cc",
+     "object": "restaurant",
+     "name": "Black Tap Craft Burgers & Beer",
+     "cuisine": [
+      "Burgers"
+     ],
+     "cohort": "fsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/48693809-41a4-47a3-911d-5f54a4da3a42/1x.png?v=1756910523",
+      "web_2x": "https://images.blackbird.xyz/48693809-41a4-47a3-911d-5f54a4da3a42/2x.png?v=1756910524",
+      "full_3x": "https://images.blackbird.xyz/48693809-41a4-47a3-911d-5f54a4da3a42/3x.png?v=1756910524"
+     },
+     "website_url": "https://blacktap.com/location/35th/",
+     "instagram_url": null,
+     "created_at": "2025-09-03T14:38:30.056439Z",
+     "updated_at": "2026-02-04T09:01:31.90017Z"
+    },
+    "neighborhood": {
+     "id": "b63979fb-70a7-475b-b158-26541a330328",
+     "object": "neighborhood",
+     "name": "Midtown",
+     "region": "New York, NY"
+    },
+    "slug": "black-tap-craft-burg-midtown",
+    "address": {
+     "street": "45 W 35th St",
+     "street2": "",
+     "city": "New York",
+     "state": "NY",
+     "zipcode": "10001",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.750124,
+     "longitude": -73.985986
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": "https://www.opentable.com/restref/client/?restref=489184&lang=en-US&ot_source=Restaurant%20website&corrid=aa86b399-bd77-4ea1-bfcd-ffb613dd650e",
+    "reservations_enabled": true,
+    "google_place_id": "ChIJX7vhtP5ZwokRPkmCmUg4ZIU",
+    "created_at": "2025-09-03T14:40:26.433911Z",
+    "updated_at": "2026-09-18T04:02:36.369947Z"
+   },
+   "blackbird_pay_enabled": false,
+   "created_at": "2026-09-19T16:00:12.319677Z",
+   "ended_at": "2026-09-19T16:00:12.303469Z",
+   "square_qr": null
+  },
+  {
+   "id": "9db39906-424b-4e82-97e4-a469281f7ba0",
+   "object": "check_in",
+   "location": {
+    "id": "fa4b384c-0a79-4fbb-8ec7-45c4591d8529",
+    "object": "location",
+    "name": "NoMad",
+    "restaurant": {
+     "id": "ec9daba8-65b8-4b98-b047-41a12adac2e1",
+     "object": "restaurant",
+     "name": "Sabai Thai",
+     "cuisine": [
+      "Thai"
+     ],
+     "cohort": "fsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/681524ae-b889-47a7-a013-ca098dc4ad65/1x.png",
+      "web_2x": "https://images.blackbird.xyz/681524ae-b889-47a7-a013-ca098dc4ad65/2x.png",
+      "full_3x": "https://images.blackbird.xyz/681524ae-b889-47a7-a013-ca098dc4ad65/3x.png"
+     },
+     "website_url": "http://www.sabaithai.nyc/",
+     "instagram_url": null,
+     "created_at": "2025-07-01T15:14:37.723295Z",
+     "updated_at": "2026-02-04T09:01:22.813895Z"
+    },
+    "neighborhood": {
+     "id": "8a36a0c2-274a-4931-ac58-a0ac9c38c546",
+     "object": "neighborhood",
+     "name": "NoMad",
+     "region": "New York, NY"
+    },
+    "slug": "sabai-thai-nomad",
+    "address": {
+     "street": "432 Park Ave S",
+     "street2": "",
+     "city": "New York",
+     "state": "NY",
+     "zipcode": "10016",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.74429900000001,
+     "longitude": -73.98366399999999
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": "https://www.sevenrooms.com/explore/sabainyc/reservations",
+    "reservations_enabled": true,
+    "google_place_id": "ChIJ83Nr8qdZwokRlQ9NQpIpcw4",
+    "created_at": "2025-07-01T15:48:49.439808Z",
+    "updated_at": "2026-09-18T04:01:53.367185Z"
+   },
+   "blackbird_pay_enabled": false,
+   "created_at": "2026-09-19T16:00:10.540675Z",
+   "ended_at": "2026-09-19T16:00:10.521506Z",
+   "square_qr": null
+  },
+  {
+   "id": "1a882aed-1858-40ab-a8fa-4f986b10fc45",
+   "object": "check_in",
+   "location": {
+    "id": "37bd9bb9-0c4f-4ea9-b66a-908275ccc551",
+    "object": "location",
+    "name": "Union Square",
+    "restaurant": {
+     "id": "19e480cf-e8f9-4ce5-94f8-19eeca178207",
+     "object": "restaurant",
+     "name": "Leon's",
+     "cuisine": [
+      "10X Coffee Club",
+      "Italian"
+     ],
+     "cohort": "fsr",
+     "price": 3,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/9d2c189d-e622-4ed0-8079-eb1eaba1fd32/1x.png",
+      "web_2x": "https://images.blackbird.xyz/9d2c189d-e622-4ed0-8079-eb1eaba1fd32/2x.png",
+      "full_3x": "https://images.blackbird.xyz/9d2c189d-e622-4ed0-8079-eb1eaba1fd32/3x.png"
+     },
+     "website_url": "https://www.leonsnyc.com/",
+     "instagram_url": null,
+     "created_at": "2025-03-13T14:38:25.384953Z",
+     "updated_at": "2026-02-04T09:01:13.028728Z"
+    },
+    "neighborhood": {
+     "id": "93b504ae-ff06-42ea-8c61-4d249da9f649",
+     "object": "neighborhood",
+     "name": "Union Square",
+     "region": "New York, NY"
+    },
+    "slug": "leons-union-square",
+    "address": {
+     "street": "817 Broadway",
+     "street2": "",
+     "city": "New York",
+     "state": "NY",
+     "zipcode": "10003",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.733877919159994,
+     "longitude": -73.99114908366569
+    },
+    "phone_number": "(414) 246-8341",
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": true,
+    "reservation_url": "https://www.opentable.com/r/leons-new-york-city",
+    "reservations_enabled": true,
+    "google_place_id": "ChIJPfXBCwBZwokRI2bnWBxCQCE",
+    "created_at": "2025-03-13T18:29:33.056446Z",
+    "updated_at": "2026-09-18T04:03:47.64007Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T16:00:08.184053Z",
+   "ended_at": "2026-09-19T16:00:13.386628Z",
+   "square_qr": null
+  },
+  {
+   "id": "99bbe1e4-876d-4d71-a97f-99b31879cb57",
+   "object": "check_in",
+   "location": {
+    "id": "d92c0928-f6d8-41e4-8558-7873745e8604",
+    "object": "location",
+    "name": "French Quarter",
+    "restaurant": {
+     "id": "44900cb4-df62-4183-9b4c-fc79a885a0eb",
+     "object": "restaurant",
+     "name": "The Coffee Counter",
+     "cuisine": [
+      "10X Coffee Club",
+      "Coffee Shop"
+     ],
+     "cohort": "qsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/7cf2d767-6dcd-4716-8ed0-ee1ba2b8fa09/1x.png",
+      "web_2x": "https://images.blackbird.xyz/7cf2d767-6dcd-4716-8ed0-ee1ba2b8fa09/2x.png",
+      "full_3x": "https://images.blackbird.xyz/7cf2d767-6dcd-4716-8ed0-ee1ba2b8fa09/3x.png"
+     },
+     "website_url": "https://www.theryderhotel.com/dine/coffee-counter/",
+     "instagram_url": null,
+     "created_at": "2024-10-24T14:39:36.539894Z",
+     "updated_at": "2026-06-18T14:02:10.70893Z"
+    },
+    "neighborhood": {
+     "id": "3f43db6b-5cf3-41de-a734-019298b22494",
+     "object": "neighborhood",
+     "name": "French Quarter",
+     "region": "Charleston, SC"
+    },
+    "slug": "the-coffee-counter-french-quarter",
+    "address": {
+     "street": "237 Meeting St",
+     "street2": "",
+     "city": "Charleston",
+     "state": "SC",
+     "zipcode": "29401",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 32.782769,
+     "longitude": -79.932075
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJU3WDczx7_ogR525G2DE5d8Q",
+    "created_at": "2024-12-03T21:15:47.449285Z",
+    "updated_at": "2026-09-18T04:03:02.268824Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T15:59:59.336654Z",
+   "ended_at": "2026-09-19T16:00:04.552378Z",
+   "square_qr": null
+  },
+  {
+   "id": "4e8cd67e-cf5e-4e7d-95a4-12f8e87721dd",
+   "object": "check_in",
+   "location": {
+    "id": "ef314241-e16d-43d5-8837-d6a62e728cbc",
+    "object": "location",
+    "name": "Harleston Village",
+    "restaurant": {
+     "id": "1d14adb0-6d01-4add-aa1d-52f9e124aa35",
+     "object": "restaurant",
+     "name": "Brown Dog Deli",
+     "cuisine": [
+      "Deli",
+      "Sandwiches"
+     ],
+     "cohort": "qsr",
+     "price": 1,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/0bf6bfea-ce00-43c4-8bb3-aeab8243d8e0/1x.png",
+      "web_2x": "https://images.blackbird.xyz/0bf6bfea-ce00-43c4-8bb3-aeab8243d8e0/2x.png",
+      "full_3x": "https://images.blackbird.xyz/0bf6bfea-ce00-43c4-8bb3-aeab8243d8e0/3x.png"
+     },
+     "website_url": "https://browndogdeli.com/",
+     "instagram_url": null,
+     "created_at": "2024-10-22T18:08:20.153772Z",
+     "updated_at": "2026-02-04T09:00:57.599999Z"
+    },
+    "neighborhood": {
+     "id": "83977060-b2a7-4cc1-8fcd-ef8f929e6954",
+     "object": "neighborhood",
+     "name": "Harleston Village",
+     "region": "Charleston, SC"
+    },
+    "slug": "brown-dog-deli-harleston-village",
+    "address": {
+     "street": "225 Calhoun St",
+     "street2": "",
+     "city": "Charleston",
+     "state": "SC",
+     "zipcode": "29401",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 32.783918,
+     "longitude": -79.942295
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJHRq3Sw56_ogRsVgGoXhhptQ",
+    "created_at": "2024-10-23T18:44:46.586306Z",
+    "updated_at": "2026-09-18T04:02:20.523349Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T15:59:56.881007Z",
+   "ended_at": "2026-09-19T16:00:23.711954Z",
+   "square_qr": null
+  },
+  {
+   "id": "eda01459-f28a-4566-a041-cc45e02b25a9",
+   "object": "check_in",
+   "location": {
+    "id": "4ee1faf2-689b-4453-b250-3b79fd508e38",
+    "object": "location",
+    "name": "Williamsburg",
+    "restaurant": {
+     "id": "b127eebc-f3eb-48d9-bad1-d98639b84e90",
+     "object": "restaurant",
+     "name": "Meadowsweet",
+     "cuisine": [
+      "New American"
+     ],
+     "cohort": "fsr",
+     "price": 3,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/df96831c-07f6-4248-9086-aa2cc3f68c91/1x.png",
+      "web_2x": "https://images.blackbird.xyz/df96831c-07f6-4248-9086-aa2cc3f68c91/2x.png",
+      "full_3x": "https://images.blackbird.xyz/df96831c-07f6-4248-9086-aa2cc3f68c91/3x.png"
+     },
+     "website_url": "https://meadowsweetnyc.com",
+     "instagram_url": null,
+     "created_at": "2024-05-22T18:35:50.47268Z",
+     "updated_at": "2026-02-04T09:00:49.784016Z"
+    },
+    "neighborhood": {
+     "id": "f702e1ef-3fb9-4449-81bb-3ebad5ea2311",
+     "object": "neighborhood",
+     "name": "Williamsburg",
+     "region": "New York, NY"
+    },
+    "slug": "meadowsweet-williamsburg",
+    "address": {
+     "street": "149 Broadway",
+     "street2": "",
+     "city": "Brooklyn",
+     "state": "NY",
+     "zipcode": "11211",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.71044271398422,
+     "longitude": -73.96311451738711
+    },
+    "phone_number": "+14142950425",
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": "https://resy.com/cities/new-york-ny/venues/meadowsweet?date=2024-06-06&seats=2",
+    "reservations_enabled": true,
+    "google_place_id": "ChIJwXUoA99bwokRU2bF-gdB25I",
+    "created_at": "2024-05-23T19:50:16.361815Z",
+    "updated_at": "2026-09-18T04:00:17.83179Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T15:59:54.290587Z",
+   "ended_at": "2026-09-19T16:00:02.536818Z",
+   "square_qr": null
+  },
+  {
+   "id": "2d2487aa-9b86-4008-bb5f-aa5cc8db2d2e",
+   "object": "check_in",
+   "location": {
+    "id": "55ca0a88-a7e9-4d86-9eff-750cf2eaf1bb",
+    "object": "location",
+    "name": "Midtown",
+    "restaurant": {
+     "id": "24f9d9fa-aaf9-4872-807a-134bc020e9cc",
+     "object": "restaurant",
+     "name": "Black Tap Craft Burgers & Beer",
+     "cuisine": [
+      "Burgers"
+     ],
+     "cohort": "fsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/48693809-41a4-47a3-911d-5f54a4da3a42/1x.png?v=1756910523",
+      "web_2x": "https://images.blackbird.xyz/48693809-41a4-47a3-911d-5f54a4da3a42/2x.png?v=1756910524",
+      "full_3x": "https://images.blackbird.xyz/48693809-41a4-47a3-911d-5f54a4da3a42/3x.png?v=1756910524"
+     },
+     "website_url": "https://blacktap.com/location/35th/",
+     "instagram_url": null,
+     "created_at": "2025-09-03T14:38:30.056439Z",
+     "updated_at": "2026-02-04T09:01:31.90017Z"
+    },
+    "neighborhood": {
+     "id": "b63979fb-70a7-475b-b158-26541a330328",
+     "object": "neighborhood",
+     "name": "Midtown",
+     "region": "New York, NY"
+    },
+    "slug": "black-tap-craft-burg-midtown",
+    "address": {
+     "street": "45 W 35th St",
+     "street2": "",
+     "city": "New York",
+     "state": "NY",
+     "zipcode": "10001",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.750124,
+     "longitude": -73.985986
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": "https://www.opentable.com/restref/client/?restref=489184&lang=en-US&ot_source=Restaurant%20website&corrid=aa86b399-bd77-4ea1-bfcd-ffb613dd650e",
+    "reservations_enabled": true,
+    "google_place_id": "ChIJX7vhtP5ZwokRPkmCmUg4ZIU",
+    "created_at": "2025-09-03T14:40:26.433911Z",
+    "updated_at": "2026-09-18T04:02:36.369947Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T15:59:52.041282Z",
+   "ended_at": "2026-09-19T15:59:55.203016Z",
+   "square_qr": null
+  },
+  {
+   "id": "9cc6dbda-94ef-4294-b53c-de6f5004b490",
+   "object": "check_in",
+   "location": {
+    "id": "850bdf85-691a-45b7-93c4-5be7f79e4f68",
+    "object": "location",
+    "name": "Inner Sunset",
+    "restaurant": {
+     "id": "9b1d16fa-0b2d-4197-a306-583e3405f7ab",
+     "object": "restaurant",
+     "name": "California Kahve",
+     "cuisine": [
+      "10X Coffee Club",
+      "Cafe"
+     ],
+     "cohort": "qsr",
+     "price": 1,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/1f180c9b-60ff-4470-a4f8-cdc480297df8/1x.png",
+      "web_2x": "https://images.blackbird.xyz/1f180c9b-60ff-4470-a4f8-cdc480297df8/2x.png",
+      "full_3x": "https://images.blackbird.xyz/1f180c9b-60ff-4470-a4f8-cdc480297df8/3x.png"
+     },
+     "website_url": "https://www.californiakahve.com/",
+     "instagram_url": null,
+     "created_at": "2025-05-06T21:53:06.534478Z",
+     "updated_at": "2026-02-04T09:01:16.514855Z"
+    },
+    "neighborhood": {
+     "id": "5009e35b-5fdf-4058-82cb-04f7ffdd31f2",
+     "object": "neighborhood",
+     "name": "Inner Sunset",
+     "region": "San Francisco, CA"
+    },
+    "slug": "california-kahve-inner-sunset",
+    "address": {
+     "street": "320 Bowling Green Dr",
+     "street2": "",
+     "city": "San Francisco",
+     "state": "CA",
+     "zipcode": "94122",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 37.7680605,
+     "longitude": -122.4582532
+    },
+    "phone_number": null,
+    "time_zone": "America/Los_Angeles",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJMQznWQCHhYARYJ1o3D-rn04",
+    "created_at": "2025-05-09T17:27:45.526278Z",
+    "updated_at": "2026-09-18T04:02:51.954854Z"
+   },
+   "blackbird_pay_enabled": false,
+   "created_at": "2026-09-19T15:59:47.266839Z",
+   "ended_at": "2026-09-19T15:59:47.264674Z",
+   "square_qr": null
+  },
+  {
+   "id": "644f8eee-b229-43f0-9219-a19443e2bcdb",
+   "object": "check_in",
+   "location": {
+    "id": "a666bf5e-5da0-4e6b-86b4-0490beefbe5a",
+    "object": "location",
+    "name": "Riverland",
+    "restaurant": {
+     "id": "87cfb4b0-57a4-49df-9657-00a324034758",
+     "object": "restaurant",
+     "name": "Huriyali",
+     "cuisine": [
+      "10X Coffee Club",
+      "Cafe"
+     ],
+     "cohort": "qsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/931e46fb-3ae8-4ea0-99ad-2e936e4b244c/1x.png",
+      "web_2x": "https://images.blackbird.xyz/931e46fb-3ae8-4ea0-99ad-2e936e4b244c/2x.png",
+      "full_3x": "https://images.blackbird.xyz/931e46fb-3ae8-4ea0-99ad-2e936e4b244c/3x.png"
+     },
+     "website_url": "https://www.huriyali.com/",
+     "instagram_url": null,
+     "created_at": "2025-02-22T17:22:52.636161Z",
+     "updated_at": "2026-02-04T09:01:13.025516Z"
+    },
+    "neighborhood": {
+     "id": "e3441945-8f39-44c3-8f4f-590fb0b530b1",
+     "object": "neighborhood",
+     "name": "Riverland Terrace",
+     "region": "Charleston, SC"
+    },
+    "slug": "huriyali-riverland",
+    "address": {
+     "street": "2016 Wappoo Dr",
+     "street2": "",
+     "city": "Charleston",
+     "state": "SC",
+     "zipcode": "29412",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 32.762481,
+     "longitude": -79.98924
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJX3X_Fgx5_ogRclV0AGOOGtA",
+    "created_at": "2025-02-25T20:20:31.782173Z",
+    "updated_at": "2026-09-18T04:02:27.765318Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T15:59:42.277498Z",
+   "ended_at": "2026-09-19T15:59:47.364539Z",
+   "square_qr": null
+  },
+  {
+   "id": "35adf3f4-f907-40cc-837b-8188d5241bde",
+   "object": "check_in",
+   "location": {
+    "id": "e86dc40d-e843-45b5-ac3f-5fee2f89e233",
+    "object": "location",
+    "name": "Cannonborough Elliotborough",
+    "restaurant": {
+     "id": "370a7315-0817-4849-8b6d-02ee9ccbb28a",
+     "object": "restaurant",
+     "name": "Nook Tiny Cafe & Market",
+     "cuisine": [
+      "10X Coffee Club",
+      "Cafe"
+     ],
+     "cohort": "qsr",
+     "price": 1,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/beea0d4b-f981-4440-bad3-72d24d627f9a/1x.png?v=1762447705",
+      "web_2x": "https://images.blackbird.xyz/beea0d4b-f981-4440-bad3-72d24d627f9a/2x.png?v=1762447705",
+      "full_3x": "https://images.blackbird.xyz/beea0d4b-f981-4440-bad3-72d24d627f9a/3x.png?v=1762447706"
+     },
+     "website_url": "https://nooktinycafe.com/",
+     "instagram_url": null,
+     "created_at": "2025-11-06T16:38:16.153514Z",
+     "updated_at": "2026-02-04T09:01:39.031997Z"
+    },
+    "neighborhood": {
+     "id": "063fec5b-11fd-4df6-b4d1-567e098a3177",
+     "object": "neighborhood",
+     "name": "Cannonborough Elliotborough",
+     "region": "Charleston, SC"
+    },
+    "slug": "nook-tiny-cafe--mar-cannonborough-elliotborough",
+    "address": {
+     "street": "267 Rutledge Ave",
+     "street2": "",
+     "city": "Charleston",
+     "state": "SC",
+     "zipcode": "29403",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 32.7925992,
+     "longitude": -79.9486125
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJy9UmUS97_ogRxZMRHEdXDpw",
+    "created_at": "2025-11-06T16:43:27.776312Z",
+    "updated_at": "2026-09-18T04:02:50.030811Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T15:59:34.206682Z",
+   "ended_at": null,
+   "square_qr": null
+  },
+  {
+   "id": "438088cf-1106-4ed1-a198-313fe4fa54a9",
+   "object": "check_in",
+   "location": {
+    "id": "980d38b2-0c94-4173-bd04-a8d40b79c13b",
+    "object": "location",
+    "name": "Avondale",
+    "restaurant": {
+     "id": "66dbc451-77db-4321-a524-7f3156f9eee8",
+     "object": "restaurant",
+     "name": "Café Roca",
+     "cuisine": [
+      "10X Coffee Club",
+      "Coffee Shop",
+      "Cafe"
+     ],
+     "cohort": "qsr",
+     "price": 1,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/cdcb70aa-572b-4c21-847a-c83b7c856625/1x.png?v=1762790857",
+      "web_2x": "https://images.blackbird.xyz/cdcb70aa-572b-4c21-847a-c83b7c856625/2x.png?v=1762790857",
+      "full_3x": "https://images.blackbird.xyz/cdcb70aa-572b-4c21-847a-c83b7c856625/3x.png?v=1762790858"
+     },
+     "website_url": "https://caferoca.com/",
+     "instagram_url": null,
+     "created_at": "2025-11-06T17:04:27.849741Z",
+     "updated_at": "2026-09-14T18:32:36.09748Z"
+    },
+    "neighborhood": {
+     "id": "7a924389-1ff0-4ead-9da5-c3f712dc6e82",
+     "object": "neighborhood",
+     "name": "Avondale",
+     "region": "Charleston, SC"
+    },
+    "slug": "cafe-roca-avondale",
+    "address": {
+     "street": "1303 Ashley River Rd",
+     "street2": "",
+     "city": "Charleston",
+     "state": "SC",
+     "zipcode": "29407",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 32.7970536,
+     "longitude": -79.99849859999999
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJOziAeZB7_ogRfY3fbfdjnGs",
+    "created_at": "2025-11-06T17:07:38.537785Z",
+    "updated_at": "2026-09-18T04:02:52.974171Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T15:59:31.249113Z",
+   "ended_at": "2026-09-19T15:59:48.957178Z",
+   "square_qr": null
+  },
+  {
+   "id": "bf314125-9a4e-431a-acea-e13ff938de74",
+   "object": "check_in",
+   "location": {
+    "id": "ff3859a6-6e3e-42ae-94b4-52eb82038bdb",
+    "object": "location",
+    "name": "Central Park",
+    "restaurant": {
+     "id": "0c1aa3a3-c5a6-43fd-9c8f-0f1d617a3597",
+     "object": "restaurant",
+     "name": "Boychik ",
+     "cuisine": [
+      "Mediterranean"
+     ],
+     "cohort": "fsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/c70a9692-a93b-430b-a22e-c84dbd50d2bd/1x.png?v=1778610458",
+      "web_2x": "https://images.blackbird.xyz/c70a9692-a93b-430b-a22e-c84dbd50d2bd/2x.png?v=1778610458",
+      "full_3x": "https://images.blackbird.xyz/c70a9692-a93b-430b-a22e-c84dbd50d2bd/3x.png?v=1778610458"
+     },
+     "website_url": "https://www.boychikkitchen.com/",
+     "instagram_url": null,
+     "created_at": "2026-04-23T02:21:43.4223Z",
+     "updated_at": "2026-05-12T18:27:39.086377Z"
+    },
+    "neighborhood": {
+     "id": "007079de-8559-4cbd-aa64-c58453949454",
+     "object": "neighborhood",
+     "name": "Central Park",
+     "region": "Denver, CO"
+    },
+    "slug": "boychik--central-park",
+    "address": {
+     "street": "2501 Dallas St",
+     "street2": "",
+     "city": "Aurora",
+     "state": "CO",
+     "zipcode": "80010",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 39.7525898,
+     "longitude": -104.8774258
+    },
+    "phone_number": null,
+    "time_zone": "America/Denver",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJufQ3pwx7bIcR5lv9Kce3LR4",
+    "created_at": "2026-04-23T02:22:15.231285Z",
+    "updated_at": "2026-09-18T04:02:03.705081Z"
+   },
+   "blackbird_pay_enabled": false,
+   "created_at": "2026-09-19T15:59:27.747128Z",
+   "ended_at": "2026-09-19T15:59:27.728693Z",
+   "square_qr": null
+  },
+  {
+   "id": "b65452ad-396f-48cc-b497-96d9374751bf",
+   "object": "check_in",
+   "location": {
+    "id": "2cc0abed-3c7a-44df-b845-af0ab8dd0c2a",
+    "object": "location",
+    "name": "Chinatown",
+    "restaurant": {
+     "id": "7142a743-5fc5-45c0-9818-f325a6e24f4d",
+     "object": "restaurant",
+     "name": "Golden Diner",
+     "cuisine": [
+      "Diner"
+     ],
+     "cohort": "fsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/f4557e47-13dc-4f60-a109-61acbbcee98a/1x.png",
+      "web_2x": "https://images.blackbird.xyz/f4557e47-13dc-4f60-a109-61acbbcee98a/2x.png",
+      "full_3x": "https://images.blackbird.xyz/f4557e47-13dc-4f60-a109-61acbbcee98a/3x.png"
+     },
+     "website_url": "http://www.goldendinerny.com/",
+     "instagram_url": null,
+     "created_at": "2024-08-12T22:30:36.847333Z",
+     "updated_at": "2026-02-04T09:00:54.112581Z"
+    },
+    "neighborhood": {
+     "id": "5ab57c56-4136-4755-a333-70109f77ff47",
+     "object": "neighborhood",
+     "name": "Chinatown",
+     "region": "New York, NY"
+    },
+    "slug": "golden-diner-golden-diner",
+    "address": {
+     "street": "123 Madison St",
+     "street2": "",
+     "city": "New York",
+     "state": "NY",
+     "zipcode": "10002",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.71241690000001,
+     "longitude": -73.9942645
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJ1-mW-LhbwokR7Ryv5ha-gzc",
+    "created_at": "2024-09-30T20:56:52.029593Z",
+    "updated_at": "2026-09-18T04:00:25.364455Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T15:59:21.837647Z",
+   "ended_at": null,
+   "square_qr": null
+  },
+  {
+   "id": "5a5e66ed-7240-4dcf-81e9-484d4a2ed6d8",
+   "object": "check_in",
+   "location": {
+    "id": "92423b8f-cb3e-491d-ad23-f9cd0b2f2069",
+    "object": "location",
+    "name": "Park Circle",
+    "restaurant": {
+     "id": "2a2d5b7a-9589-4dd3-83c8-5f51dcbfb520",
+     "object": "restaurant",
+     "name": "Sesame Burgers and Beer",
+     "cuisine": [
+      "Burgers",
+      "American"
+     ],
+     "cohort": "fsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/985461ef-17c6-4806-9257-b2c656a62a28/1x.png",
+      "web_2x": "https://images.blackbird.xyz/985461ef-17c6-4806-9257-b2c656a62a28/2x.png",
+      "full_3x": "https://images.blackbird.xyz/985461ef-17c6-4806-9257-b2c656a62a28/3x.png"
+     },
+     "website_url": "https://www.sesameburgersandbeer.com/",
+     "instagram_url": null,
+     "created_at": "2025-04-06T19:07:09.521906Z",
+     "updated_at": "2026-02-04T09:01:16.506789Z"
+    },
+    "neighborhood": {
+     "id": "72209223-67d2-430c-b448-d71de035cfd9",
+     "object": "neighborhood",
+     "name": "Park Circle",
+     "region": "Charleston, SC"
+    },
+    "slug": "sesame-burgers-and-b-sesame-burgers--beer",
+    "address": {
+     "street": "4726 Spruill Ave",
+     "street2": "",
+     "city": "North Charleston",
+     "state": "SC",
+     "zipcode": "29405",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 32.8807774,
+     "longitude": -79.9800052
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJl1_vmulk_ogROpCvs6ao7n0",
+    "created_at": "2025-09-08T19:53:11.799653Z",
+    "updated_at": "2026-09-18T04:02:19.80478Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T15:59:18.628209Z",
+   "ended_at": null,
+   "square_qr": null
+  },
+  {
+   "id": "0f1d05e6-c2d9-4d36-ab5b-5585c7d0079a",
+   "object": "check_in",
+   "location": {
+    "id": "65d64b88-1dc4-42a6-8a66-ab1092f9c2d2",
+    "object": "location",
+    "name": "Greenpoint",
+    "restaurant": {
+     "id": "6bc4974c-1acf-4c98-860a-0bee0b0ad23d",
+     "object": "restaurant",
+     "name": "Flower Cat",
+     "cuisine": [
+      "10X Coffee Club",
+      "Cafe"
+     ],
+     "cohort": "qsr",
+     "price": 1,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/1af6ddbb-eb60-4b2d-a634-1cdd5f39f9c6/1x.png?v=1777998743",
+      "web_2x": "https://images.blackbird.xyz/1af6ddbb-eb60-4b2d-a634-1cdd5f39f9c6/2x.png?v=1777998743",
+      "full_3x": "https://images.blackbird.xyz/1af6ddbb-eb60-4b2d-a634-1cdd5f39f9c6/3x.png?v=1777998743"
+     },
+     "website_url": "https://flowercat.nyc/",
+     "instagram_url": null,
+     "created_at": "2026-04-28T21:07:53.812052Z",
+     "updated_at": "2026-05-05T16:32:23.790375Z"
+    },
+    "neighborhood": {
+     "id": "5abf3f45-8d91-4775-87f3-62a637eee6d9",
+     "object": "neighborhood",
+     "name": "Greenpoint",
+     "region": "New York, NY"
+    },
+    "slug": "flower-cat-flower-cat",
+    "address": {
+     "street": "162 Noble St",
+     "street2": "",
+     "city": "Brooklyn",
+     "state": "NY",
+     "zipcode": "11222",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.7287165,
+     "longitude": -73.9538547
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJJT2fwKdZwokRA8epvwuvdL8",
+    "created_at": "2026-04-28T21:08:43.505927Z",
+    "updated_at": "2026-09-19T04:00:23.450168Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T15:59:13.497633Z",
+   "ended_at": "2026-09-19T15:59:16.187995Z",
+   "square_qr": null
+  },
+  {
+   "id": "79088329-859a-40e2-93aa-d1dc1c931066",
+   "object": "check_in",
+   "location": {
+    "id": "e3a6c9d8-3826-48ac-9e9e-3c03c4bdeaba",
+    "object": "location",
+    "name": "Upper East Side",
+    "restaurant": {
+     "id": "b5ee7f11-e5c8-4ac0-aa99-d33654804dd2",
+     "object": "restaurant",
+     "name": "Sushi of Gari",
+     "cuisine": [
+      "Sushi"
+     ],
+     "cohort": "fsr",
+     "price": 4,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/719c5a81-2deb-4beb-8b65-fae1f70f0924/1x.png",
+      "web_2x": "https://images.blackbird.xyz/719c5a81-2deb-4beb-8b65-fae1f70f0924/2x.png",
+      "full_3x": "https://images.blackbird.xyz/719c5a81-2deb-4beb-8b65-fae1f70f0924/3x.png"
+     },
+     "website_url": "https://www.sushiofgari.com/",
+     "instagram_url": null,
+     "created_at": "2025-06-16T19:20:32.241378Z",
+     "updated_at": "2026-02-04T09:01:22.810767Z"
+    },
+    "neighborhood": {
+     "id": "ced02784-be1c-434a-9878-d26c2caa5ccf",
+     "object": "neighborhood",
+     "name": "Upper East Side",
+     "region": "New York, NY"
+    },
+    "slug": "0ed2f995-200d-4037-8389-5b38c243b95f",
+    "address": {
+     "street": "402 E 78th St",
+     "street2": "",
+     "city": "New York",
+     "state": "NY",
+     "zipcode": "10075",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.7712773,
+     "longitude": -73.95281270000001
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": "https://www.opentable.com/sushi-of-gari-upper-east-side",
+    "reservations_enabled": true,
+    "google_place_id": "ChIJs9JDurhYwokRSjnRF8h3US8",
+    "created_at": "2025-06-18T14:31:56.952163Z",
+    "updated_at": "2026-09-18T04:03:29.522226Z"
+   },
+   "blackbird_pay_enabled": false,
+   "created_at": "2026-09-19T15:59:12.693375Z",
+   "ended_at": "2026-09-19T15:59:12.691776Z",
+   "square_qr": null
+  },
+  {
+   "id": "6d7aa721-cef4-4f14-884f-caab722671fb",
+   "object": "check_in",
+   "location": {
+    "id": "ef314241-e16d-43d5-8837-d6a62e728cbc",
+    "object": "location",
+    "name": "Harleston Village",
+    "restaurant": {
+     "id": "1d14adb0-6d01-4add-aa1d-52f9e124aa35",
+     "object": "restaurant",
+     "name": "Brown Dog Deli",
+     "cuisine": [
+      "Deli",
+      "Sandwiches"
+     ],
+     "cohort": "qsr",
+     "price": 1,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/0bf6bfea-ce00-43c4-8bb3-aeab8243d8e0/1x.png",
+      "web_2x": "https://images.blackbird.xyz/0bf6bfea-ce00-43c4-8bb3-aeab8243d8e0/2x.png",
+      "full_3x": "https://images.blackbird.xyz/0bf6bfea-ce00-43c4-8bb3-aeab8243d8e0/3x.png"
+     },
+     "website_url": "https://browndogdeli.com/",
+     "instagram_url": null,
+     "created_at": "2024-10-22T18:08:20.153772Z",
+     "updated_at": "2026-02-04T09:00:57.599999Z"
+    },
+    "neighborhood": {
+     "id": "83977060-b2a7-4cc1-8fcd-ef8f929e6954",
+     "object": "neighborhood",
+     "name": "Harleston Village",
+     "region": "Charleston, SC"
+    },
+    "slug": "brown-dog-deli-harleston-village",
+    "address": {
+     "street": "225 Calhoun St",
+     "street2": "",
+     "city": "Charleston",
+     "state": "SC",
+     "zipcode": "29401",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 32.783918,
+     "longitude": -79.942295
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJHRq3Sw56_ogRsVgGoXhhptQ",
+    "created_at": "2024-10-23T18:44:46.586306Z",
+    "updated_at": "2026-09-18T04:02:20.523349Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T15:59:11.946337Z",
+   "ended_at": "2026-09-19T15:59:39.051206Z",
+   "square_qr": null
+  },
+  {
+   "id": "c348e9a9-7a22-479e-8107-40690eebc9e8",
+   "object": "check_in",
+   "location": {
+    "id": "bef14f58-0b14-42a5-9fe3-5b8c8ecfa2d2",
+    "object": "location",
+    "name": "Greenpoint",
+    "restaurant": {
+     "id": "a402fa9e-847c-4d28-9f48-74083e47850e",
+     "object": "restaurant",
+     "name": "Fornino",
+     "cuisine": [
+      "Pizza"
+     ],
+     "cohort": "fsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/2cf1a99b-7f19-436d-b353-79449fdabf96/1x.png",
+      "web_2x": "https://images.blackbird.xyz/2cf1a99b-7f19-436d-b353-79449fdabf96/2x.png",
+      "full_3x": "https://images.blackbird.xyz/2cf1a99b-7f19-436d-b353-79449fdabf96/3x.png"
+     },
+     "website_url": "https://www.fornino.com/",
+     "instagram_url": null,
+     "created_at": "2024-12-10T23:44:49.017597Z",
+     "updated_at": "2026-02-04T09:01:00.544743Z"
+    },
+    "neighborhood": {
+     "id": "5abf3f45-8d91-4775-87f3-62a637eee6d9",
+     "object": "neighborhood",
+     "name": "Greenpoint",
+     "region": "New York, NY"
+    },
+    "slug": "bcaaa555-c235-4e16-a5dc-aaf23fa9dbec",
+    "address": {
+     "street": "849 Manhattan Ave",
+     "street2": "",
+     "city": "Brooklyn",
+     "state": "NY",
+     "zipcode": "11222",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.7289826955393,
+     "longitude": -73.95397472883556
+    },
+    "phone_number": "(414) 897-9377",
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": "https://www.exploretock.com/tock.js",
+    "reservations_enabled": true,
+    "google_place_id": "ChIJx1Bo1EBZwokRUZ_xdNzvcLY",
+    "created_at": "2024-12-12T21:24:46.150409Z",
+    "updated_at": "2026-09-18T04:01:48.600036Z"
+   },
+   "blackbird_pay_enabled": false,
+   "created_at": "2026-09-19T15:59:09.830777Z",
+   "ended_at": "2026-09-19T15:59:09.816366Z",
+   "square_qr": null
+  },
+  {
+   "id": "f3affb63-5824-4226-beca-a963b9f53563",
+   "object": "check_in",
+   "location": {
+    "id": "f47479f0-a0ec-402d-90aa-242c6d67bc8b",
+    "object": "location",
+    "name": "Venice",
+    "restaurant": {
+     "id": "b9d62c5c-5e01-42a5-9d71-3d01c93ad744",
+     "object": "restaurant",
+     "name": "Gjusta",
+     "cuisine": [
+      "10X Coffee Club",
+      "Cafe"
+     ],
+     "cohort": "qsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/596426cd-1058-46fe-b889-b3a462cff56a/1x.png?v=1760018352",
+      "web_2x": "https://images.blackbird.xyz/596426cd-1058-46fe-b889-b3a462cff56a/2x.png?v=1760018353",
+      "full_3x": "https://images.blackbird.xyz/596426cd-1058-46fe-b889-b3a462cff56a/3x.png?v=1760018353"
+     },
+     "website_url": "http://www.gjusta.com/",
+     "instagram_url": null,
+     "created_at": "2025-10-09T04:12:48.204045Z",
+     "updated_at": "2026-02-04T09:01:35.871211Z"
+    },
+    "neighborhood": {
+     "id": "7024e268-5d58-4e9f-a0dd-dd4bfa00ae56",
+     "object": "neighborhood",
+     "name": "Venice",
+     "region": "Los Angeles, CA"
+    },
+    "slug": "gjusta-venice",
+    "address": {
+     "street": "320 Sunset Ave",
+     "street2": "",
+     "city": "Venice",
+     "state": "CA",
+     "zipcode": "90291",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 33.9952076,
+     "longitude": -118.4744823
+    },
+    "phone_number": null,
+    "time_zone": "America/Los_Angeles",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJIb5F-cW6woARd4CTt6yz_pg",
+    "created_at": "2025-10-09T04:13:30.222903Z",
+    "updated_at": "2026-09-18T04:01:23.804031Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T15:59:08.552959Z",
+   "ended_at": null,
+   "square_qr": null
+  },
+  {
+   "id": "d7ec8119-106a-4e5a-9c21-7cdd9ebf19d5",
+   "object": "check_in",
+   "location": {
+    "id": "884bc123-ce59-4ef6-bbe3-b469c5fd4f1b",
+    "object": "location",
+    "name": "Meeting Street",
+    "restaurant": {
+     "id": "141ecaba-aba6-4de2-a375-48c2b4bba4f4",
+     "object": "restaurant",
+     "name": "Callie's Hot Little Biscuit",
+     "cuisine": [
+      "Southern"
+     ],
+     "cohort": "qsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/d1c746e3-0077-44bd-ba8f-b52b67de6922/1x.png",
+      "web_2x": "https://images.blackbird.xyz/d1c746e3-0077-44bd-ba8f-b52b67de6922/2x.png",
+      "full_3x": "https://images.blackbird.xyz/d1c746e3-0077-44bd-ba8f-b52b67de6922/3x.png"
+     },
+     "website_url": "https://calliesbiscuits.com/",
+     "instagram_url": null,
+     "created_at": "2024-10-23T03:02:15.304227Z",
+     "updated_at": "2026-02-04T09:00:57.60034Z"
+    },
+    "neighborhood": {
+     "id": "3f43db6b-5cf3-41de-a734-019298b22494",
+     "object": "neighborhood",
+     "name": "French Quarter",
+     "region": "Charleston, SC"
+    },
+    "slug": "callies-hot-little-meeting-street",
+    "address": {
+     "street": "188 Meeting St",
+     "street2": "",
+     "city": "Charleston",
+     "state": "SC",
+     "zipcode": "29401",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 32.780816,
+     "longitude": -79.93036
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJdz9mtA16_ogRnHxmONzNzn4",
+    "created_at": "2024-10-23T16:39:32.307198Z",
+    "updated_at": "2026-09-18T04:02:40.820736Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T15:59:01.552181Z",
+   "ended_at": "2026-09-19T15:59:06.056052Z",
+   "square_qr": null
+  },
+  {
+   "id": "5fc2df47-c5a6-4621-a832-0a75ffb288d7",
+   "object": "check_in",
+   "location": {
+    "id": "9b2f1e60-78af-4b33-9f83-dc832c2ce764",
+    "object": "location",
+    "name": "NOPA",
+    "restaurant": {
+     "id": "42f7b994-2cae-4019-99fa-250a10b18cb9",
+     "object": "restaurant",
+     "name": "Early To Rise, Scratch Made Brunch",
+     "cuisine": [
+      "Brunch"
+     ],
+     "cohort": "fsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/0640f322-989d-444e-bfc5-9938bcd27aae/1x.png?v=1783713032",
+      "web_2x": "https://images.blackbird.xyz/0640f322-989d-444e-bfc5-9938bcd27aae/2x.png?v=1783713032",
+      "full_3x": "https://images.blackbird.xyz/0640f322-989d-444e-bfc5-9938bcd27aae/3x.png?v=1783713033"
+     },
+     "website_url": "http://www.earlytorisesf.com/",
+     "instagram_url": null,
+     "created_at": "2026-05-01T21:26:48.926778Z",
+     "updated_at": "2026-07-10T19:50:33.208409Z"
+    },
+    "neighborhood": {
+     "id": "025fc644-e9c9-460e-ab0c-bd79c3425a8c",
+     "object": "neighborhood",
+     "name": "NOPA",
+     "region": "San Francisco, CA"
+    },
+    "slug": "early-to-rise-scrat-nopa",
+    "address": {
+     "street": "1801 McAllister St",
+     "street2": "",
+     "city": "San Francisco",
+     "state": "CA",
+     "zipcode": "94115",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 37.7772226,
+     "longitude": -122.4419042
+    },
+    "phone_number": null,
+    "time_zone": "America/Los_Angeles",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": "https://www.opentable.com/restaurant/profile/1355377",
+    "reservations_enabled": true,
+    "google_place_id": "ChIJ8w-xYiSBhYARhNGm1rkxp8s",
+    "created_at": "2026-05-01T21:28:22.161114Z",
+    "updated_at": "2026-09-18T04:02:00.41123Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T15:59:01.516866Z",
+   "ended_at": null,
+   "square_qr": null
+  },
+  {
+   "id": "ef233d9e-1cbe-44bf-b3ad-6cb9da7564af",
+   "object": "check_in",
+   "location": {
+    "id": "85eff60f-06c8-4d87-9911-9d74ec02483c",
+    "object": "location",
+    "name": "Boulder",
+    "restaurant": {
+     "id": "6594ee43-0ee7-4f7a-909d-53603b82d981",
+     "object": "restaurant",
+     "name": "Centro Mexican Kitchen",
+     "cuisine": [
+      "Mexican"
+     ],
+     "cohort": "fsr",
+     "price": 2,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/7782dfe4-2492-46e2-9d93-72288e38bb92/1x.png?v=1769636180",
+      "web_2x": "https://images.blackbird.xyz/7782dfe4-2492-46e2-9d93-72288e38bb92/2x.png?v=1769636180",
+      "full_3x": "https://images.blackbird.xyz/7782dfe4-2492-46e2-9d93-72288e38bb92/3x.png?v=1769636180"
+     },
+     "website_url": "https://www.centromexican.com/",
+     "instagram_url": null,
+     "created_at": "2026-01-23T19:47:23.913078Z",
+     "updated_at": "2026-02-04T09:01:45.246709Z"
+    },
+    "neighborhood": {
+     "id": "c8e2c741-9fde-47d8-9ebb-f9cdf90fb5c0",
+     "object": "neighborhood",
+     "name": "Pearl Street",
+     "region": "Denver, CO"
+    },
+    "slug": "centro-mexican-kitch-boulder",
+    "address": {
+     "street": "950 Pearl St",
+     "street2": "",
+     "city": "Boulder",
+     "state": "CO",
+     "zipcode": "80302",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 40.01715799999999,
+     "longitude": -105.282536
+    },
+    "phone_number": null,
+    "time_zone": "America/Denver",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJpS9bwibsa4cR9pgAy9zE5V0",
+    "created_at": "2026-01-23T19:55:55.014612Z",
+    "updated_at": "2026-09-18T04:02:03.589045Z"
+   },
+   "blackbird_pay_enabled": false,
+   "created_at": "2026-09-19T15:58:56.080428Z",
+   "ended_at": "2026-09-19T15:58:56.063718Z",
+   "square_qr": null
+  },
+  {
+   "id": "9c445f95-956a-4a95-bb27-7ebecea9af33",
+   "object": "check_in",
+   "location": {
+    "id": "980d38b2-0c94-4173-bd04-a8d40b79c13b",
+    "object": "location",
+    "name": "Avondale",
+    "restaurant": {
+     "id": "66dbc451-77db-4321-a524-7f3156f9eee8",
+     "object": "restaurant",
+     "name": "Café Roca",
+     "cuisine": [
+      "10X Coffee Club",
+      "Coffee Shop",
+      "Cafe"
+     ],
+     "cohort": "qsr",
+     "price": 1,
+     "tags": [],
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/cdcb70aa-572b-4c21-847a-c83b7c856625/1x.png?v=1762790857",
+      "web_2x": "https://images.blackbird.xyz/cdcb70aa-572b-4c21-847a-c83b7c856625/2x.png?v=1762790857",
+      "full_3x": "https://images.blackbird.xyz/cdcb70aa-572b-4c21-847a-c83b7c856625/3x.png?v=1762790858"
+     },
+     "website_url": "https://caferoca.com/",
+     "instagram_url": null,
+     "created_at": "2025-11-06T17:04:27.849741Z",
+     "updated_at": "2026-09-14T18:32:36.09748Z"
+    },
+    "neighborhood": {
+     "id": "7a924389-1ff0-4ead-9da5-c3f712dc6e82",
+     "object": "neighborhood",
+     "name": "Avondale",
+     "region": "Charleston, SC"
+    },
+    "slug": "cafe-roca-avondale",
+    "address": {
+     "street": "1303 Ashley River Rd",
+     "street2": "",
+     "city": "Charleston",
+     "state": "SC",
+     "zipcode": "29407",
+     "country": "USA"
+    },
+    "coordinate": {
+     "latitude": 32.7970536,
+     "longitude": -79.99849859999999
+    },
+    "phone_number": null,
+    "time_zone": "America/New_York",
+    "payments_enabled": true,
+    "is_club": false,
+    "reservation_url": null,
+    "reservations_enabled": false,
+    "google_place_id": "ChIJOziAeZB7_ogRfY3fbfdjnGs",
+    "created_at": "2025-11-06T17:07:38.537785Z",
+    "updated_at": "2026-09-18T04:02:52.974171Z"
+   },
+   "blackbird_pay_enabled": true,
+   "created_at": "2026-09-19T15:58:55.979748Z",
+   "ended_at": null,
+   "square_qr": null
+  }
+ ],
+ "pagination": {
+  "total_count": 7170894,
+  "total_pages": 14342,
+  "current_page": 0,
+  "next_page": 1,
+  "page_size": 500
+ }
+}

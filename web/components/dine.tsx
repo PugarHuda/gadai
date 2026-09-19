@@ -1,7 +1,9 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
-import type { DinePick, DinePlace, DineSource, FlynetStatus } from "@feedesk/shared";
-import { ago } from "@/components/ui";
+import type { DineMemberLogin, DinePick, DinePlace, DineSource, DineTrending, FlynetStatus } from "@feedesk/shared";
+import { api } from "@/lib/api";
+import { Card, Empty, Loading, ago, useLoad } from "@/components/ui";
 
 export const priceTag = (p: number | null) => (p ? "$".repeat(p) : "price n/a");
 
@@ -30,7 +32,7 @@ export function PlaceCard({ p, children }: { p: DinePlace; children?: React.Reac
   );
 }
 
-export function PickCard({ x, rank }: { x: DinePick; rank: number }) {
+export function PickCard({ x, rank, action }: { x: DinePick; rank: number; action?: React.ReactNode }) {
   const p = x.place;
   return (
     <PlaceCard p={p}>
@@ -45,6 +47,8 @@ export function PickCard({ x, rank }: { x: DinePick; rank: number }) {
           </span>
         )}
         {x.visits != null && x.visits > 0 && <span className="tag text-mute">visited {x.visits}×</span>}
+        {x.membership && <span className="tag text-violet">your card: {x.membership.tier}</span>}
+        {x.weekCheckIns != null && <span className="tag num text-mute">{x.weekCheckIns} check-ins / 7d</span>}
       </div>
       <ul className="mt-2 list-disc space-y-0.5 pl-4 text-sm">
         {x.reasons.map((r, i) => (
@@ -64,7 +68,64 @@ export function PickCard({ x, rank }: { x: DinePick; rank: number }) {
         </p>
       ))}
       <PlaceLinks p={p} />
+      {action}
     </PlaceCard>
+  );
+}
+
+/** "Save to my Blackbird list" (write:save_to_list). Disabled with the reason while Blackbird has no published endpoint. */
+export function SaveToList({ loanId, session, restaurantId, state }: { loanId: number; session: string; restaurantId: string; state: DineMemberLogin }) {
+  const [r, setR] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    setBusy(true);
+    try {
+      await api(`/api/loans/${loanId}/dine/save`, { body: { session, restaurantId } });
+      setR({ ok: true, msg: "Saved to your Blackbird list" });
+    } catch (e) {
+      setR({ ok: false, msg: `Not saved: ${(e as Error).message}` });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="pt-2 text-xs">
+      <button className="btn btn-ghost" disabled={!state.available || busy} title={state.reason ?? undefined} onClick={save}>
+        {busy ? "Saving…" : "Save to my Blackbird list"}
+      </button>
+      {r && <p className={`mt-1 ${r.ok ? "text-desk" : "text-stamp"}`} role="status">{r.msg}</p>}
+    </div>
+  );
+}
+
+/** Venues busiest on the Blackbird network: picked from the latest anonymized check-ins, ranked by their 7-day count. */
+export function Trending({ region }: { region?: string }) {
+  const t = useLoad(() => api<DineTrending>(`/api/flynet/trending${region ? `?region=${encodeURIComponent(region)}` : ""}`), [region]);
+  const d = t.data;
+  return (
+    <Card title={`Trending on Blackbird this week${region ? ` · ${region}` : ""}`} right={d ? <SourceLine s={d.source} /> : "Flynet /check_ins"}>
+      <Loading l={t.loading && !d} e={t.error} retry={t.reload} what="Blackbird check-in activity">
+        {d && d.places.length === 0 && <Empty title="No recent check-ins here">The latest {d.sample.size} Blackbird check-ins include none{region ? ` in ${region}` : ""}. Try another city.</Empty>}
+        {d && d.places.length > 0 && (
+          <>
+            <p className="mb-3 text-xs text-mute">
+              Venues from the latest <span className="num">{d.sample.size}</span> network check-ins{d.sample.from && d.sample.to && <> ({ago(d.sample.from)} to {ago(d.sample.to)})</>}, ranked by check-ins in the last 7 days. Anonymized: Flynet shares no member identity.
+            </p>
+            {d.errors.length > 0 && <p className="mb-2 text-xs text-amber-ink">Some 7-day counts failed: {d.errors.slice(0, 2).join("; ")}</p>}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {d.places.map((r) => (
+                <PlaceCard key={r.place.id} p={r.place}>
+                  <p className="text-xs">
+                    <b className="num">{r.weekCheckIns ?? "n/a"}</b> check-ins in 7 days · <span className="num">{r.recentCheckIns}</span> just now
+                  </p>
+                  <PlaceLinks p={r.place} />
+                </PlaceCard>
+              ))}
+            </div>
+          </>
+        )}
+      </Loading>
+    </Card>
   );
 }
 

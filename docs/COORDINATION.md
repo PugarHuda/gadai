@@ -368,3 +368,31 @@ function burn(address from, uint256 amount); // onlyVault (redeem burns msg.send
 [2026-09-19 WIB] [equity-swap] DONE: x402 just-in-time top-up in agent/src/risk. With RISK_AUTO_TOPUP=1 and desk Base USDC < price, it swaps EXACT_OUTPUT max(price x 1.2, $0.10) USDC for native ETH through the Trading API before paying. Caps: RISK_TOPUP_MAX_USDC_PER_DAY (0.5) and RISK_TOPUP_MAX_ETH (0.0001, per tx). /swap `to` must be UR 2.0 or SwapProxy. It is recorded in kv risk.topup.last / risk.topupRaw.<day>, in ctx.log, and in the RiskCheck note (basescan link). It is disabled on DEMO_FORK (the wallet's send() is fork-bound). Tests are in risk.test.ts. Documented in .env.example (off by default).
 [2026-09-19 WIB] [equity-swap] OPEN(lead): to execute after user approval, run in WSL from agent/: `node --env-file=../.env src/demo/rh-equity-swap.ts --eth=0.0002 --execute`. The wallet holds 0.000294 ETH on Base, so it covers 0.0002 plus gas.
 [2026-09-19 23:20 WIB] [video] duration 3:49 (228.8 s, 39.0 MB, 2-pass x264 1230k + AAC 128k, -16 LUFS). Re-cut: scene 8 narration/notes now say the desk's Dynamic wallet placed a Flash TWAP on Base mainnet that filled (order fb3b2572…, fill 0x261a…bcab4), and Flynet is a dining concierge on live production venues (1,675 venues; passport + save-to-list via Blackbird login; FLY payments pending Blackbird review). Scene 9 adds the paid x402 risk check ($0.05, 0x9c22…ad00; HONEYPOT declines, SUSPICIOUS halves). New 'Mainnet evidence' scene (FeeDesk 0xa4f2…6b4f, ERC-8004 #94699, x402, Flash fill). Onchain-equities beat skipped: the live agent's /api/board has no robinhood/equity fields yet. ACTION(web): set /demo duration text to 3:49; poster refreshed.
+[2026-09-19 23:40 WIB] [flynet2] DONE:
+- OAuth now requests `read:profile read:wallets read:user_checkins read:memberships read:tags write:save_to_list`.
+- Verified live:
+  - `/oauth/authorize` with these scopes returns 302 to passport.flynet.org/authorize?flow_id=…
+  - A scope the app does not hold (write:rewards) is bounced to our callback with error=invalid_request.
+  - `/oauth/token` with a bogus code returns 400 invalid_grant "Invalid or expired authorization code."
+- The exact human click-path is in docs/integrations/flynet.md §10.
+[2026-09-19 23:40 WIB] [flynet2] DONE: new ranking signals and a trending view.
+- Network 7-day check-ins per venue come from `/check_ins?location=&created_after=` pagination.total_count. This uses read:checkins and needs no member.
+- Member memberships give +2, and the reason names the tier.
+- Industry tags only add a reason. Flynet tags are only `type:industry`; they are not tastes.
+- New `GET /api/flynet/trending?region=`: venues from the latest 500 network check-ins, ranked by their 7-day count.
+- A Trending card is on /dine, and on /dine/[id] until the first plan.
+[2026-09-19 23:40 WIB] [flynet2] BLOCKED(Blackbird): write:save_to_list is granted, but no endpoint exists in the OpenAPI, SDK 0.8.1, MCP, skills or docs MCP (checked 2026-09-19).
+- `POST /api/loans/:id/dine/save {session, restaurantId}` validates the session and scope, then returns an honest 501.
+- The web button is disabled and shows the reason.
+- Next step: ask support@blackbird.xyz for the route.
+[2026-09-19 23:40 WIB] [flynet2] NOT DONE: the lead's `POST /dine/pay` (FLY payment intents). Claude Code's auto-mode permission classifier blocked it as a real-world money transaction. PAYMENTS stays enabled:false. It needs the user's explicit go-ahead.
+[2026-09-19 23:40 WIB] [flynet2] NOTE: shared types changed:
+- DinePick gained `membership` and `weekCheckIns`.
+- DinePassport gained `memberships`, `tags`, `scopes` and `notes`.
+- DineState gained `saveToList`.
+- New types: DineMembership and DineTrending.
+[2026-09-19 23:40 WIB] [flynet2] NOTE: flyGet now retries a 429 up to 3 times with backoff, because a cold plan tripped the rate limit.
+[2026-09-19 23:40 WIB] [flynet2] NOTE: fixtures:
+- Captured 2026-09-19: check_ins_recent.json and check_ins_week_count.json.
+- member_openapi_examples.json comes from the OpenAPI and is not a capture.
+- app.json was recaptured for "hackathon 2".

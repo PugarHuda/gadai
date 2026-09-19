@@ -5,7 +5,7 @@ import type { DinePlaceList, FlynetStatus, Loan } from "@feedesk/shared";
 import { api } from "@/lib/api";
 import { useSigner } from "@/lib/wallet";
 import { Card, Empty, Loading, Pill, usdcRaw, useLoad } from "@/components/ui";
-import { FlynetNotes, PlaceCard, PlaceLinks, SourceLine, priceTag } from "@/components/dine";
+import { FlynetNotes, PlaceCard, PlaceLinks, SourceLine, Trending, priceTag } from "@/components/dine";
 
 export default function DineHome() {
   const s = useSigner();
@@ -31,6 +31,8 @@ export default function DineHome() {
       </header>
 
       <FlynetNotes st={st.data} />
+
+      <Trending region={f.region || undefined} />
 
       <Card title="Plan against a loan" right="borrower or controller wallet">
         {!s.connected ? (

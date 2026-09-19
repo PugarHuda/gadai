@@ -1,0 +1,38 @@
+{
+ "captured_on": null,
+ "source": "NOT a capture. These routes need a member OAuth token, which no human has granted yet. Copied verbatim from the official OpenAPI examples at https://docs.flynet.org/api-reference/openapi.yaml (fetched 2026-09-19): GET /users/me/memberships and GET /users/me/tags. Replace with real captures after the first member login.",
+ "memberships": {
+  "memberships": [
+   {
+    "id": "011ac10e-7f27-4355-847a-c51e2e7e5625",
+    "object": "membership",
+    "restaurant_id": "2cb56d03-4417-4b60-afe3-be819ecde8ac",
+    "check_in_count": 1,
+    "last_check_in_date": "2026-05-26T16:30:45.825827Z",
+    "membership_tier": {
+     "id": "8a71471b-c07c-4e05-9888-7ecd8e1bc609",
+     "object": "membership_tier",
+     "name": "Member",
+     "artist": "Andrew Braswell",
+     "asset": {
+      "preview_1x": "https://images.blackbird.xyz/.../343_490.png",
+      "web_2x": "https://images.blackbird.xyz/.../343_490.png",
+      "full_3x": "https://images.blackbird.xyz/.../343_490.png"
+     }
+    }
+   }
+  ],
+  "pagination": { "total_count": 875, "total_pages": 18, "current_page": 0, "next_page": 1, "page_size": 50 }
+ },
+ "tags": {
+  "tags": [
+   {
+    "object": "user_tag",
+    "type": "industry",
+    "metadata": [{ "key": "Employer", "value": ["FLYBAR"] }],
+    "created_at": "2026-01-15T21:47:02.273075Z",
+    "updated_at": "2026-02-19T18:50:38.512641Z"
+   }
+  ]
+ }
+}

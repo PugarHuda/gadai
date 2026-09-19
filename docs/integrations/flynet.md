@@ -136,3 +136,74 @@ Fail loudly if any value is missing. Never mock. Do not send the API key, `clien
 - Server-side cuisine or geo filtering.
 - Production traffic without partner approval.
 - React "Pay with FLY" / receipt components (not built).
+
+## 10. [flynet2] Production app "hackathon 2" (verified live 2026-09-19)
+
+- `GET /app` (production, `x-api-key`) returns:
+  - name: `hackathon 2`
+  - client id: `ba3ca201-5d5c-4a51-bbdb-f905df5ca146`
+  - `allowed_scopes`: `read:profile read:wallets read:user_checkins read:checkins read:app read:balance read:restaurant_specials read:restaurant_challenges write:save_to_list read:memberships read:tags`
+
+  The response is captured in `agent/src/flynet/fixtures/app.json`.
+- **OAuth scopes requested** (`SCOPES` in `agent/src/flynet/index.ts`): `read:profile read:wallets read:user_checkins read:memberships read:tags write:save_to_list`.
+- **Blackbird accepts the authorize request.** This request returns **302 → `https://passport.flynet.org/authorize?flow_id=<uuid>`**, which is the member login:
+  `GET https://api.blackbird.xyz/oauth/authorize?response_type=code&client_id=…&redirect_uri=https%3A%2F%2Faqua-economic-moss-modes.trycloudflare.com%2Fapi%2Fflynet%2Fcallback&scope=<the 6 scopes>&state=…&code_challenge=<S256>&code_challenge_method=S256`
+  Leave `audience` out. The SDK adds an empty one, and the agent removes it.
+- **A scope the app lacks makes the whole request fail. It is not silently dropped.** With `scope=write:rewards`, Blackbird redirects (302) to our callback with `?error=invalid_request&state=…`. So `SCOPES` must stay a subset of `allowed_scopes`. A test checks this against the fixture.
+- **The token endpoint gives a proper error for a bogus code:** `POST https://api.blackbird.xyz/oauth/token` (form fields `grant_type=authorization_code`, code, redirect_uri, client_id, client_secret, code_verifier) returns `400 {"error":"invalid_grant","error_description":"Invalid or expired authorization code."}`. The lead also verified that `client_secret` is required, so the exchange stays server-side.
+- **Granted scopes are in the access token's JWT `scope` claim.** `tokenScopes()` reads it. If a member logged in before a scope was added, the agent shows a note ("log out and log in again") rather than getting a 403.
+
+### Member routes used (shapes come from the OpenAPI; no response has been captured with a member token yet)
+- `GET /users/me/memberships?page=&page_size=100` (`read:memberships`) returns one card per restaurant: `restaurant_id`, `check_in_count`, `last_check_in_date` and `membership_tier{name, asset}`. The filter parameter is `restaurant`, not `restaurant_id`.
+  - Ranking: a brand where the member holds a card gets +2, and the reason names the card: `you hold a Blackbird "VIP" membership at X (7 check-ins on the card)`.
+  - With "somewhere new", a card lowers the score instead.
+  - The tier name is the only perk information Flynet exposes.
+- `GET /users/me/tags` (`read:tags`): the only tag type is `industry`, with metadata such as `Employer: ["FLYBAR"]` for restaurant staff. **Tags describe employers, not tastes.** They only add the reason "your Blackbird industry tag lists X as your employer" and do not change the score.
+- `member_openapi_examples.json` holds the OpenAPI examples word for word, with `captured_on: null`. Replace it with real captures after the first member login.
+
+### Network activity without a member (`read:checkins`, API key)
+- `GET /check_ins` is the anonymized feed for all of Blackbird: about 7.17M rows in total, about 142k per 7 days. Each item embeds the full `location` and has no `user`. `page_size` works up to at least 1000.
+- **A venue's 7-day count** is the `pagination.total_count` of `GET /check_ins?location=<id>&created_after=<ISO, now-7d>&page_size=1`, which takes about 2 s. Example: Bareburger UES has 179.
+  - These counts feed the concierge ranking: +2 × count / the busiest venue on the shortlist, with the reason "N Blackbird check-ins here in the last 7 days".
+  - They are cached for 1 hour.
+- **Trending** (`GET /api/flynet/trending?region=`) takes the latest 500 check-ins from the last 2 hours and groups them by venue. It keeps the top 8 and orders them by their 7-day count. The result is cached for 10 minutes.
+  - The unfiltered feed takes 4 to 11 s. With `created_after` it takes 4 to 5 s. The call has a 30 s timeout.
+- **Rate limits:** a cold plan loads about 34 catalog pages, then 12 opening-hours reads, 12 weekly counts, 6 specials and 6 challenges. That burst triggers 429 `Rate limit exceeded. Retry after 1 seconds.` `flyGet` now retries up to 3 times, waiting 1, 2 and 3 s. After that it reports the failure in `notes`.
+- **Test data check (2026-09-19):** none of the 1,675 live locations has test, demo, sandbox, fake, sample or staging in its name. 30 locations have the `{0,0}` "unknown" coordinate, which the agent already maps to null.
+
+### write:save_to_list: the scope is granted but the endpoint is not published
+The app holds the scope, but **no endpoint for it is documented anywhere**. Checked on 2026-09-19:
+- the Flynet OpenAPI 1.0 (docs.flynet.org/api-reference/openapi.yaml)
+- `@flynetdev/core@0.8.1` (the latest version)
+- `@flynetdev/mcp@0.2.0`
+- `@flynetdev/skills@0.1.0`
+- `@flynetdev/react@0.7.2`
+- the docs MCP (`grep -ri save` across every page)
+- llms-full.txt
+
+Probing guessed paths tells you nothing: every unknown `/flynet/v1/*` path returns 403 `forbidden` with an API key and 401 without one. The official SKILL.md says "never invent endpoints".
+
+What the code does now:
+- `POST /api/loans/:id/dine/save {session, restaurantId}` checks the input, the member session and the token's `write:save_to_list` scope, then returns **501** with the reason.
+- The "Save to my Blackbird list" button on the web is disabled and shows that reason.
+- Once support@blackbird.xyz names the route, flip `SAVE_TO_LIST` and add the call.
+
+### Human steps to finish the member login demo
+Before you start, check all of these:
+- The agent runs this code behind the tunnel `https://aqua-economic-moss-modes.trycloudflare.com`. That is the host in `FLYNET_REDIRECT_URI`, so `/api/flynet/callback` must reach this agent.
+- The agent has `WEB_URL=https://gadai-six.vercel.app`.
+- The Vercel web app's `NEXT_PUBLIC_AGENT_URL` points at the same agent.
+- Loan N exists in that agent's database.
+
+Then:
+1. Open `https://gadai-six.vercel.app/dine/N`.
+2. In the "Blackbird passport" card, click **Log in with Dynamic first** and log in with the **borrower** wallet of loan N.
+3. Click **Log in with Blackbird**. The wallet asks you to sign `Gadai: link my Blackbird account to loan N\nNonce: <uuid>`. Click **Sign**.
+4. The browser goes through the agent's `/api/flynet/connect`, then `api.blackbird.xyz/oauth/authorize`, and lands on `passport.flynet.org/authorize?flow_id=…`.
+5. On passport.flynet.org, log in with a real Blackbird member account, using whatever the page asks for (phone or email code). Review the consent for the 6 scopes and approve it. I have not seen this page's exact labels, because reaching it needs a real account. Finish within **10 minutes**, because the OAuth state expires after that.
+6. Blackbird redirects to the callback. The agent exchanges the code server-side and redirects to `https://gadai-six.vercel.app/dine/N#member=<session>`.
+7. Check the result:
+   - The passport shows the member's name, FLY balance, check-ins, **membership cards** and **tags**.
+   - Asking the concierge gives a plan whose header says "personalized with your check-ins and membership cards".
+   - Cards show "your card: <tier>" where the member holds a card.
+   - Each card has a disabled "Save to my Blackbird list" button with the reason.

@@ -1,6 +1,7 @@
 // Blackbird Flynet dining concierge (docs/integrations/flynet.md; live docs https://docs.flynet.org).
-// What the approved "hackathon" app may do (GET /app allowed_scopes, 2026-09-19): read restaurants/locations/hours,
-// specials, challenges, the anonymized venue feed, its own balance, and, with member OAuth, profile/wallets/check-ins.
+// What the production app "hackathon 2" may do (GET /app allowed_scopes, 2026-09-19): read restaurants/locations/hours,
+// specials, challenges, the anonymized network check-in feed, its own balance, and, with member OAuth, profile/wallets/
+// check-ins/memberships/tags plus write:save_to_list (granted, but no endpoint is published for it; see SAVE_TO_LIST).
 // It has NO write:rewards and no payment-intent access, so this module never moves FLY or USDC: the loan's drawLimit is a
 // planning budget, and the member pays in the Blackbird app. See the DECISION line in docs/COORDINATION.md.
 import { createHash, randomBytes } from "node:crypto";
@@ -10,7 +11,7 @@ import { AUTH_BASE_BY_ENV, FlynetOAuth } from "@flynetdev/core";
 import {
   API, flynetLinkMessage,
   type DineChallenge, type DineHour, type DinePassport, type DinePick, type DinePlace, type DinePlaceDetail, type DinePlaceList,
-  type DinePlan, type DinePlanRequest, type DineSource, type DineSpecial, type DineState, type FlynetStatus, type Hex, type Loan,
+  type DineMembership, type DinePlan, type DinePlanRequest, type DineSource, type DineSpecial, type DineState, type DineTrending, type FlynetStatus, type Hex, type Loan,
 } from "@feedesk/shared";
 import type { Ctx } from "../ctx.ts";
 import { jsonBody, need, opt, posInt } from "../ctx.ts";
@@ -18,25 +19,34 @@ import { getLoan, now, useNonce } from "../db/index.ts";
 import { llmChat, LlmNoCredits } from "../bankr/index.ts";
 
 type R = Record<string, any>;
-const SCOPES = ["read:profile", "read:wallets", "read:user_checkins"]; // what the app is allowed; read:memberships is not
+// Member scopes requested at login: every member scope the app holds (GET /app, 2026-09-19). Blackbird rejects a scope the
+// app lacks with error=invalid_request on the callback (verified with write:rewards), so this list must track allowed_scopes.
+export const SCOPES = ["read:profile", "read:wallets", "read:user_checkins", "read:memberships", "read:tags", "write:save_to_list"];
 const env = () => (opt("FLYNET_ENV", "staging") === "production" ? "production" : "staging");
 const base = () => (env() === "production" ? API.FLYNET_PROD : API.FLYNET_STAGING);
 export const PAYMENTS = {
   enabled: false as const,
   reason: "Paying with FLY needs Blackbird partner access (write:rewards / payment intents). This app is read-only, so Gadai books no draw and moves no FLY or USDC: the member pays at the venue in the Blackbird app.",
 };
-const TTL = { catalog: 6 * 3600_000, hours: 6 * 3600_000, offers: 3600_000, app: 3600_000 };
+// ponytail: write:save_to_list is granted to the app, but no save-to-list route exists in the Flynet OpenAPI 1.0, @flynetdev/core
+// 0.8.1, @flynetdev/mcp 0.2.0, @flynetdev/skills 0.1.0 or the docs MCP (all checked 2026-09-19), and SKILL.md forbids inventing
+// endpoints. Set the documented path + body here once Blackbird (support@blackbird.xyz) publishes it; the route below is ready.
+export const SAVE_TO_LIST = {
+  available: false,
+  reason: "Blackbird granted this app write:save_to_list, but has not published the save-to-list endpoint (not in the Flynet API reference or SDK as of 2026-09-19). Gadai will not guess an undocumented endpoint, so nothing was saved. Save it in the Blackbird app for now.",
+};
+const TTL = { catalog: 6 * 3600_000, hours: 6 * 3600_000, offers: 3600_000, app: 3600_000, week: 3600_000, recent: 10 * 60_000 };
 
 // ─── Flynet HTTP (API key: `x-api-key`; member routes: Bearer) ───
 class FlyError extends Error { status: number; constructor(status: number, msg: string) { super(msg); this.status = status; } }
-async function flyGet<T = R>(path: string, bearer?: string, retried = false): Promise<T> {
+async function flyGet<T = R>(path: string, bearer?: string, timeoutMs = 15_000, tries = 0): Promise<T> {
   const headers: Record<string, string> = bearer ? { authorization: `Bearer ${bearer}` } : { "x-api-key": need("FLYNET_API_KEY") };
-  const r = await fetch(base() + path, { headers, signal: AbortSignal.timeout(15_000) })
+  const r = await fetch(base() + path, { headers, signal: AbortSignal.timeout(timeoutMs) })
     .catch((e) => { throw new FlyError(0, `Flynet unreachable (${(e as Error).message})`); });
   const text = await r.text();
-  if (r.status === 429 && !retried) { // Flynet rate limit ("Retry after N seconds"): wait once, then give up loudly
-    await new Promise((ok) => setTimeout(ok, Math.min(5, Number(r.headers.get("retry-after")) || 1) * 1000));
-    return flyGet<T>(path, bearer, true);
+  if (r.status === 429 && tries < 3) { // Flynet rate limit ("Retry after N seconds"): back off up to 3 times, then give up loudly
+    await new Promise((ok) => setTimeout(ok, Math.min(5, Number(r.headers.get("retry-after")) || 1) * 1000 * (tries + 1)));
+    return flyGet<T>(path, bearer, timeoutMs, tries + 1);
   }
   if (!r.ok) {
     let why = r.headers.get("www-authenticate") ?? "";
@@ -121,6 +131,44 @@ export const toChallenges = (r: R): DineChallenge[] => (r.challenges as R[]).map
 const hoursOf = (ctx: Ctx, id: string) => cached(ctx, `hours:${id}`, TTL.hours, async () => toHours(await flyGet(`/locations/${id}/open_hours`)));
 const specialsOf = (ctx: Ctx, rid: string) => cached(ctx, `specials:${rid}`, TTL.offers, async () => toSpecials(await flyGet(`/specials?restaurant=${rid}&page_size=20`)));
 const challengesOf = (ctx: Ctx, rid: string) => cached(ctx, `challenges:${rid}`, TTL.offers, async () => toChallenges(await flyGet(`/challenges?restaurant=${rid}&page_size=20`)));
+// Network activity (API key, read:checkins). The feed is ~140k check-ins a week, so a venue's 7-day count is the filtered
+// list's pagination.total_count (page_size=1), not a download. created_after must be ISO-8601 (epoch is rejected).
+const weekAgo = () => new Date(Math.floor(Date.now() / 3600_000) * 3600_000 - 7 * 86400_000).toISOString();
+const weekOf = (ctx: Ctx, locationId: string) => cached(ctx, `week:${locationId}`, TTL.week, async () => {
+  const n = (await flyGet(`/check_ins?location=${locationId}&created_after=${weekAgo()}&page_size=1`)).pagination?.total_count;
+  if (typeof n !== "number") throw new FlyError(502, "Flynet /check_ins returned no pagination.total_count");
+  return n;
+});
+// ponytail: the latest 500 network check-ins (~25 min of Blackbird traffic, 0.8 MB) pick the trending candidates; their
+// 7-day counts rank them. A true weekly leaderboard needs a count per venue (~1,700 calls); add if Flynet ships aggregates.
+// The bare feed counts all ~7M rows and takes 4-11 s, so bound it to the last 2 hours (measured 4-5 s) and allow 30 s.
+const recentOf = (ctx: Ctx) => cached(ctx, "recent", TTL.recent, async () => {
+  const since = new Date(Math.floor(Date.now() / 3600_000) * 3600_000 - 2 * 3600_000).toISOString();
+  return (await flyGet(`/check_ins?created_after=${since}&page_size=500`, undefined, 30_000)).check_ins as R[];
+});
+/** Group raw network check-ins by venue (each embeds its full location), newest window first. Pure: tested on a capture. */
+export function trendingFrom(checkIns: R[], region?: string) {
+  const by = new Map<string, { place: DinePlace; recentCheckIns: number }>();
+  for (const ci of checkIns) {
+    if (!ci.location?.id) continue;
+    const place = toPlace(ci.location);
+    if (region && place.region !== region) continue;
+    const row = by.get(place.id) ?? { place, recentCheckIns: 0 };
+    row.recentCheckIns++;
+    by.set(place.id, row);
+  }
+  const at = checkIns.map((c) => String(c.created_at)).filter(Boolean).sort();
+  return { rows: [...by.values()].sort((a, b) => b.recentCheckIns - a.recentCheckIns || a.place.name.localeCompare(b.place.name)), from: at[0] ?? null, to: at.at(-1) ?? null };
+}
+export async function trending(ctx: Ctx, region?: string): Promise<DineTrending> {
+  const recent = await recentOf(ctx).catch(toHttp);
+  const t = trendingFrom(recent.v, region);
+  const top = t.rows.slice(0, 8), errors: string[] = [];
+  const weeks = await gentle(top, (r) => weekOf(ctx, r.place.id), errors);
+  const places = top.map((r, i) => ({ ...r, weekCheckIns: weeks[i]?.v ?? null }))
+    .sort((a, b) => (b.weekCheckIns ?? -1) - (a.weekCheckIns ?? -1) || b.recentCheckIns - a.recentCheckIns);
+  return { places, sample: { size: recent.v.length, from: t.from, to: t.to }, source: src(recent), errors: [...new Set(errors)] };
+}
 /** Settle a batch of cached Flynet reads with bounded concurrency; failures become null + a readable note. */
 async function gentle<T, U>(items: T[], fn: (x: T) => Promise<U>, errors: string[], n = 3): Promise<(U | null)[]> {
   const out: (U | null)[] = new Array(items.length).fill(null);
@@ -216,9 +264,10 @@ const km = (a: { lat: number; lng: number }, p: DinePlace) => {
   return 6371 * 2 * Math.asin(Math.sqrt(h));
 };
 
-type Scored = { p: DinePlace; score: number; reasons: string[]; dist: number | null; est: number | null; fits: boolean | null; visits: number };
+type Scored = { p: DinePlace; score: number; reasons: string[]; dist: number | null; est: number | null; fits: boolean | null; visits: number; membership: DineMembership | null };
+export type Personal = { visits?: Map<string, number>; visitedHoods?: Set<string>; memberships?: Map<string, DineMembership>; employers?: string[] };
 /** Stage 1 (catalog only, no extra Flynet calls): hard filters then a scored, brand-deduped candidate list. */
-export function prefilter(places: DinePlace[], c: Cues, o: { partySize: number; budgetUsd: number; near?: { lat: number; lng: number }; visits?: Map<string, number>; visitedHoods?: Set<string> }) {
+export function prefilter(places: DinePlace[], c: Cues, o: { partySize: number; budgetUsd: number; near?: { lat: number; lng: number } } & Personal) {
   const notes: string[] = [];
   let pool = places.filter((p) => p.paymentsEnabled);
   if (c.region) pool = pool.filter((p) => p.region === c.region);
@@ -254,7 +303,12 @@ export function prefilter(places: DinePlace[], c: Cues, o: { partySize: number; 
     if (visits && c.somewhereNew) score -= 3;
     else if (visits) { score += 1; reasons.push(`you have checked in here ${visits}×`); }
     else if (o.visitedHoods?.has(p.neighborhood ?? "")) { score += 1; reasons.push(`new to you, in a neighborhood you dine in`); }
-    return { p, score, reasons, dist, est, fits, visits };
+    const membership = o.memberships?.get(p.restaurantId) ?? null; // brand-level card (read:memberships)
+    if (membership && c.somewhereNew) score -= 2;
+    else if (membership) { score += 2; reasons.push(`you hold a Blackbird "${membership.tier}" membership at ${p.name} (${membership.checkIns} check-in${membership.checkIns === 1 ? "" : "s"} on the card)`); }
+    // Flynet tags are only type "industry" (restaurant staff, metadata Employer); no taste tags exist, so no score change
+    if (o.employers?.includes(p.name.toLowerCase())) reasons.push(`your Blackbird industry tag lists ${p.name} as your employer`);
+    return { p, score, reasons, dist, est, fits, visits, membership };
   });
   scored.sort((a, b) => b.score - a.score || (a.dist ?? 0) - (b.dist ?? 0) || a.p.name.localeCompare(b.p.name));
   const seen = new Set<string>(), out: Scored[] = [];
@@ -315,24 +369,55 @@ async function accessToken(ctx: Ctx, loanId: number): Promise<string> {
 // The browser proves it finished this loan's OAuth with a random session token (only its hash is stored).
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
 const viewKey = (loanId: number) => `flynet:view:${loanId}`;
-function memberSession(ctx: Ctx, c: Context, loanId: number): boolean {
-  const t = c.req.header("x-flynet-session") ?? c.req.query("session"); // query: the agent CORS allowlist has no custom headers
+function memberSession(ctx: Ctx, c: Context, loanId: number, bodySession?: unknown): boolean {
+  const t = typeof bodySession === "string" ? bodySession : c.req.header("x-flynet-session") ?? c.req.query("session"); // query: the agent CORS allowlist has no custom headers
   if (!t || !getLink(ctx, loanId)) return false;
   const row = ctx.db.prepare("SELECT value FROM kv WHERE key = ?").get(viewKey(loanId)) as R | undefined;
   return !!row && row.value === sha(t);
 }
 const memberCache = new Map<number, { at: number; p: Promise<Member> }>(); // personal data: memory only, 5 min
-type Member = { firstName: string; tier: string | null; wallets: R; checkIns: R[] };
+type Member = { firstName: string; tier: string | null; wallets: R; checkIns: R[]; scopes: string[] | null; memberships: DineMembership[] | null; tags: R[] | null; notes: string[] };
+/** Scopes on a Flynet access token: its JWT `scope` claim (docs: concepts/oauth). null if the token is not a readable JWT. */
+export function tokenScopes(token: string): string[] | null {
+  try {
+    const sc = JSON.parse(Buffer.from(token.split(".")[1]!, "base64url").toString()).scope;
+    return typeof sc === "string" ? sc.split(" ").filter(Boolean) : null;
+  } catch { return null; }
+}
+export const toMembership = (m: R): DineMembership => ({
+  restaurantId: m.restaurant_id, tier: m.membership_tier?.name || "Member", checkIns: Number(m.check_in_count ?? 0),
+  lastCheckIn: m.last_check_in_date ?? null, art: m.membership_tier?.asset?.web_2x ?? m.membership_tier?.asset?.preview_1x ?? null,
+});
+/** Employer names from `industry` tags (metadata key "Employer"), lowercased for matching brand names. */
+export const employersOf = (tags: R[]): string[] => tags.filter((t) => t.type === "industry")
+  .flatMap((t) => ((t.metadata ?? []) as R[]).filter((m) => /^employer$/i.test(m.key)).flatMap((m) => (m.value ?? []) as string[]))
+  .map((x) => String(x).toLowerCase());
 function member(ctx: Ctx, loanId: number): Promise<Member> {
   const hit = memberCache.get(loanId);
   if (hit && Date.now() - hit.at < 5 * 60_000) return hit.p;
   const p = (async () => {
     const tok = await accessToken(ctx, loanId);
-    const [me, status, wallets, cis] = await Promise.all([
+    const scopes = tokenScopes(tok), notes: string[] = [];
+    // Optional member reads: a login from before a scope was added lacks it (403), so ask to log in again rather than fail.
+    async function extra<T>(scope: string, load: () => Promise<T>): Promise<T | null> {
+      if (scopes && !scopes.includes(scope)) { notes.push(`Your Blackbird login did not grant ${scope}; log out and log in again to add it.`); return null; }
+      return load().catch((e) => { notes.push(`${scope} read failed: ${(e as Error).message}`); return null; });
+    }
+    const [me, status, wallets, cis, memberships, tags] = await Promise.all([
       flyGet("/users/me", tok), flyGet("/users/me/status", tok).catch((e) => (e.status === 404 ? null : Promise.reject(e))), // 404 = no status yet
       flyGet("/users/me/wallets", tok), flyGet("/users/me/check_ins?page_size=50", tok),
+      extra("read:memberships", async () => {
+        const out: DineMembership[] = [];
+        for (let page = 0; page < 5; page++) { // ponytail: first 500 cards (docs example member has 875); raise if members hit it
+          const r = await flyGet(`/users/me/memberships?page=${page}&page_size=100`, tok);
+          out.push(...((r.memberships ?? []) as R[]).map(toMembership));
+          if (r.pagination?.next_page == null) break;
+        }
+        return out;
+      }),
+      extra("read:tags", async () => ((await flyGet("/users/me/tags", tok)).tags ?? []) as R[]),
     ]);
-    return { firstName: me.first_name ?? "", tier: status?.tier ?? null, wallets, checkIns: cis.check_ins ?? [] };
+    return { firstName: me.first_name ?? "", tier: status?.tier ?? null, wallets, checkIns: cis.check_ins ?? [], scopes, memberships, tags, notes };
   })();
   memberCache.set(loanId, { at: Date.now(), p });
   p.catch(() => memberCache.delete(loanId));
@@ -345,6 +430,10 @@ const visitsOf = (m: Member) => {
     if (ci.location?.neighborhood?.name) hoods.add(ci.location.neighborhood.name);
   }
   return { visits, hoods };
+};
+const personal = (m: Member): Personal => {
+  const { visits, hoods } = visitsOf(m);
+  return { visits, visitedHoods: hoods, memberships: new Map((m.memberships ?? []).map((x) => [x.restaurantId, x])), employers: employersOf(m.tags ?? []) };
 };
 
 export async function passport(ctx: Ctx, loanId: number): Promise<DinePassport> {
@@ -359,6 +448,11 @@ export async function passport(ctx: Ctx, loanId: number): Promise<DinePassport> 
     checkIns: m.checkIns.map((ci) => ({ placeId: ci.location?.id, name: ci.location?.restaurant?.name || ci.location?.name || "venue", neighborhood: ci.location?.neighborhood?.name ?? null, region: ci.location?.neighborhood?.region ?? null, at: ci.created_at })),
     placesVisited: visits.size,
     gapsNearby: places.filter((p) => p.paymentsEnabled && p.neighborhood && hoods.has(p.neighborhood) && !visits.has(p.id)).slice(0, 6),
+    memberships: m.memberships && m.memberships
+      .map((x) => ({ ...x, name: places.find((p) => p.restaurantId === x.restaurantId)?.name ?? "Blackbird restaurant (not in the venue list)" }))
+      .sort((a, b) => b.checkIns - a.checkIns),
+    tags: m.tags && m.tags.map((t) => ({ type: String(t.type), metadata: ((t.metadata ?? []) as R[]).map((x) => ({ key: String(x.key), value: ((x.value ?? []) as unknown[]).map(String) })) })),
+    scopes: m.scopes, notes: m.notes,
   };
 }
 
@@ -438,9 +532,9 @@ async function planFresh(ctx: Ctx, loan: Loan, req: DinePlanRequest, withMember:
   if (budgetUsd <= 0) notes.push("This loan has no dining budget (drawLimit 0), so budget fit is not checked.");
   if (loan.status !== "ACTIVE") notes.push(`Loan is ${loan.status}: the dining budget is a plan until the loan is funded (ACTIVE).`);
   const m = withMember ? await member(ctx, loan.id).catch((e) => { notes.push(`Member history unavailable: ${e.message}`); return null; }) : null;
-  const mv = m ? visitsOf(m) : null;
+  if (m) notes.push(...m.notes);
   const cues = parseRequest(req.request, cat.v);
-  const pre = prefilter(cat.v, cues, { partySize: req.partySize, budgetUsd: budgetUsd > 0 ? budgetUsd : Infinity, near: req.near, visits: mv?.visits, visitedHoods: mv?.hoods });
+  const pre = prefilter(cat.v, cues, { partySize: req.partySize, budgetUsd: budgetUsd > 0 ? budgetUsd : Infinity, near: req.near, ...(m ? personal(m) : {}) });
   notes.push(...pre.notes);
   if (!pre.candidates.length) throw new HTTPException(404, { message: "No Blackbird venue matches that request. Try a city (NYC, SF, LA, Denver, Charleston) or a cuisine." });
 
@@ -448,6 +542,8 @@ async function planFresh(ctx: Ctx, loan: Loan, req: DinePlanRequest, withMember:
   const errors: string[] = [];
   const top = pre.candidates.slice(0, 12);
   const hours = await gentle(top, (s) => hoursOf(ctx, s.p.id), errors);
+  const weeks = await gentle(top, (s) => weekOf(ctx, s.p.id), errors); // network activity (read:checkins), no member needed
+  const busiest = Math.max(0, ...weeks.map((w) => w?.v ?? 0));
   const at = req.time && !/^\d\d:\d\d$/.test(req.time) ? new Date(req.time) : new Date();
   const enriched = top.map((s, i) => {
     const hs = hours[i]?.v ?? null;
@@ -461,7 +557,10 @@ async function planFresh(ctx: Ctx, loan: Loan, req: DinePlanRequest, withMember:
     if (open === null) reasons.push("hours not published on Flynet");
     if (cues.late && open !== false && closesLate(today)) { score += 2; reasons.push(`open late (until ${today!.close})`); }
     if (cues.late && today && !closesLate(today)) score -= 2;
-    return { ...s, score, reasons, open, today };
+    const week = weeks[i]?.v ?? null;
+    if (week && busiest) { score += (2 * week) / busiest; reasons.push(`${week} Blackbird check-ins here in the last 7 days${week === busiest ? " (busiest on this shortlist)" : ""}`); }
+    if (week === 0) reasons.push("no Blackbird check-ins here in the last 7 days");
+    return { ...s, score, reasons, open, today, week };
   }).sort((a, b) => b.score - a.score);
   const short = enriched.slice(0, 6);
   const specials = await gentle(short, (s) => specialsOf(ctx, s.p.restaurantId), errors); // sequential batches: Flynet rate-limits bursts
@@ -473,7 +572,7 @@ async function planFresh(ctx: Ctx, loan: Loan, req: DinePlanRequest, withMember:
     return {
       place: s.p, reasons: s.reasons, openAtTime: s.open, hoursToday: s.today ? `${s.today.open}–${s.today.close}` : null,
       estCostUsd: s.est, fitsBudget: budgetUsd > 0 ? s.fits : null, distanceKm: s.dist == null ? null : Math.round(s.dist * 10) / 10,
-      specials: sp, challenges: chs, visits: m ? s.visits : null,
+      specials: sp, challenges: chs, visits: m ? s.visits : null, membership: s.membership, weekCheckIns: s.week,
     };
   }).sort((a, b) => Number(b.openAtTime !== false) - Number(a.openAtTime !== false)); // never lead with a closed venue
   if (errors.length) notes.push(`Some Flynet reads failed and were skipped: ${[...new Set(errors)].slice(0, 3).join("; ")}`);
@@ -486,7 +585,7 @@ async function planFresh(ctx: Ctx, loan: Loan, req: DinePlanRequest, withMember:
   const ranked = await llmRank(req, picks, budgetUsd).catch((e) => ({ err: e as Error }));
   if ("err" in ranked) {
     const why = ranked.err instanceof LlmNoCredits ? "Bankr LLM has no credits" : /Missing env/.test(ranked.err.message) ? "no Bankr LLM key" : `Bankr LLM failed (${ranked.err.message.slice(0, 120)})`;
-    return { ...base, ranker: "deterministic", rankerNote: `Deterministic ranker: ${why}. Scores cuisine, place, budget fit, hours at your time, specials.`, picks: picks.slice(0, 5) };
+    return { ...base, ranker: "deterministic", rankerNote: `Deterministic ranker: ${why}. Scores cuisine, place, budget fit, hours at your time, 7-day Blackbird check-ins, specials, and (logged in) your visits and membership cards.`, picks: picks.slice(0, 5) };
   }
   return { ...base, ranker: "bankr-llm", rankerNote: "Bankr LLM ordered the live Flynet shortlist and wrote the first reason; the facts below it come from Flynet.", picks: ranked.slice(0, 5) };
 }
@@ -495,7 +594,8 @@ async function planFresh(ctx: Ctx, loan: Loan, req: DinePlanRequest, withMember:
 async function llmRank(req: DinePlanRequest, picks: DinePick[], budgetUsd: number): Promise<DinePick[]> {
   const facts = picks.map((x) => ({ id: x.place.id, name: x.place.name, cuisine: x.place.cuisine, neighborhood: x.place.neighborhood, price: x.place.price,
     openAtTime: x.openAtTime, hoursToday: x.hoursToday, estCostUsd: x.estCostUsd, distanceKm: x.distanceKm, reservations: x.place.reservationsEnabled,
-    specials: x.specials.map((s) => s.label), challenges: x.challenges.map((c) => c.title), memberVisits: x.visits }));
+    specials: x.specials.map((s) => s.label), challenges: x.challenges.map((c) => c.title), memberVisits: x.visits,
+    memberCard: x.membership && { tier: x.membership.tier, checkIns: x.membership.checkIns }, networkCheckInsLast7Days: x.weekCheckIns }));
   const raw = await llmChat([
     { role: "system", content: `You are the Gadai dining concierge. A borrower asks for a place to eat; the dining budget is $${budgetUsd.toFixed(0)} for the party. Order the candidates best-first for the request and write one plain sentence per pick using ONLY the given facts (never invent dishes, prices or hours). Put closed venues last. Reply with ONLY JSON: {"picks":[{"id":"...","why":"..."}]}` },
     { role: "user", content: JSON.stringify({ request: req.request, partySize: req.partySize, candidates: facts }) },
@@ -510,7 +610,7 @@ async function llmRank(req: DinePlanRequest, picks: DinePick[], budgetUsd: numbe
 
 export function dineState(ctx: Ctx, loanId: number): DineState {
   const loan = loanOr404(ctx, loanId);
-  return { loanId, symbol: loan.symbol, loanStatus: loan.status, budgetRaw: budgetRaw(loan), linked: !!getLink(ctx, loanId), memberLogin: memberLogin(), payments: PAYMENTS };
+  return { loanId, symbol: loan.symbol, loanStatus: loan.status, budgetRaw: budgetRaw(loan), linked: !!getLink(ctx, loanId), memberLogin: memberLogin(), payments: PAYMENTS, saveToList: SAVE_TO_LIST };
 }
 
 // ─── routes ───
@@ -534,6 +634,11 @@ export function register(app: Hono, ctx: Ctx) {
     return c.json({ ...listPlaces(cat.v, q), source: src(cat) } satisfies DinePlaceList);
   });
   app.get("/api/flynet/restaurants/:id", async (c) => c.json(await placeDetail(ctx, c.req.param("id"))));
+  app.get("/api/flynet/trending", async (c) => {
+    const region = c.req.query("region") || undefined;
+    if (region && region.length > 80) throw new HTTPException(400, { message: "region too long" });
+    return c.json(await trending(ctx, region));
+  });
   app.get("/api/loans/:id/dine", (c) => c.json(dineState(ctx, posInt(c.req.param("id"), "loan id"))));
   app.post("/api/loans/:id/dine/plan", async (c) => {
     const loanId = posInt(c.req.param("id"), "loan id");
@@ -545,6 +650,22 @@ export function register(app: Hono, ctx: Ctx) {
     loanOr404(ctx, loanId);
     if (!memberSession(ctx, c, loanId)) throw new HTTPException(401, { message: "Blackbird member session required (log in with Blackbird on this loan's dine page)" });
     return c.json(await passport(ctx, loanId));
+  });
+  /** Member-authenticated POST: loan exists, body parsed, session valid (body `session`, header or query). */
+  const memberPost = async (c: Context) => {
+    const loanId = posInt(c.req.param("id"), "loan id");
+    loanOr404(ctx, loanId);
+    const b = await jsonBody(c);
+    if (!memberSession(ctx, c, loanId, b.session)) throw new HTTPException(401, { message: "Blackbird member session required (log in with Blackbird on this loan's dine page)" });
+    return { loanId, b };
+  };
+  app.post("/api/loans/:id/dine/save", async (c) => {
+    const { loanId, b } = await memberPost(c);
+    if (typeof b.restaurantId !== "string" || !UUID.test(b.restaurantId)) throw new HTTPException(400, { message: "restaurantId must be a Flynet restaurant or location UUID" });
+    const scopes = tokenScopes(await accessToken(ctx, loanId));
+    if (scopes && !scopes.includes("write:save_to_list")) throw new HTTPException(403, { message: "Your Blackbird login did not grant write:save_to_list; log out and log in again." });
+    if (!SAVE_TO_LIST.available) throw new HTTPException(501, { message: SAVE_TO_LIST.reason });
+    return c.json({ ok: true }); // unreachable until SAVE_TO_LIST names the documented endpoint
   });
   app.delete("/api/loans/:id/dine/member", async (c) => {
     const loanId = posInt(c.req.param("id"), "loan id");

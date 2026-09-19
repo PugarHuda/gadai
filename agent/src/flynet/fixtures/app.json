@@ -1,9 +1,9 @@
 {
  "captured_on": "2026-09-19",
- "source": "GET https://api.blackbird.xyz/flynet/v1/app (account + merchant id stripped) (production)",
- "id": "f6b4e775-dc14-4eff-a8cf-44e2fdb2cba4",
+ "source": "GET https://api.blackbird.xyz/flynet/v1/app (account + merchant id stripped) (production, app \"hackathon 2\")",
+ "id": "ba3ca201-5d5c-4a51-bbdb-f905df5ca146",
  "object": "app",
- "name": "hackathon",
+ "name": "hackathon 2",
  "allowed_scopes": [
   "read:profile",
   "read:wallets",
@@ -12,8 +12,11 @@
   "read:app",
   "read:balance",
   "read:restaurant_specials",
-  "read:restaurant_challenges"
+  "read:restaurant_challenges",
+  "write:save_to_list",
+  "read:memberships",
+  "read:tags"
  ],
  "active": true,
- "created_at": "2026-09-19T15:11:27.344004Z"
+ "created_at": "2026-09-19T15:44:11.29283Z"
 }

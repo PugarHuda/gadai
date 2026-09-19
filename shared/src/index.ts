@@ -578,6 +578,16 @@ export type DineState = {
   linked: boolean; // a Blackbird member is linked to this loan (OAuth)
   memberLogin: DineMemberLogin;
   payments: DinePayments;
+  saveToList: DineMemberLogin; // write:save_to_list is granted, but Blackbird has not published the endpoint yet
+};
+/** A member's Blackbird membership card at one restaurant (GET /users/me/memberships, read:memberships). */
+export type DineMembership = { restaurantId: string; tier: string; checkIns: number; lastCheckIn: string | null; art: string | null };
+/** GET /api/flynet/trending: venues busiest on the Blackbird network (anonymized GET /check_ins, read:checkins). */
+export type DineTrending = {
+  places: { place: DinePlace; weekCheckIns: number | null; recentCheckIns: number }[];
+  sample: { size: number; from: string | null; to: string | null }; // the latest network check-ins the list was picked from
+  source: DineSource;
+  errors: string[];
 };
 /** POST /api/loans/:id/dine/plan */
 export type DinePlanRequest = { request: string; partySize: number; time?: string; near?: { lat: number; lng: number } };
@@ -592,6 +602,8 @@ export type DinePick = {
   specials: DineSpecial[];
   challenges: DineChallenge[];
   visits: number | null; // the linked member's check-ins here (only with the member session)
+  membership: DineMembership | null; // the member's card at this brand (member session + read:memberships)
+  weekCheckIns: number | null; // network check-ins at this venue in the last 7 days (null = Flynet read failed)
 };
 export type DinePlan = {
   loanId: number;
@@ -618,6 +630,10 @@ export type DinePassport = {
   checkIns: { placeId: string; name: string; neighborhood: string | null; region: string | null; at: string }[];
   placesVisited: number;
   gapsNearby: DinePlace[]; // Blackbird venues in the member's neighborhoods they have not checked in at
+  memberships: (DineMembership & { name: string })[] | null; // null = token lacks read:memberships or the read failed (see notes)
+  tags: { type: string; metadata: { key: string; value: string[] }[] }[] | null; // null = token lacks read:tags or the read failed
+  scopes: string[] | null; // scopes on the member's access token (JWT `scope` claim)
+  notes: string[];
 };
 export const flynetLinkMessage = (loanId: number, nonce: string) =>
   `Gadai: link my Blackbird account to loan ${loanId}\nNonce: ${nonce}`;

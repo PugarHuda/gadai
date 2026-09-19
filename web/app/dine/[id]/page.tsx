@@ -7,7 +7,7 @@ import { api } from "@/lib/api";
 import { ENV } from "@/lib/env";
 import { useSigner } from "@/lib/wallet";
 import { Btn, Card, Empty, Err, Loading, Pill, ago, usd, usdcRaw, useLoad } from "@/components/ui";
-import { FlynetNotes, PickCard, PlaceCard, PlaceLinks, SourceLine } from "@/components/dine";
+import { FlynetNotes, PickCard, PlaceCard, PlaceLinks, SaveToList, SourceLine, Trending } from "@/components/dine";
 
 const EXAMPLES = ["somewhere in NYC for four, open late, burgers", "cheap drinks in SF", "Italian in Denver, takes reservations", "coffee in the Financial District"];
 const skey = (id: number) => `gadai:flynet-session:${id}`;
@@ -107,7 +107,10 @@ export default function DinePlanner({ params }: { params: Promise<{ id: string }
                   </Empty>
                 ) : !session ? (
                   <div className="space-y-2 text-sm">
-                    <p>Log in with Blackbird to read your profile, FLY balance and check-ins (read-only). The concierge then knows where you have eaten and can suggest somewhere new.</p>
+                    <p>
+                      Log in with Blackbird to read your profile, FLY balance, check-ins, membership cards and tags. The concierge then knows where you have eaten, boosts
+                      restaurants where you hold a card, and can suggest somewhere new. Nothing is paid.
+                    </p>
                     <Btn onClick={s.connected ? connect : s.login}>{s.connected ? "Log in with Blackbird" : "Log in with Dynamic first"}</Btn>
                     <p className="text-[11px] text-mute">You sign one message with the loan&apos;s borrower wallet so the login binds to this loan.</p>
                   </div>
@@ -152,6 +155,36 @@ export default function DinePlanner({ params }: { params: Promise<{ id: string }
                           </ul>
                         )}
                         {pass.data.checkIns.length === 0 && <p className="text-xs text-mute">No check-ins yet on this Blackbird account.</p>}
+                        {pass.data.memberships && (
+                          <div>
+                            <p className="label">membership cards ({pass.data.memberships.length})</p>
+                            {pass.data.memberships.length === 0 ? (
+                              <p className="text-xs text-mute">No membership cards yet.</p>
+                            ) : (
+                              <ul className="max-h-40 space-y-1 overflow-auto text-xs">
+                                {pass.data.memberships.map((m) => (
+                                  <li key={m.restaurantId} className="flex justify-between gap-2">
+                                    <span>{m.name}</span>
+                                    <span className="text-mute">
+                                      {m.tier} · <span className="num">{m.checkIns}</span> check-ins
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        )}
+                        {pass.data.tags && pass.data.tags.length > 0 && (
+                          <p className="text-xs">
+                            <span className="label mr-2">tags</span>
+                            {pass.data.tags.map((t) => `${t.type}${t.metadata.length ? ` (${t.metadata.map((m) => `${m.key}: ${m.value.join(", ")}`).join("; ")})` : ""}`).join(" · ")}
+                          </p>
+                        )}
+                        {pass.data.notes.map((n) => (
+                          <p key={n} className="text-xs text-amber-ink">
+                            {n}
+                          </p>
+                        ))}
                         <Btn kind="ghost" onClick={logout}>
                           Log out of Blackbird
                         </Btn>
@@ -200,8 +233,10 @@ export default function DinePlanner({ params }: { params: Promise<{ id: string }
                     <span className="text-mute">{plan.rankerNote}</span>
                   </p>
                   <p className="mt-2 text-xs text-mute">
-                    Read as: {plan.understood.join(" · ")} · {plan.considered} Blackbird venues matched{plan.personalized ? " · personalized with your check-ins" : ""}
+                    Read as: {plan.understood.join(" · ")} · {plan.considered} Blackbird venues matched
+                    {plan.personalized ? " · personalized with your check-ins and membership cards" : ""} · 7-day check-ins are network-wide and anonymized
                   </p>
+                  {session && !d.saveToList.available && <p className="mt-2 text-xs text-mute">Save to list: {d.saveToList.reason}</p>}
                   {plan.notes.map((n) => (
                     <p key={n} className="mt-2 rounded-[3px] border border-amber/50 bg-amber/10 px-3 py-1.5 text-xs text-amber-ink">
                       {n}
@@ -209,11 +244,18 @@ export default function DinePlanner({ params }: { params: Promise<{ id: string }
                   ))}
                   <div className="mt-4 grid gap-4 sm:grid-cols-2">
                     {plan.picks.map((x, i) => (
-                      <PickCard key={x.place.id} x={x} rank={i + 1} />
+                      <PickCard
+                        key={x.place.id}
+                        x={x}
+                        rank={i + 1}
+                        action={session && pass.data ? <SaveToList loanId={loanId} session={session} restaurantId={x.place.restaurantId} state={d.saveToList} /> : undefined}
+                      />
                     ))}
                   </div>
                 </Card>
               )}
+
+              {!plan && <Trending />}
 
               {pass.data && pass.data.gapsNearby.length > 0 && (
                 <Card title="Gaps in your passport" right="Blackbird venues in your neighborhoods you have not checked in at">
