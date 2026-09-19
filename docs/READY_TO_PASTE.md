@@ -4,7 +4,7 @@ Links
 - Repo: https://github.com/PugarHuda/gadai
 - Live site: https://gadai-six.vercel.app (live data through a public tunnel to the DEMO_FORK agent; Credit Line Board at /board)
 - Paid credit report (x402, $0.02 USDC on Base): https://x402.bankr.bot/0x0455408228f460722ecbe80789bcf1628b479e98/gadai-credit?token=0x...
-- Demo video: <YouTube/Loom URL after upload> (file: docs/demo/gadai-demo.mp4, 2:28, narrated)
+- Demo video: https://gadai-six.vercel.app/demo (direct MP4: https://gadai-six.vercel.app/gadai-demo.mp4, 2:28, narrated)
 
 ## Runtime submission form
 
@@ -36,7 +36,7 @@ The underwriter reads live data from Bankr's public fee APIs, sizes the loan wit
 >
 > Every credit call is a public signal you can mirror with @DefinitiveFi Flash bracket/DCA orders.
 >
-> Demo: <video URL>
+> Demo: gadai-six.vercel.app/demo
 > Code: github.com/PugarHuda/gadai
 
 ## Uniswap developer feedback form
