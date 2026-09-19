@@ -240,7 +240,7 @@ async function pledgeLocked(ctx: Ctx, id: number, req: PledgeRequest): Promise<L
 
 export function createApp(ctx: Ctx): Hono {
   const app = new Hono();
-  app.use("/api/*", cors({ origin: ctx.webUrl, allowHeaders: ["content-type", "x-admin-token"], allowMethods: ["GET", "POST", "DELETE", "OPTIONS"] }));
+  app.use("/api/*", cors({ origin: [ctx.webUrl, ...(process.env.EXTRA_WEB_ORIGINS ?? "").split(",").filter(Boolean)], allowHeaders: ["content-type", "x-admin-token"], allowMethods: ["GET", "POST", "DELETE", "OPTIONS"] }));
   app.use("/api/admin/*", async (c, next) => {
     const got = Buffer.from(c.req.header("x-admin-token") ?? ""), want = Buffer.from(need("ADMIN_TOKEN"));
     if (got.length !== want.length || !timingSafeEqual(got, want)) return c.json({ error: "bad or missing x-admin-token" }, 401);
