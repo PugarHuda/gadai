@@ -1,0 +1,13 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.1.0/plugin.schema.json",
+  "name": "gadai",
+  "version": "1.0.0",
+  "description": "Gadai for Grok Bot: quote a USDC credit line against a Bankr token's creator fees, explain the pledge flow, read the Credit Line Board, and watch a loan daily.",
+  "author": {
+    "name": "Gadai",
+    "url": "https://gadai-six.vercel.app"
+  },
+  "homepage": "https://gadai-six.vercel.app",
+  "repository": "https://github.com/PugarHuda/gadai",
+  "keywords": ["grok-bot", "bankr", "base", "usdc", "credit", "creator-fees", "x402"]
+}
