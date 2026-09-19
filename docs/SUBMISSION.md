@@ -11,7 +11,7 @@ The deadline is **Sun 2026-09-20 03:00 WIB**. Tick a box only against evidence y
 - [ ] The skill matches the server: `node skill/gadai/check.mjs` passes.
 - [ ] `pnpm --filter @feedesk/agent test` and `pnpm contracts:test` are green.
 - [ ] `.env` is **not** committed: `git ls-files | grep -c '^.env$'` prints `0`.
-- [x] Video: https://gadai-six.vercel.app/demo (3:08, narrated; scene list in [DEMO.md](DEMO.md)).
+- [x] Video: https://gadai-six.vercel.app/demo (3:49, narrated; scene list in [DEMO.md](DEMO.md)).
 - [x] Mainnet evidence (Base, signed by the Dynamic agent wallet `0x81b7…305D`):
   - Uniswap Trading API swap: `0x6dd51e0c3fa3a8ace9633a32200857b8795c1e6cadd06e0eb5d9f701026cc072`
   - FeeDesk: `0xa4f21ace41923bccfdebf1c6ab49659d80476b4f` (deploy tx `0x21cce9322a7ceb0a1af4225973d9ad3969c298a5594d7f71a7f7689c233ee858`)

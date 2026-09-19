@@ -29,11 +29,15 @@
  },
  {
   "id": "desk",
-  "text": "Every credit decision is a public signal. Followers can mirror approved borrowers with Definitive Flash bracket or DCA orders. Flash is mainnet only, so on the fork it's quote-tested, not filled. Borrowers can also draw a small dining line against pledged fees at Blackbird restaurants, signed by the borrower. Our Flynet access is still pending."
+  "text": "Every credit decision is a public signal. Followers can mirror approved borrowers with Definitive Flash bracket or DCA orders, and the desk follows its own signals. Its Dynamic wallet placed a real Flash TWAP order on Base mainnet, and it filled. Every loan also carries a dining budget. The desk's concierge ranks live Blackbird restaurants, 1,675 venues with hours, specials and challenges, against that budget. Members log in with Blackbird for their passport and saved lists. Paying in FLY still needs Blackbird's review."
  },
  {
   "id": "x402",
-  "text": "And other agents can buy the same credit report for two cents, over x402 on Bankr's cloud. Agent to agent, paid in USDC on Base."
+  "text": "x402 runs both ways. Other agents buy the same credit report for two cents on Bankr's cloud. And the desk pays for data too: its Dynamic wallet bought a third-party risk check for five cents in USDC, and the underwriter uses the verdict. A honeypot is declined. A suspicious token gets half the line."
+ },
+ {
+  "id": "mainnet",
+  "text": "This isn't only on the fork. On Base mainnet, FeeDesk is deployed, and the desk is ERC-8004 agent 94699. The x402 risk check was paid, and the Flash order filled. Every hash is on Basescan."
  },
  {
   "id": "close",

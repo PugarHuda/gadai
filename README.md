@@ -9,7 +9,7 @@ Built for Runtime Agent Week (Bankr x Propaganda). Chain: Base (8453).
 ### Judges: verify in 5 minutes
 
 1. **Site:** https://gadai-six.vercel.app (live data from the Gadai agent, which runs in `DEMO_FORK` on an Anvil fork of Base; every page shows a DEMO_FORK banner).
-2. **Video (3:08, narrated):** https://gadai-six.vercel.app/demo
+2. **Video (3:49, narrated):** https://gadai-six.vercel.app/demo
 3. **Mainnet evidence:** https://gadai-six.vercel.app/evidence, or [docs/EVIDENCE.md](docs/EVIDENCE.md) if that page is not deployed yet. Five Base mainnet txs signed by the Dynamic agent wallet: a Uniswap Trading API swap, the FeeDesk deploy, the ERC-8004 registration, an x402 payment and a Definitive Flash TWAP.
 4. **Agent health:** `curl https://aqua-economic-moss-modes.trycloudflare.com/api/health` → `{"ok":true,"demoFork":true,"block":…}` (plus `chainNote` once the agent runs current code). This is a Cloudflare quick tunnel, so the hostname changes if the tunnel restarts; the site always has the current one.
 5. **Paid API:** `curl -i "https://x402.bankr.bot/0x0455408228f460722ecbe80789bcf1628b479e98/gadai-credit?token=0x5F980Dcfc4c0fa3911554cf5ab288ed0eb13DBa3"` → `HTTP/1.1 402 Payment Required` with x402 v2 requirements ($0.02 USDC on Base).
@@ -263,6 +263,9 @@ A dining concierge for borrowers and their agents. Ask "somewhere in NYC for fou
 - The agent makes 6 requests at a time, each with a 15 s timeout, and keeps results in memory for 10 minutes. If a fetch fails, the row stays on the board with an `error` and is counted in `totals.failed`.
 - This is a pre-approval, not a binding quote. On-chain checks (an open vault on the pool, the claimable-fees beneficiary check) and the LLM memos run when the agent applies. Each row's Apply button opens `/apply?token=…&borrower=…`.
 - Tests: `agent/src/board/board.test.ts`, which runs on real API responses captured on 2026-09-19 (`agent/src/board/fixtures-captured-2026-09-19/`), including the Robinhood fee responses, `quote-tokens-robinhood.json`, and the Uniswap quotes (`uniswap-quote-4663-{SPY,TSLA,MSTR}-weth.json`, `uniswap-quote-8453-weth-usdc.json`).
+
+### Onchain equities: real swap
+[`agent/src/demo/rh-equity-swap.ts`](agent/src/demo/rh-equity-swap.ts): the desk's Dynamic agent wallet buys a Robinhood tokenized stock. It bridges ETH from Base to Robinhood Chain (4663) with Relay (`POST https://api.relay.link/quote/v2`; the Base deposit tx is sent exactly as quoted, and its target must be one of Relay's advertised Base addresses). It waits for the ETH to arrive on 4663, then swaps ETH → TSLA (`0x322F…3b2d`; `symbol()` is checked on-chain) through the Uniswap Trading API `/quote` + `/swap` on 4663. It sends no `x-universal-router-version` header, because 2.0 returns no quotes there. The script is a dry run by default: it prints both quotes and the exact txs. `--execute` sends them (WSL only). `--eth` is capped at 0.00025, and each tx has a gas-cost cap (`MAX_SPEND_ETH`). A dry run on 2026-09-19 quoted 0.0002 ETH → 0.000190 ETH on 4663 (Relay fee about $0.026), then 0.000160 ETH → 0.00116 TSLA (impact 0.05%).
 
 ### Paid credit report on Bankr x402 Cloud
 `gadai-credit` is the Gadai engine sold as a paid API: **$0.02 USDC on Base per call**, no desk server needed.

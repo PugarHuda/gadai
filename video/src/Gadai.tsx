@@ -354,8 +354,58 @@ const Repay: React.FC = () => {
   );
 };
 
+// Real Flynet production records (agent/src/flynet/fixtures, captured 2026-09-19). The live fork agent predates the
+// concierge build, so the dine page is drawn here instead of screen-captured.
+const VENUES: [string, string, string, string, string][] = [
+  ["Casa 13urger", "Bowery · New York, NY", "Burgers", "$", "Fri 12:00–02:30"],
+  ["Proper Food", "116 Montgomery St · San Francisco, CA", "American · Sandwiches", "$$", "special: Earn 10X back in Fly"],
+  ["Frankies 457 Spuntino", "Carroll Gardens · New York, NY", "Italian", "$$", ""],
+  ["Damian", "Arts District · Los Angeles, CA", "Mexican", "$$$$", ""],
+];
+const Dine: React.FC<{ member: number }> = ({ member }) => {
+  const f = useCurrentFrame();
+  const h = useSpring(2);
+  const m = spring({ frame: f - member, fps: FPS, config: { damping: 16 } });
+  return (
+    <AbsoluteFill style={{ background: C.desk }}>
+      <div style={{ position: "absolute", left: 120, top: 150, opacity: h, transform: `translateY(${(1 - h) * 20}px)` }}>
+        <div style={{ fontFamily: SANS, fontWeight: 800, fontSize: 72, color: C.ink, letterSpacing: "-0.02em" }}>Dine on your fees</div>
+        <div style={{ fontFamily: SANS, fontSize: 28, color: C.mute, marginTop: 6, maxWidth: 1100 }}>Every loan carries a dining budget. The desk's concierge ranks live Blackbird venues against it.</div>
+      </div>
+      <div style={{ position: "absolute", left: 120, top: 360, width: 1060, background: C.sheet, border: `1px solid ${C.rule}`, borderRadius: 3, boxShadow: "0 10px 28px -16px rgb(22 24 29 / .35)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", padding: "16px 24px", borderBottom: `1px solid ${C.rule}` }}>
+          <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 24, color: C.ink }}>Blackbird venues</span>
+          <span style={{ fontFamily: MONO, fontSize: 18, color: C.mute }}>Flynet production · 1,675 venues</span>
+        </div>
+        {VENUES.map(([n, where, cui, price, note], i) => {
+          const s = spring({ frame: f - 14 - i * 6, fps: FPS, config: { damping: 16 } });
+          return (
+            <div key={n} style={{ display: "flex", alignItems: "baseline", gap: 18, padding: "16px 24px", borderTop: i ? `1px solid ${C.rule}` : "none", opacity: s, transform: `translateX(${(1 - s) * -20}px)` }}>
+              <span style={{ fontFamily: MONO, fontSize: 18, color: C.violet, width: 30 }}>{String(i + 1).padStart(2, "0")}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 28, color: C.ink }}>{n} <span style={{ fontWeight: 400, fontSize: 20, color: C.mute }}>{where}</span></div>
+                <div style={{ fontFamily: SANS, fontSize: 19, color: C.mute, marginTop: 2 }}>{cui}{note && <span style={{ color: C.green }}> · {note}</span>}</div>
+              </div>
+              <span style={{ fontFamily: MONO, fontSize: 22, color: C.ink }}>{price}</span>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ position: "absolute", left: 1230, top: 360, width: 570, display: "grid", gap: 16 }}>
+        {[["Concierge", "hours · specials · challenges, ranked against the loan's dining budget"], ["Member", "Blackbird login · passport · save to list"]].map(([k, v], i) => (
+          <div key={k} style={{ background: i ? C.violetTint : C.sheet, border: `1px solid ${i ? C.violet : C.rule}`, borderRadius: 3, padding: "20px 24px", opacity: i ? m : h }}>
+            <Label style={{ fontSize: 15 }}>{k}</Label>
+            <div style={{ fontFamily: SANS, fontSize: 24, color: C.ink, marginTop: 6, lineHeight: 1.3 }}>{v}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ position: "absolute", left: 120, top: 890, fontFamily: MONO, fontSize: 16, color: C.mute }}>venue records: Flynet production API (read scopes approved), captured 2026-09-19</div>
+    </AbsoluteFill>
+  );
+};
+
 const Desk: React.FC = () => {
-  const sw = at("desk", "Borrowers", 1);
+  const sw = at("desk", "Every", 1);
   const L = sceneLen("desk");
   return (
     <AbsoluteFill>
@@ -363,13 +413,13 @@ const Desk: React.FC = () => {
         <Cam src="desk" start={8} rate={1.1} keys={[[0, 800, 220, 1.35], [80, 960, 480, 1.22], [sw, 960, 560, 1.28]]} />
       </Sequence>
       <Sequence from={sw}>
-        <Cam src="dine" start={1.8} rate={1.1} keys={[[0, 800, 230, 1.35], [120, 960, 500, 1.22], [L - sw, 960, 560, 1.28]]} />
+        <Dine member={at("desk", "Members") - sw} />
       </Sequence>
       <Chapter n="06" title="Follow the Desk · Dine on fees" />
-      <Sponsor from={at("desk", "Definitive")} to={sw - 5} name="Definitive" role="Flash bracket / DCA mirrors" />
-      <LowerThird from={at("desk", "Flash", 1)} to={sw - 5} label="status" value="Flash is mainnet-only · quote-tested, not filled on the fork" accent={C.amber} />
-      <Sponsor from={at("desk", "Blackbird")} to={L} name="Blackbird" role="Flynet dining line" />
-      <LowerThird from={at("desk", "signed")} to={L} label="status" value="signed draws (EIP-191/1271) · Flynet access pending" accent={C.amber} />
+      <Sponsor from={at("desk", "Definitive")} to={sw - 5} name="Definitive" role="Flash bracket / DCA / TWAP" />
+      <LowerThird from={at("desk", "placed")} to={sw - 5} label="Flash TWAP · Base mainnet · filled" value={<>order fb3b2572…ac82f<br />fill {short("0x261a1355c4d5c7a1e97aaf398a1eb42f8c8563b5489f68709c2bd7660f3bcab4", 10, 6)} · 0.125 USDC → 2,158 GITLAWB</>} accent={C.green} />
+      <Sponsor from={at("desk", "Blackbird")} to={L} name="Blackbird" role="Flynet · approved on production" />
+      <LowerThird from={at("desk", "Paying")} to={L} label="status · Blackbird"  value="FLY payments: pending review" accent={C.amber} x={1230} y={170} />
       <Captions id="desk" />
       <Voice id="desk" />
     </AbsoluteFill>
@@ -396,7 +446,7 @@ const X402: React.FC = () => {
     <AbsoluteFill style={{ background: C.desk }}>
       <div style={{ position: "absolute", left: 120, top: 90, opacity: s }}>
         <div style={{ fontFamily: SANS, fontWeight: 800, fontSize: 60, color: C.ink, letterSpacing: "-0.015em" }}>Paid credit report</div>
-        <div style={{ fontFamily: SANS, fontSize: 28, color: C.mute, marginTop: 4 }}>x402 on Bankr's cloud · agent-to-agent commerce</div>
+        <div style={{ fontFamily: SANS, fontSize: 28, color: C.mute, marginTop: 4 }}>x402 both ways · sells credit reports, buys risk checks</div>
       </div>
       <div style={{ position: "absolute", left: 120, top: 250, width: 1680, background: C.ink, borderRadius: 4, padding: "30px 40px", opacity: s, transform: `translateY(${(1 - s) * 30}px)`, boxShadow: "0 30px 60px -30px rgba(0,0,0,.6)" }}>
         <div style={{ fontFamily: MONO, fontSize: 20, color: "#7d838d", marginBottom: 14 }}>GET x402.bankr.bot/0x0455…9e98/gadai-credit?token=0x5F98…DBa3</div>
@@ -411,8 +461,58 @@ const X402: React.FC = () => {
         })}
       </div>
       <Sponsor from={at("x402", "x402")} to={sceneLen("x402")} name="Bankr" role="x402 Cloud" top={96} />
+      <Sponsor from={at("x402", "Dynamic")} to={sceneLen("x402")} name="Dynamic" role="agent wallet pays" top={170} />
+      <LowerThird from={at("x402", "desk") - 5} to={sceneLen("x402")} label="desk paid · third-party risk check · Base mainnet" value={`0.05 USDC · ${short("0x9c22339bffe1f0e424dad6d5ab64d77603176716d95694eb40430d203f98ad00", 10, 6)}`} accent={C.green} x={120} />
+      <LowerThird from={at("x402", "honeypot") - 5} to={sceneLen("x402")} label="verdict → underwriter" value="HONEYPOT declines · SUSPICIOUS halves" x={1000} />
       <Captions id="x402" />
       <Voice id="x402" />
+    </AbsoluteFill>
+  );
+};
+
+// Base mainnet receipts (read from mainnet.base.org, 2026-09-19; see docs/EVIDENCE.md)
+const DESK_WALLET = "0x81b73786BF2dE819e66BB57d08effADe0085305D";
+const TXS: { k: string; title: string; hash: string; block: number; time: string; rows: [string, string][] }[] = [
+  { k: "FeeDesk", title: "FeeDesk deployed", hash: "0x21cce9322a7ceb0a1af4225973d9ad3969c298a5594d7f71a7f7689c233ee858", block: 51521161, time: "15:27:49", rows: [["From", `${short(DESK_WALLET, 8, 6)} · Dynamic agent wallet`], ["Contract created", short("0xa4f21ace41923bccfdebf1c6ab49659d80476b4f", 10, 8)]] },
+  { k: "ERC-8004", title: "ERC-8004 register → agent #94699", hash: "0xde4b3490940e7bc064c3511c7843eab20f16f1419e456185e35a7690966229cb", block: 51521164, time: "15:27:55", rows: [["To", `${short("0x8004a169fb4a3325136eb29fa0ceb6d2e539a432", 8, 6)} · Identity Registry`], ["Minted", `agentId 94699 → ${short(DESK_WALLET, 8, 6)}`]] },
+  { k: "x402", title: "x402 risk check paid", hash: "0x9c22339bffe1f0e424dad6d5ab64d77603176716d95694eb40430d203f98ad00", block: 51521178, time: "15:28:23", rows: [["Transfer", `0.05 USDC from ${short(DESK_WALLET, 8, 6)}`], ["Auth", "EIP-3009 · Dynamic MPC · Bankr facilitator"]] },
+  { k: "Flash", title: "Definitive Flash TWAP fill", hash: "0x261a1355c4d5c7a1e97aaf398a1eb42f8c8563b5489f68709c2bd7660f3bcab4", block: 51521408, time: "15:36:03", rows: [["Order", "fb3b2572-48c6-4ce5-b79a-6199cefac82f"], ["Swap", "0.125 USDC → 2,158.27 GITLAWB"]] },
+];
+const Mainnet: React.FC = () => {
+  const f = useCurrentFrame();
+  const h = useSpring(2);
+  return (
+    <AbsoluteFill style={{ background: C.desk }}>
+      <div style={{ position: "absolute", left: 120, top: 70, opacity: h, transform: `translateY(${(1 - h) * 20}px)` }}>
+        <div style={{ fontFamily: SANS, fontWeight: 800, fontSize: 60, color: C.ink, letterSpacing: "-0.015em" }}>Mainnet evidence</div>
+        <div style={{ fontFamily: SANS, fontSize: 26, color: C.mute, marginTop: 4 }}>Base mainnet (8453) · signed by the desk's Dynamic agent wallet · 2026-09-19 UTC</div>
+      </div>
+      <div style={{ position: "absolute", left: 120, top: 220, width: 1680, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+        {TXS.map((x) => {
+          const s = spring({ frame: f - (at("mainnet", x.k) - 8), fps: FPS, config: { damping: 16 } });
+          return (
+            <div key={x.k} style={{ background: C.sheet, border: `1px solid ${C.rule}`, borderRadius: 6, opacity: s, transform: `translateY(${(1 - s) * 24}px)`, boxShadow: "0 10px 28px -16px rgb(22 24 29 / .35)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 22px", borderBottom: `1px solid ${C.rule}` }}>
+                <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 25, color: C.ink }}>{x.title}</span>
+                <span style={{ fontFamily: SANS, fontWeight: 600, fontSize: 16, color: C.green, background: "#e3f1e8", border: `1px solid ${C.green}`, borderRadius: 4, padding: "3px 10px" }}>✓ Success</span>
+              </div>
+              <div style={{ padding: "12px 22px 16px", display: "grid", gridTemplateColumns: "180px 1fr", rowGap: 8, fontSize: 19 }}>
+                {([["Transaction hash", short(x.hash, 18, 10)], ["Block", `${x.block.toLocaleString("en-US")} · ${x.time} UTC`], ...x.rows] as [string, string][]).map(([k, v]) => (
+                  <React.Fragment key={k}>
+                    <span style={{ fontFamily: SANS, color: C.mute }}>{k}</span>
+                    <span style={{ fontFamily: MONO, color: k === "Transaction hash" ? C.violet : C.ink }}>{v}</span>
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ position: "absolute", left: 120, top: 800, fontFamily: MONO, fontSize: 18, color: C.mute, opacity: interpolate(f, [at("mainnet", "Every"), at("mainnet", "Every") + 20], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) }}>
+        basescan.org/tx/&lt;hash&gt; · FeeDesk {short("0xa4f21ace41923bccfdebf1c6ab49659d80476b4f", 10, 8)} · full list in docs/EVIDENCE.md
+      </div>
+      <Captions id="mainnet" />
+      <Voice id="mainnet" />
     </AbsoluteFill>
   );
 };
@@ -423,11 +523,11 @@ const Close: React.FC = () => {
     ["Bankr", "fee API · LLM Gateway · x402 Cloud · skill"],
     ["Dynamic", "agent wallet signs every desk tx"],
     ["Uniswap", "CCA for FeeNotes · Trading API swaps"],
-    ["Definitive", "Flash bracket / DCA mirror orders"],
-    ["Blackbird", "Flynet dining line on pledged fees"],
+    ["Definitive", "Flash TWAP filled on mainnet · bracket / DCA mirrors"],
+    ["Blackbird", "Flynet dining concierge · live venues"],
     ["Base", "chain · ERC-8021 builder code"],
-    ["ERC-8004", "borrower identity · repayment reputation"],
-    ["x402", "$0.02 paid credit report"],
+    ["ERC-8004", "desk agent #94699 · repayment reputation"],
+    ["x402", "$0.02 credit report · $0.05 risk check paid"],
   ];
   const h = useSpring(4);
   return (
@@ -452,7 +552,7 @@ const Close: React.FC = () => {
         <span style={{ fontFamily: MONO, fontSize: 34, color: C.ink }}>github.com/PugarHuda/gadai</span>
       </div>
       <div style={{ position: "absolute", left: 120, top: 780, fontFamily: SANS, fontSize: 20, color: C.mute, opacity: interpolate(f, [80, 100], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) }}>
-        Demo runs on an Anvil fork of Base against real Bankr pools. Numbers on screen were read live from the Gadai agent on {String((data as any).capturedAt).slice(0, 10)}.
+        The loan lifecycle runs on an Anvil fork of Base against real Bankr pools; mainnet transactions are listed in docs/EVIDENCE.md. Numbers on screen were read live from the Gadai agent on {String((data as any).capturedAt).slice(0, 10)}.
       </div>
       <Captions id="close" />
       <Voice id="close" />
@@ -460,7 +560,7 @@ const Close: React.FC = () => {
   );
 };
 
-const SCENES: [string, React.FC][] = [["open", Open], ["idea", Idea], ["board", Board], ["apply", Apply], ["pledge", Pledge], ["cca", Cca], ["repay", Repay], ["desk", Desk], ["x402", X402], ["close", Close]];
+const SCENES: [string, React.FC][] = [["open", Open], ["idea", Idea], ["board", Board], ["apply", Apply], ["pledge", Pledge], ["cca", Cca], ["repay", Repay], ["desk", Desk], ["x402", X402], ["mainnet", Mainnet], ["close", Close]];
 export const totalFrames = SCENES.reduce((a, [id]) => a + sceneLen(id), 0) - XF * (SCENES.length - 1) + 30;
 
 export const Gadai: React.FC = () => (

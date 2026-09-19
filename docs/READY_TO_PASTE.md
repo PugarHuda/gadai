@@ -5,7 +5,7 @@ Every line below was checked against the live endpoints and `docs/EVIDENCE.md` o
 ## Links
 - Repo: https://github.com/PugarHuda/gadai
 - Live site: https://gadai-six.vercel.app (live data from the Gadai agent, which runs in DEMO_FORK on an Anvil fork of Base)
-- Demo video (3:08, narrated): https://gadai-six.vercel.app/demo (direct MP4: https://gadai-six.vercel.app/gadai-demo.mp4)
+- Demo video (3:49, narrated): https://gadai-six.vercel.app/demo (direct MP4: https://gadai-six.vercel.app/gadai-demo.mp4)
 - Mainnet evidence: https://gadai-six.vercel.app/evidence (source: https://github.com/PugarHuda/gadai/blob/main/docs/EVIDENCE.md)
 - Credit Line Board: https://gadai-six.vercel.app/board
 - A full loan (fork): https://gadai-six.vercel.app/loans/1
