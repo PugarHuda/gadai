@@ -6,6 +6,7 @@ solc = "0.8.26"
 evm_version = "cancun"
 optimizer = true
 optimizer_runs = 200
+via_ir = true             # FeeDesk embeds FeeVault+FeeNote initcode: without IR it is over EIP-170 (24,733 > 24,576 B); IR leaves ~1.7 KB
 remappings = ["forge-std/=lib/forge-std/src/", "solady/=lib/solady/src/"]
 fs_permissions = [{ access = "read-write", path = "./out-abi" }]
 

@@ -61,9 +61,9 @@ const ctx: Ctx = {
 
 // 1. deploy FeeDesk (keeper = desk wallet), createLoan, borrower pledges via FeesManager.updateBeneficiary, confirmPledge
 const deskArt = art("FeeDesk.sol/FeeDesk.json");
-const depHash = await deskWc.deployContract({ abi: deskArt.abi, bytecode: deskArt.bytecode.object, args: [deskWc.account.address, treasury], account: deskWc.account, chain: base });
+const depHash = await deskWc.deployContract({ abi: deskArt.abi, bytecode: deskArt.bytecode.object, args: [deskWc.account.address, treasury, 86400n], account: deskWc.account, chain: base });
 const desk = (await wait(depHash)).receipt.contractAddress!;
-const params = { borrower: BORROWER, poolId: POOL, feesManager: FM, creatorToken: TOKEN, principal: P, faceValue: FACE, drawLimit: 10_000_000n, noteName: "FeeNote GITLAWB #1", noteSymbol: "fnGITLAWB1" };
+const params = { borrower: BORROWER, poolId: POOL, feesManager: FM, creatorToken: TOKEN, principal: P, faceValue: FACE, drawLimit: 10_000_000n, noteName: "FeeNote GITLAWB #1", noteSymbol: "fnGITLAWB1", keeperTokenCustody: false };
 const { result: [, vault, note], request } = await pub.simulateContract({ address: desk, abi: deskArt.abi, functionName: "createLoan", args: [params], account: deskWc.account }) as unknown as { result: [bigint, Address, Address]; request: unknown };
 await wait(await deskWc.writeContract(request as never));
 await call("anvil_impersonateAccount", [BORROWER]);

@@ -1,5 +1,5 @@
 "use client";
-import type { Memo, Persona } from "@feedesk/shared";
+import type { Memo, Persona, Signal } from "@feedesk/shared";
 import { Pill, usdcRaw } from "./ui";
 
 /** One card per underwriter persona. The first (lead) persona's decision is binding. */
@@ -16,7 +16,9 @@ export function Memos({ memos, personas, leadId }: { memos: Memo[]; personas?: P
               <div>
                 <div className="font-display text-lg leading-tight">{p?.name ?? m.personaId}</div>
                 <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-mute">
-                  {m.model.startsWith("engine-only") ? <span className="tag text-amber-ink">engine only, no LLM review</span> : m.model}
+                  {/^(engine-only|rules)/.test(m.model) ? (
+                    <span className="tag text-amber-ink" title={m.model}>{m.model.startsWith("rules") ? "rule-based persona" : "engine only"}, no LLM review</span>
+                  ) : m.model}
                   {lead && <span className="tag text-violet">lead, binding</span>}
                 </div>
               </div>
@@ -37,5 +39,15 @@ export function Memos({ memos, personas, leadId }: { memos: Memo[]; personas?: P
         );
       })}
     </div>
+  );
+}
+
+/** Whether followers' mirror buys were queued for a signal, and why not (e.g. a rules memo with no LLM review). */
+export function MirrorTag({ s }: { s: Pick<Signal, "mirrorable" | "mirrorNote"> }) {
+  if (!s.mirrorable && !s.mirrorNote) return null;
+  return (
+    <p className={`mt-1 text-[11px] ${s.mirrorable ? "text-desk" : "text-amber-ink"}`}>
+      {s.mirrorable ? "Mirrored to followers" : `Not mirrored: ${s.mirrorNote}`}
+    </p>
   );
 }

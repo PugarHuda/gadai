@@ -6,6 +6,7 @@ import { DynamicWidget } from "@dynamic-labs/sdk-react-core";
 const LINKS = [
   ["/", "Loan book"],
   ["/apply", "Borrow"],
+  ["/board", "Credit lines"],
   ["/notes", "Lend"],
   ["/desk", "Follow the Desk"],
   ["/dine", "Dine"],
@@ -23,7 +24,7 @@ export function Nav() {
         <div className="order-last -mx-4 w-[calc(100%+2rem)] overflow-x-auto md:order-none md:mx-0 md:w-auto md:flex-1">
           <nav aria-label="Main" className="flex gap-1 px-4 md:px-0">
             {LINKS.map(([h, l]) => {
-              const on = h === "/" ? p === "/" : p.startsWith(h);
+              const on = h === "/" ? p === "/" || p.startsWith("/loans/") : p.startsWith(h); // a loan page belongs to the loan book
               return (
                 <Link
                   key={h}

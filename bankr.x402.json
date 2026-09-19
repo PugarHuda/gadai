@@ -1,0 +1,59 @@
+{
+  "network": "base",
+  "currency": "USDC",
+  "services": {
+    "gadai-credit": {
+      "description": "Gadai credit report for any Bankr Doppler token on Base: live creator-fee history (Bankr public API) run through Gadai's deterministic underwriting engine. Returns fee run-rates (r7/r30/lifetime, slope, cv), the max USDC credit line the fee stream supports (30% advance x 14d, $250 cap), fee rate, CCA floor price, term, eligibility and the full formula with numbers plugged in.",
+      "price": "0.02",
+      "methods": ["GET"],
+      "category": "data",
+      "tags": ["credit", "underwriting", "bankr", "doppler", "creator-fees", "base", "defi", "gadai"],
+      "schema": {
+        "input": {
+          "type": "object",
+          "properties": {
+            "token": { "type": "string", "description": "Bankr Doppler token address on Base (0x..., 40 hex chars), e.g. 0x5F980Dcfc4c0fa3911554cf5ab288ed0eb13DBa3" },
+            "borrower": { "type": "string", "description": "Optional wallet (0x...). If set, the report is ineligible unless it is the token's fee beneficiary." }
+          },
+          "required": ["token"]
+        },
+        "output": {
+          "type": "object",
+          "properties": {
+            "token": { "type": "string", "description": "Token address (lowercase)" },
+            "symbol": { "type": "string", "description": "Token symbol, null if not a Bankr Doppler token" },
+            "beneficiary": { "type": "string", "description": "Fee beneficiary the history belongs to" },
+            "sharePct": { "type": "number", "description": "Beneficiary share of pool fees, percent" },
+            "history": {
+              "type": "object",
+              "description": "Fee history in WETH (days = calendar days since first fees)",
+              "properties": {
+                "days": { "type": "integer" }, "lifetimeWeth": { "type": "number" }, "claimableWeth": { "type": "number" },
+                "r7": { "type": "number", "description": "WETH/day, last 7d incl. claimable" },
+                "r30": { "type": "number", "description": "WETH/day, last 30d incl. claimable" },
+                "rLife": { "type": "number", "description": "WETH/day, lifetime" },
+                "slope30d": { "type": "number", "description": "Least-squares slope of the 30d daily series" },
+                "cv30d": { "type": "number", "description": "Coefficient of variation of the 30d daily series (null if no fees)" }
+              }
+            },
+            "ethUsd": { "type": "number", "description": "ETH/USD used" },
+            "ethUsdSource": { "type": "string", "description": "Where ethUsd came from" },
+            "terms": {
+              "type": "object",
+              "description": "Engine terms at the max principal (null when below $1)",
+              "properties": {
+                "maxPrincipalUsdc": { "type": "number" }, "feeRatePct": { "type": "number" }, "floorPrice": { "type": "number", "description": "USDC per $1 FeeNote" },
+                "termDays": { "type": "number" }, "drawLimitUsdc": { "type": "number" }
+              }
+            },
+            "eligible": { "type": "boolean", "description": "Would Gadai pre-approve a loan (on-chain checks run at apply time)" },
+            "reasons": { "type": "array", "items": { "type": "string" }, "description": "Why not eligible (empty when eligible)" },
+            "formula": { "type": "string", "description": "Full engine formula with the live numbers plugged in" },
+            "generatedAt": { "type": "string", "description": "ISO 8601 timestamp" },
+            "source": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

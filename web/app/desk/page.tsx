@@ -20,6 +20,7 @@ import { api } from "@/lib/api";
 import { ENV } from "@/lib/env";
 import { useSigner } from "@/lib/wallet";
 import { Addr, Btn, Card, Empty, Loading, Pill, ago, pct, usd, usdcRaw, useLoad } from "@/components/ui";
+import { MirrorTag } from "@/components/memo";
 
 export default function Desk() {
   const s = useSigner();
@@ -93,6 +94,7 @@ export default function Desk() {
                   </div>
                   <p className="mt-1 text-xs">{g.rationale}</p>
                   <p className="mt-1 text-[11px] text-mute num">principal {usdcRaw(g.principalRaw)} · note px {g.maxNotePrice.toFixed(2)} · {ago(g.createdAt)}</p>
+                  <MirrorTag s={g} />
                 </li>
               ))}
               {sig.data?.length === 0 && <li><Empty title="No signals yet">Each credit memo becomes a public signal here: approve or decline, a score, and the rationale.</Empty></li>}
@@ -203,7 +205,7 @@ function FollowForm({ personas, initial, onDone }: { personas: { id: string; nam
         </label>
         <div className="grid grid-cols-2 gap-2">
           {(["bracket", "dca"] as const).map((m) => (
-            <button key={m} onClick={() => setMode(m)} className={`rounded-[3px] border px-3 py-2 text-left transition-colors ${mode === m ? "border-violet bg-violet-tint ring-1 ring-violet" : "border-rule bg-paper hover:border-mute"}`}>
+            <button key={m} type="button" aria-pressed={mode === m} onClick={() => setMode(m)} className={`rounded-[3px] border px-3 py-2 text-left transition-colors ${mode === m ? "border-violet bg-violet-tint ring-1 ring-violet" : "border-rule bg-paper hover:border-mute"}`}>
               <div className="text-sm font-bold">{m === "bracket" ? "Bracket" : "DCA"}</div>
               <div className="text-xs text-mute">{m === "bracket" ? "Flash market buy + attached TP/SL" : "Flash TWAP, 1 slice/day"}</div>
             </button>

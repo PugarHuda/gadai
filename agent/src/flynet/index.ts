@@ -8,11 +8,11 @@ import type { Hono } from "hono";
 import { parseAbi, parseEventLogs } from "viem";
 import { ENVIRONMENTS, FlynetDiscoveryClient, FlynetMemberClient, FlynetOAuth, type FlynetEnvironment, type models } from "@flynetdev/core";
 import {
-  ADDR, ERC20_ABI, FEE_VAULT_ABI, drawMessage, flynetLinkMessage,
-  type Address, type DineMember, type DineState, type Draw, type DrawRequest, type Hex, type Loan, type Recommendation,
+  ADDR, ERC20_ABI, FEE_VAULT_ABI, diningSettleMessage, flynetLinkMessage,
+  type Address, type DineMember, type DineState, type Draw, type DrawQuote, type DrawRequest, type Hex, type Loan, type Recommendation,
 } from "@feedesk/shared";
 import type { Ctx } from "../ctx.ts";
-import { need, opt } from "../ctx.ts";
+import { jsonBody, need, opt, posInt } from "../ctx.ts";
 import { addEvent, getLoan, now, useNonce } from "../db/index.ts";
 import { llmChat } from "../bankr/index.ts";
 
@@ -85,7 +85,7 @@ function spendNonce(ctx: Ctx, nonce: string) {
   if (!nonce || nonce.length < 8) throw new HTTPException(400, { message: "nonce (≥8 chars) required" });
   if (!useNonce(ctx.db, nonce)) throw new HTTPException(409, { message: "nonce already used" });
 }
-const readV = <T>(ctx: Ctx, vault: Address, fn: string) => ctx.pub.readContract({ address: vault, abi: vaultAbi, functionName: fn as any }) as Promise<T>;
+const readV = <T>(ctx: Ctx, vault: Address, fn: string, args?: unknown[]) => ctx.pub.readContract({ address: vault, abi: vaultAbi, functionName: fn as any, args: args as any }) as Promise<T>;
 
 /** FLY price as (wei, cents) from a Flynet AccountBalance (docs: no price endpoint). Needs ≥ minCents of value so
  *  whole-cent rounding of balanceUsd can't skew the rate (1.49¢ → 1¢ would be a 49% error). */
@@ -231,23 +231,47 @@ const errMsg = (e: unknown) => String((e as Error)?.message ?? e).slice(0, 400);
 export const isRevert = (e: unknown) => /revert/i.test(errMsg(e)) && !/timed? ?out|timeout/i.test(errMsg(e));
 const drawing = new Set<number>(); // one draw/settle per loan at a time (in-process)
 
+const DRAW_TTL_SEC = 900n; // signature validity the agent quotes; FeeVault.addDraw enforces the deadline
+const centsOf = (v: unknown) => {
+  const cents = Number(v);
+  if (!Number.isSafeInteger(cents) || cents <= 0) throw new HTTPException(400, { message: "amountUsdCents must be a positive integer" });
+  return cents;
+};
+const uintOf = (v: unknown, what: string) => {
+  if (typeof v !== "string" || !/^\d{1,78}$/.test(v)) throw new HTTPException(400, { message: `${what} must be a decimal string` });
+  return BigInt(v);
+};
+/** The vault's own drawMessage for this amount at its current drawNonce (what the borrower signs and addDraw verifies). */
+export async function drawQuote(ctx: Ctx, loanId: number, amountUsdCents: unknown): Promise<DrawQuote> {
+  const loan = loanOr404(ctx, loanId);
+  const cents = centsOf(amountUsdCents);
+  if (!loan.vault) throw new HTTPException(409, { message: "loan has no vault" });
+  const amountRaw = BigInt(cents) * 10_000n; // USDC 6 dec
+  const [nonce, block] = await Promise.all([readV<bigint>(ctx, loan.vault, "drawNonce"), ctx.pub.getBlock()]);
+  const deadline = block.timestamp + DRAW_TTL_SEC;
+  const message = await readV<string>(ctx, loan.vault, "drawMessage", [amountRaw, nonce, deadline]);
+  return { message, amountUsdCents: cents, amountRaw: amountRaw.toString(), nonce: nonce.toString(), deadline: deadline.toString() };
+}
+
 export async function draw(ctx: Ctx, loanId: number, req: DrawRequest): Promise<Draw> {
   const loan = loanOr404(ctx, loanId);
-  const cents = Number(req.amountUsdCents);
-  if (!Number.isSafeInteger(cents) || cents <= 0) throw new HTTPException(400, { message: "amountUsdCents must be a positive integer" });
-  await assertBorrower(ctx, loan, drawMessage(loanId, cents, req.nonce), req.signature);
+  const cents = centsOf(req.amountUsdCents);
+  const nonce = uintOf(req.nonce, "nonce"), deadline = uintOf(req.deadline, "deadline");
   if (!loan.vault) throw new HTTPException(409, { message: "loan has no vault" });
+  const amountRaw = BigInt(cents) * 10_000n; // USDC 6 dec
+  await assertBorrower(ctx, loan, await readV<string>(ctx, loan.vault, "drawMessage", [amountRaw, nonce, deadline]), req.signature);
   if (!getLink(ctx, loanId)) throw new HTTPException(409, { message: "connect Blackbird first" });
   const open = ctx.db.prepare("SELECT id FROM draws WHERE loan_id = ? AND status IN ('pending','recorded')").all(loanId);
   if (drawing.has(loanId) || open.length) throw new HTTPException(409, { message: "a previous draw is still being processed; retry in a minute" });
   drawing.add(loanId);
   try {
-    spendNonce(ctx, req.nonce);
-    const amountRaw = BigInt(cents) * 10_000n; // USDC 6 dec
-    const [status, limit, drawn] = await Promise.all([
+    const [status, limit, drawn, onchainNonce, block] = await Promise.all([
       readV<number>(ctx, loan.vault, "status"), readV<bigint>(ctx, loan.vault, "drawLimit"), readV<bigint>(ctx, loan.vault, "drawn"),
+      readV<bigint>(ctx, loan.vault, "drawNonce"), ctx.pub.getBlock(),
     ]);
     if (status !== 3) throw new HTTPException(409, { message: "dining draws open once the loan is Active (funded)" });
+    if (nonce !== onchainNonce) throw new HTTPException(409, { message: `stale draw signature: vault drawNonce is ${onchainNonce}, signed ${nonce}; fetch a new draw-message` });
+    if (block.timestamp >= deadline) throw new HTTPException(409, { message: "draw signature expired; fetch a new draw-message" });
     if (drawn + amountRaw > limit) throw new HTTPException(409, { message: `draw exceeds the line: drawn ${drawn} + ${amountRaw} > limit ${limit} (USDC raw)` });
 
     // FLY/USD: the desk's app wallet first (not borrower-controlled); the member balance only if it is worth at least $1
@@ -257,8 +281,8 @@ export async function draw(ctx: Ctx, loanId: number, req: DrawRequest): Promise<
     const flyWei = (BigInt(cents) * px.wei) / px.cents;
     if (BigInt(appBal.balance.value) < flyWei) throw new HTTPException(409, { message: `desk FLY float insufficient: app wallet ${appBal.balance.value} wei < ${flyWei}` });
 
-    const id = Number(ctx.db.prepare("INSERT INTO draws (loan_id,amount_raw,fly_wei,location_id,flynet_reward_id,tx_hash,status,error,created_at) VALUES (?,?,?,?,?,?,?,?,?)")
-      .run(loanId, amountRaw.toString(), flyWei.toString(), req.locationId ?? null, null, null, "pending", null, now()).lastInsertRowid);
+    const id = Number(ctx.db.prepare("INSERT INTO draws (loan_id,amount_raw,fly_wei,location_id,flynet_reward_id,tx_hash,status,error,draw_nonce,deadline,borrower_sig,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")
+      .run(loanId, amountRaw.toString(), flyWei.toString(), req.locationId ?? null, null, null, "pending", null, nonce.toString(), deadline.toString(), req.signature, now()).lastInsertRowid);
     await recordDrawOnchain(ctx, id);
     if (drawRow(ctx, id).status === "recorded") await issueDrawFly(ctx, id);
     const d = rowToDraw(drawRow(ctx, id));
@@ -267,35 +291,40 @@ export async function draw(ctx: Ctx, loanId: number, req: DrawRequest): Promise<
   } finally { drawing.delete(loanId); }
 }
 
-/** Step 1: vault.addDraw by the Dynamic agent wallet. Clean revert: failed. Anything else stays pending for reconcile. */
+const markRecorded = (ctx: Ctx, r: R, hash: string | null, extra: R = {}) => {
+  setDraw(ctx, Number(r.id), { status: "recorded", tx_hash: hash, error: null });
+  addEvent(ctx.db, Number(r.loan_id), "draw", (hash ?? null) as Hex | null, { drawId: Number(r.id), amountRaw: r.amount_raw, flyWei: r.fly_wei, locationId: r.location_id, ...extra });
+};
+
+/** Step 1: vault.addDraw(amount, deadline, borrowerSig) by the Dynamic agent wallet. A revert is final only while the draw's
+ *  nonce is still unused on-chain (a resend of an already-mined draw reverts BadDrawSignature: that draw is booked, not failed).
+ *  Anything else stays pending for reconcile. */
 async function recordDrawOnchain(ctx: Ctx, drawId: number) {
   const d = drawRow(ctx, drawId);
   const loan = getLoan(ctx.db, Number(d.loan_id))!;
   try {
     const w = await ctx.wallet();
-    const r = await w.write({ address: loan.vault!, abi: vaultAbi, functionName: "addDraw", args: [BigInt(d.amount_raw)] });
-    setDraw(ctx, drawId, { status: "recorded", tx_hash: r.hash, error: null });
-    addEvent(ctx.db, loan.id, "draw", r.hash, { drawId, amountRaw: d.amount_raw, flyWei: d.fly_wei, locationId: d.location_id });
+    const r = await w.write({ address: loan.vault!, abi: vaultAbi, functionName: "addDraw", args: [BigInt(d.amount_raw), BigInt(d.deadline), d.borrower_sig as Hex] });
+    markRecorded(ctx, d, r.hash);
   } catch (e) {
+    const used = await readV<bigint>(ctx, loan.vault!, "drawNonce").then((n) => n > BigInt(d.draw_nonce)).catch(() => false);
+    if (used) return void markRecorded(ctx, d, d.tx_hash ?? null, { reconciled: true });
     setDraw(ctx, drawId, isRevert(e) ? { status: "failed", error: `addDraw reverted, nothing charged: ${errMsg(e)}` } : { error: `addDraw unconfirmed: ${errMsg(e)}` });
     ctx.log("flynet", `addDraw for draw ${drawId}: ${errMsg(e)}`);
   }
 }
 
-/** Pending draws whose addDraw outcome is unknown (e.g. receipt timeout): on-chain drawn() vs the sum of booked draws decides.
- *  ponytail: assumes only this module calls addDraw and at most 1 pending draw per loan (enforced in draw()). */
-export async function reconcilePending(ctx: Ctx, loanId: number, drawnOnchain: bigint, resend = recordDrawOnchain) {
-  const rows = ctx.db.prepare("SELECT * FROM draws WHERE loan_id = ? AND status IN ('pending','recorded','issued') ORDER BY id").all(loanId) as R[];
-  let booked = rows.filter((r) => r.status !== "pending").reduce((s, r) => s + BigInt(r.amount_raw), 0n);
-  for (const r of rows.filter((x) => x.status === "pending")) {
-    const age = Date.now() - Date.parse(r.created_at);
-    if (drawnOnchain - booked >= BigInt(r.amount_raw)) {
-      booked += BigInt(r.amount_raw);
-      setDraw(ctx, Number(r.id), { status: "recorded", error: null });
-      addEvent(ctx.db, loanId, "draw", r.tx_hash ?? null, { drawId: Number(r.id), amountRaw: r.amount_raw, flyWei: r.fly_wei, reconciled: true });
-    } else if (age > 30 * 60_000) setDraw(ctx, Number(r.id), { status: "failed", error: `${r.error ?? ""}; addDraw never landed on-chain (no debt, no FLY)` });
+/** Pending draws whose addDraw outcome is unknown (e.g. receipt timeout), decided by on-chain state, not by guessing:
+ *  vault.drawNonce past the draw's signed nonce = it landed (only a valid signature over that nonce consumes it; at most one
+ *  open draw per loan, enforced in draw()); chain time past its deadline = it can never land; else resend the same signed args. */
+export async function reconcilePending(ctx: Ctx, loanId: number, chain: { drawNonce: bigint; now: bigint }, resend = recordDrawOnchain) {
+  const rows = ctx.db.prepare("SELECT * FROM draws WHERE loan_id = ? AND status = 'pending' ORDER BY id").all(loanId) as R[];
+  for (const r of rows) {
+    if (r.draw_nonce == null) setDraw(ctx, Number(r.id), { status: "failed", error: "legacy draw without a borrower signature" });
+    else if (chain.drawNonce > BigInt(r.draw_nonce)) markRecorded(ctx, r, r.tx_hash ?? null, { reconciled: true });
+    else if (chain.now > BigInt(r.deadline)) setDraw(ctx, Number(r.id), { status: "failed", error: `${r.error ?? ""}; addDraw deadline passed unmined (no debt, no FLY)` });
     // ponytail: the wallet sends txs serially with a 180s receipt wait, so an addDraw still unmined after 5 min was dropped: resend
-    else if (age > 5 * 60_000) await resend(ctx, Number(r.id));
+    else if (Date.now() - Date.parse(r.created_at) > 5 * 60_000) await resend(ctx, Number(r.id));
   }
 }
 
@@ -342,7 +371,7 @@ export function settleAmounts(issued: { flyWei: string; amountRaw: string }[], s
 
 export async function settle(ctx: Ctx, loanId: number, body: { nonce: string; signature: Hex }): Promise<DineState> {
   const loan = loanOr404(ctx, loanId);
-  await assertBorrower(ctx, loan, drawMessage(loanId, 0, body.nonce), body.signature);
+  await assertBorrower(ctx, loan, diningSettleMessage(loanId, body.nonce), body.signature);
   if (!loan.vault) throw new HTTPException(409, { message: "loan has no vault" });
   if (drawing.has(loanId)) throw new HTTPException(409, { message: "a draw/settle is in progress; retry in a minute" });
   drawing.add(loanId);
@@ -399,7 +428,7 @@ export async function payCredit(ctx: Ctx, loanId: number) {
 // ─── routes + loop ───
 export function register(app: Hono, ctx: Ctx) {
   app.get("/api/flynet/connect", async (c) => {
-    const loanId = Number(c.req.query("loanId")), nonce = c.req.query("nonce") ?? "", sig = (c.req.query("sig") ?? "") as Hex;
+    const loanId = posInt(c.req.query("loanId"), "loanId"), nonce = c.req.query("nonce") ?? "", sig = (c.req.query("sig") ?? "") as Hex;
     const loan = loanOr404(ctx, loanId);
     await assertBorrower(ctx, loan, flynetLinkMessage(loanId, nonce), sig);
     spendNonce(ctx, nonce);
@@ -420,10 +449,11 @@ export function register(app: Hono, ctx: Ctx) {
       .run(st.loan_id, profile.id, t.access_token, t.refresh_token ?? "", new Date(Date.now() + t.expires_in * 1000).toISOString(), now());
     return c.redirect(`${ctx.webUrl}/dine/${st.loan_id}`, 302);
   });
-  app.get("/api/flynet/restaurants", async (c) => c.json(await recommend(ctx, Number(c.req.query("loanId")))));
-  app.get("/api/loans/:id/dine", async (c) => c.json(await dineState(ctx, Number(c.req.param("id")))));
-  app.post("/api/loans/:id/dine/draw", async (c) => c.json(await draw(ctx, Number(c.req.param("id")), await c.req.json())));
-  app.post("/api/loans/:id/dine/settle", async (c) => c.json(await settle(ctx, Number(c.req.param("id")), await c.req.json())));
+  app.get("/api/flynet/restaurants", async (c) => c.json(await recommend(ctx, posInt(c.req.query("loanId"), "loanId"))));
+  app.get("/api/loans/:id/dine", async (c) => c.json(await dineState(ctx, posInt(c.req.param("id"), "loan id"))));
+  app.get("/api/loans/:id/dine/draw-message", async (c) => c.json(await drawQuote(ctx, posInt(c.req.param("id"), "loan id"), c.req.query("amountUsdCents"))));
+  app.post("/api/loans/:id/dine/draw", async (c) => c.json(await draw(ctx, posInt(c.req.param("id"), "loan id"), await jsonBody<DrawRequest>(c))));
+  app.post("/api/loans/:id/dine/settle", async (c) => c.json(await settle(ctx, posInt(c.req.param("id"), "loan id"), await jsonBody<{ nonce: string; signature: Hex }>(c))));
 }
 
 export function start(ctx: Ctx): () => void {
@@ -435,7 +465,9 @@ export function start(ctx: Ctx): () => void {
       const step = (what: string, p: Promise<unknown>) => p.catch((e) => ctx.log("flynet", `${what}: ${errMsg(e)}`));
       for (const { loan_id } of ctx.db.prepare("SELECT DISTINCT loan_id FROM draws WHERE status = 'pending'").all() as R[]) {
         const loan = getLoan(ctx.db, Number(loan_id));
-        if (loan?.vault && !drawing.has(loan.id)) await step(`reconcile loan ${loan.id}`, readV<bigint>(ctx, loan.vault, "drawn").then((d) => reconcilePending(ctx, loan.id, d)));
+        if (loan?.vault && !drawing.has(loan.id))
+          await step(`reconcile loan ${loan.id}`, Promise.all([readV<bigint>(ctx, loan.vault, "drawNonce"), ctx.pub.getBlock()])
+            .then(([drawNonce, b]) => reconcilePending(ctx, loan.id, { drawNonce, now: b.timestamp })));
       }
       for (const d of ctx.db.prepare("SELECT id, loan_id FROM draws WHERE status = 'recorded'").all() as R[]) {
         if (!drawing.has(Number(d.loan_id))) await step(`issue FLY draw ${d.id}`, issueDrawFly(ctx, Number(d.id)));

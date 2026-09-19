@@ -16,6 +16,7 @@
     "contracts:test": "node --env-file-if-exists=.env scripts/forge.mjs test",
     "contracts:deploy": "node --env-file-if-exists=.env scripts/forge.mjs deploy",
     "typecheck": "pnpm -r typecheck",
-    "contracts:deploy:fork": "node --env-file-if-exists=.env scripts/forge.mjs deploy:fork"
+    "contracts:deploy:fork": "node --env-file-if-exists=.env scripts/forge.mjs deploy:fork",
+    "e2e": "npm --prefix tests/e2e test --"
   }
 }

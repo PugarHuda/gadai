@@ -132,10 +132,11 @@ export const CCA_AUCTION_ABI = [
 // The contracts module OWNS these three and replaces them if the Solidity changes (post a COORDINATION line).
 export const FEE_DESK_ABI = [
   "function activeVaultByPool(bytes32) view returns (address)",
-  "function createLoan((address borrower, bytes32 poolId, address feesManager, address creatorToken, uint256 principal, uint256 faceValue, uint256 drawLimit, string noteName, string noteSymbol) p) returns (uint256 loanId, address vault, address note)",
+  "function createLoan((address borrower, bytes32 poolId, address feesManager, address creatorToken, uint256 principal, uint256 faceValue, uint256 drawLimit, string noteName, string noteSymbol, bool keeperTokenCustody) p) returns (uint256 loanId, address vault, address note)",
   "function isVault(address) view returns (bool)",
   "function keeper() view returns (address)",
   "function loanCount() view returns (uint256)",
+  "function maxOracleAge() view returns (uint256)",
   "function onVaultClosed(bytes32 poolId)",
   "function owner() view returns (address)",
   "function setKeeper(address k)",
@@ -161,14 +162,13 @@ export const FEE_VAULT_ABI = [
   "function FLASH_SETTLEMENT() view returns (address)",
   "function MAX_AUCTION_BLOCKS() view returns (uint64)",
   "function MAX_CLAIM_DELAY_BLOCKS() view returns (uint64)",
-  "function MAX_ORACLE_AGE() view returns (uint256)",
   "function MAX_START_DELAY_BLOCKS() view returns (uint64)",
   "function MIN_OUT_BPS_OF_ORACLE() view returns (uint256)",
   "function PLEDGE_TIMEOUT() view returns (uint256)",
   "function UNI_SWAP_PROXY() view returns (address)",
   "function USDC() view returns (address)",
   "function WETH() view returns (address)",
-  "function addDraw(uint256 usdcAmount)",
+  "function addDraw(uint256 usdcAmount, uint256 deadline, bytes borrowerSig)",
   "function approveFlash(address token, uint256 amount)",
   "function approvedHash(bytes32) view returns (bool)",
   "function auction() view returns (address)",
@@ -185,13 +185,17 @@ export const FEE_VAULT_ABI = [
   "function disburse() returns (uint256 amount)",
   "function drawDebt() view returns (uint256)",
   "function drawLimit() view returns (uint256)",
+  "function drawMessage(uint256 usdcAmount, uint256 nonce, uint256 deadline) view returns (string)",
+  "function drawNonce() view returns (uint256)",
   "function drawn() view returns (uint256)",
   "function faceValue() view returns (uint256)",
   "function feesManager() view returns (address)",
   "function flashDomainSeparator() view returns (bytes32)",
   "function flashOrderDigest((address swapper, address vault, address recipient, address fromToken, address toToken, uint256 fromAmount, uint256 salt, uint256 deadline) o) view returns (bytes32)",
   "function isValidSignature(bytes32 hash, bytes) view returns (bytes4)",
+  "function keeperTokenCustody() view returns (bool)",
   "function loanId() view returns (uint256)",
+  "function maxOracleAge() view returns (uint256)",
   "function note() view returns (address)",
   "function noteSupply() view returns (uint256)",
   "function oracleMinUsdcOut(uint256 wethIn) view returns (uint256)",
@@ -213,6 +217,7 @@ export const FEE_VAULT_ABI = [
   "event Disbursed(address indexed borrower, uint256 amount)",
   "event Drawn(uint256 amount, uint256 drawDebt)",
   "event FlashOrderAuthorized(bytes32 indexed digest, address fromToken, uint256 fromAmount)",
+  "event KeeperTokenCustodyEnabled(address indexed keeper)",
   "event Pledged(address indexed borrower, uint256 shares)",
   "event Redeemed(address indexed holder, uint256 notes)",
   "event Released(address indexed borrower)",
@@ -220,11 +225,14 @@ export const FEE_VAULT_ABI = [
   "event TokenLegSent(address indexed keeper, address token, uint256 amount)",
   "error AuctionNotOver()",
   "error BadAuctionParams()",
+  "error BadDrawSignature()",
   "error BadFlashOrder()",
   "error BadOracle()",
   "error BadStatus(uint8 status)",
   "error BadToken(address token)",
   "error CannotRelease()",
+  "error CustodyDisabled()",
+  "error DrawExpired()",
   "error NotGraduated()",
   "error NotPledged()",
   "error OverDrawLimit()",
@@ -274,12 +282,16 @@ export type LoanStatus = "DECLINED" | "APPROVED" | "PLEDGED" | "AUCTION" | "ACTI
 export type LoanEventKind =
   | "applied" | "memo" | "declined" | "loan_created" | "pledged" | "auction_started" | "bid"
   | "disbursed" | "collected" | "swapped" | "flash_twap" | "token_leg_sent" | "repaid" | "draw"
-  | "desk_paid" | "released" | "cancelled" | "error";
+  | "desk_paid" | "released" | "cancelled" | "error" | "erc8004_registered" | "erc8004_feedback" | "erc8004_metadata";
 
 // ─── DTOs ───
 export type ApiError = { error: string };
 
 export type TxRequest = { to: Address; data: Hex; value?: string; chainId: number; label?: string };
+/** POST /api/loans (approved) also returns claimFirst: an optional FeesManager.collectFees tx to sign BEFORE pledgeTx
+ *  (accrued fees go to the borrower instead of the vault). null when nothing is accrued or the builder failed. */
+export type ClaimFirst = { tx: TxRequest; claimableWethRaw: string; claimableTokenRaw: string; note: string };
+export type ApplyResponse = LoanDetail & { claimFirst?: ClaimFirst | null };
 
 export type Persona = {
   id: string; // "prudent" | "momentum" | ...
@@ -353,6 +365,9 @@ export type Signal = {
   maxNotePrice: number;
   rationale: string;
   createdAt: string;
+  /** Were followers' mirror buys queued for this signal? mirrorNote says why not (e.g. rules memo, no LLM review). */
+  mirrorable: boolean;
+  mirrorNote: string | null;
 };
 
 export type DebtState = {
@@ -391,7 +406,12 @@ export type LoanEvent = { id: number; loanId: number; kind: LoanEventKind; txHas
 export type LoanDetail = Loan & { events: LoanEvent[]; signals: Signal[]; memos: Memo[] };
 
 /** POST /api/loans body. The BORROWER (fee beneficiary) signs applyMessage via EIP-191 personal_sign (EOA, 1271 or 6492). */
-export type ApplyRequest = { token: Address; borrower: Address; controller?: Address; via?: "web" | "bankr-skill"; nonce: string; signature: Hex };
+export type ApplyRequest = {
+  token: Address; borrower: Address; controller?: Address; via?: "web" | "bankr-skill"; nonce: string; signature: Hex;
+  /** Optional ERC-8004 agentId (decimal string) owned by the borrower or controller. Its Gadai repayment reputation can only
+   *  lower the line; on release the desk gives it feedback. */
+  erc8004AgentId?: string;
+};
 /** controller defaults to borrower; pass the SAME value you POST (omitted controller ⇒ sign with controller = borrower). */
 export const applyMessage = (token: Address, borrower: Address, controller: Address, nonce: string) =>
   `Gadai: apply for a loan against my creator fees\nToken: ${token.toLowerCase()}\nBorrower: ${borrower.toLowerCase()}\nController: ${controller.toLowerCase()}\nNonce: ${nonce}`;
@@ -530,12 +550,18 @@ export type DineState = {
   drawnRaw: string;
   draws: Draw[];
 };
-/** Borrower (or controller) signs this EIP-191 message to authorize a draw. */
-export const drawMessage = (loanId: number, amountUsdCents: number, nonce: string) =>
-  `Gadai dining draw\nLoan: ${loanId}\nAmount (USD cents): ${amountUsdCents}\nNonce: ${nonce}`;
+/** Borrower personal_signs this to consent to one draw; FeeVault.addDraw re-derives it on-chain (FeeVault.drawMessage) and
+ *  checks the signature (EIP-191 EOA or EIP-1271). Byte-identical to the Solidity string; nonce = vault.drawNonce(). */
+export const drawMessage = (vault: Address, chainId: number, usdcRaw: bigint | string, nonce: bigint | string, deadline: bigint | string) =>
+  `Gadai dining draw\nVault: ${vault.toLowerCase()}\nChain: ${chainId}\nAmount (USDC raw): ${usdcRaw}\nNonce: ${nonce}\nDeadline: ${deadline}`;
+/** GET /api/loans/:id/dine/draw-message?amountUsdCents=N: the exact text to sign (read from the vault) + the fields it covers. */
+export type DrawQuote = { message: string; amountUsdCents: number; amountRaw: string; nonce: string; deadline: string };
+/** Borrower signs this EIP-191 message to settle unused dining FLY (off-chain auth, checked by the agent). */
+export const diningSettleMessage = (loanId: number, nonce: string) => `Gadai dining settle\nLoan: ${loanId}\nNonce: ${nonce}`;
 export const flynetLinkMessage = (loanId: number, nonce: string) =>
   `Gadai: link my Blackbird account to loan ${loanId}\nNonce: ${nonce}`;
-export type DrawRequest = { amountUsdCents: number; locationId?: string; nonce: string; signature: Hex };
+/** POST /api/loans/:id/dine/draw: nonce/deadline are the DrawQuote values the signature covers. */
+export type DrawRequest = { amountUsdCents: number; locationId?: string; nonce: string; deadline: string; signature: Hex };
 
 /** Documented Bankr chat phrase for pledging (docs.bankr.bot fee-splitting.md). */
 export const pledgeChatText = (token: Address, vault: Address) =>

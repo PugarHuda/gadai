@@ -15,6 +15,9 @@ export type BankrTokenEntry = {
   source: string; chain: string;
 };
 export type DailyWeth = { date: string; weth: string };
+/** Bankr fee APIs return "<0.000001" for dust amounts (claimable.*, totals.*, daily weth): count as 0 (conservative).
+ *  Wrap every fee-API decimal string with this before parseUnits/Number. */
+export const dust = (s: string) => (s.startsWith("<") ? "0" : s);
 export type TokenFees = {
   address: Address; // beneficiary the history belongs to
   chain: string; days: number; tokens: BankrTokenEntry[];
@@ -58,7 +61,7 @@ async function call<T>(path: string, body?: unknown, cacheMs = 0): Promise<T> {
     ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }
     : undefined);
   const text = await res.text();
-  if (!res.ok) throw new Error(`Bankr ${body ? "POST" : "GET"} ${path} → ${res.status}: ${text.slice(0, 300)}`);
+  if (!res.ok) throw Object.assign(new Error(`Bankr ${body ? "POST" : "GET"} ${path} → ${res.status}: ${text.slice(0, 300)}`), { status: res.status });
   const v = JSON.parse(text) as T;
   if (cacheMs) cache.set(key, { at: Date.now(), v });
   return v;
@@ -88,6 +91,16 @@ export function assertPledgeTx(tx: TxRequest, e: { feesManager: Address; poolId:
   if (tx.data.toLowerCase() !== want.toLowerCase()) fail(`calldata ≠ updateBeneficiary(${e.poolId}, ${e.vault}) = ${want}`);
 }
 
+/** Claim-first tx the borrower may sign before pledging: must be exactly FeesManager.collectFees(poolId) on Base. */
+export function assertClaimTx(tx: TxRequest, e: { feesManager: Address; poolId: Hex }): void {
+  const fail = (why: string) => { throw new Error(`claim tx rejected: ${why} (${JSON.stringify(tx)})`); };
+  if (tx.chainId !== CHAIN_ID_BASE) fail(`chainId ${tx.chainId}`);
+  if (!isAddressEqual(tx.to, e.feesManager)) fail(`to ${tx.to} ≠ fees manager ${e.feesManager}`);
+  if (tx.value !== undefined && BigInt(tx.value) !== 0n) fail("nonzero value");
+  const want = encodeFunctionData({ abi: parseAbi(FEES_MANAGER_ABI), functionName: "collectFees", args: [e.poolId] });
+  if (tx.data.toLowerCase() !== want.toLowerCase()) fail(`calldata ≠ collectFees(${e.poolId}) = ${want}`);
+}
+
 export async function buildClaim(beneficiary: Address, tokens: Address[]): Promise<{ txs: TxRequest[]; errors: unknown[] }> {
   const r = await call<{ transactions: { to: Address; data: Hex; chainId: number; description?: string }[]; errors: unknown[] }>(
     "/public/doppler/build-claim", { beneficiaryAddress: beneficiary, tokenAddresses: tokens });
@@ -95,6 +108,8 @@ export async function buildClaim(beneficiary: Address, tokens: Address[]): Promi
 }
 
 // ─── LLM Gateway (OpenAI-compatible) ───
+/** 402 / insufficient_credits only. The underwriter may fall back to rules on this (and nothing else) when opted in. */
+export class LlmNoCredits extends Error {}
 export type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 export async function llmChat(messages: ChatMessage[], o: { model: string; maxTokens?: number }): Promise<string> {
   const key = process.env.BANKR_LLM_KEY || process.env.BANKR_API_KEY;
@@ -105,7 +120,8 @@ export async function llmChat(messages: ChatMessage[], o: { model: string; maxTo
     body: JSON.stringify({ model: o.model, messages, max_tokens: o.maxTokens ?? 1200, temperature: 0 }),
   });
   const text = await res.text();
-  if (res.status === 401 || res.status === 402) throw new Error(`Bankr LLM credits/key: ${res.status} ${text.slice(0, 300)}`);
+  if (res.status === 401) throw new Error(`Bankr LLM key rejected (401): ${text.slice(0, 300)}`); // bad key: never a fallback case
+  if (res.status === 402 || (!res.ok && /insufficient_credits/.test(text))) throw new LlmNoCredits(`Bankr LLM out of credits (${res.status}): ${text.slice(0, 300)}`);
   if (!res.ok) throw new Error(`Bankr LLM ${o.model} → ${res.status}: ${text.slice(0, 300)}`);
   const content = JSON.parse(text)?.choices?.[0]?.message?.content;
   if (typeof content !== "string") throw new Error(`Bankr LLM ${o.model}: no message content in ${text.slice(0, 300)}`);

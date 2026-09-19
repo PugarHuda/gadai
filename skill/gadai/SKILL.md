@@ -23,7 +23,7 @@ Gadai lends USDC to Bankr agents and creators. The collateral is the creator-fee
 
 Gadai API base URL. Every call below uses `$FD`, so set it first:
 ```bash
-FD=https://FEEDESK_API_HOST
+FD=https://aqua-economic-moss-modes.trycloudflare.com
 ```
 Writes (sign a message, submit a transaction) use your own wallet. **Inside Bankr**, use your built-in tools for signing a message and submitting an arbitrary transaction. **Outside Bankr** (any other agent with the Bankr CLI or Wallet API), use `bankr wallet sign` / `bankr wallet submit`, or `https://api.bankr.bot/wallet/sign` / `/wallet/submit` with your Bankr API key in `X-API-Key`.
 
@@ -73,6 +73,14 @@ The response is a `Quote`:
 
 Present the quote like this: "Up to **X USDC** now. You repay **Y USDC** (fee **Z%**) out of your fees, expected in about **N days** at the current rate. Fees you haven't claimed yet (**W WETH**) go to the vault and count as your first repayment. While the loan is open, your fees go to the vault and not to your wallet, so any fee-funded auto top-up stops too."
 
+### 2a. Paid credit report (x402, works without the desk)
+
+The same engine math is also sold on Bankr x402 Cloud for **$0.02 USDC** per call, for any Base Doppler token. Use it when `$FD` is unreachable, or when the user wants a credit report on a token they don't own. It costs money, so ask the user first ("This report costs $0.02 USDC. Go ahead?").
+```bash
+bankr x402 call "https://x402.bankr.bot/0x0455408228f460722ecbe80789bcf1628b479e98/gadai-credit?token=<TOKEN>&borrower=<BORROWER>" --max-payment 0.02
+```
+Inside Bankr, use your built-in x402 call tool with that URL. `borrower` is optional. The response has `eligible`, `reasons[]`, `history` (r7/r30/rLife in WETH/day, slope30d, cv30d), `terms` (`maxPrincipalUsdc`, `feeRatePct`, `floorPrice`, `termDays`, `drawLimitUsdc`) and `formula`. Show the `formula`. This report is a pre-approval without on-chain checks: to borrow, still get the quote in step 2 and apply in step 3. A `400` means a bad address, and no payment was taken.
+
 ## 3. Apply (the LLM credit decision)
 
 Continue only after the user says to apply. The desk only accepts an application signed by the borrower wallet, so nobody can apply against someone else's fees.
@@ -98,8 +106,9 @@ If `signer` is not the borrower address, stop. The desk would reject it with 401
 curl -s -X POST "$FD/api/loans" -H 'content-type: application/json' \
   -d '{"token":"<TOKEN>","borrower":"<BORROWER>","via":"bankr-skill","nonce":"<NONCE>","signature":"<SIGNATURE>"}'
 ```
+If the borrower has an ERC-8004 agent identity (Base IdentityRegistry), you may add `"erc8004AgentId":"<AGENT_ID>"` (decimal string) to that body. The agent must be owned by the borrower wallet, or the desk answers `400`. Its Gadai repayment record can only **lower** the line, never raise it, and a repaid loan adds positive feedback to it.
 
-The response is a `LoanDetail`: `id`, `status`, `vault`, `note`, `terms`, `leadMemo`, `memos[]`, `pledgeTx`, `pledgeChatText`, `events[]`.
+The response is a `LoanDetail`: `id`, `status`, `vault`, `note`, `terms`, `leadMemo`, `memos[]`, `pledgeTx`, `pledgeChatText`, `events[]`, plus `claimFirst` (an optional transaction, or `null`; see step 4). Keep `claimFirst`: it is returned only by this call.
 - `status: "DECLINED"`: show `leadMemo.rationale` and `leadMemo.risks`, then stop.
 - `status: "APPROVED"`: show every memo in `memos[]` (persona, model, decision, principal, confidence, rationale). The desk's Dynamic agent wallet has already deployed the loan's vault on-chain; the `loan_created` event has the tx hash.
 - HTTP `401`: missing nonce/signature, or the signature is not the borrower's over that exact message. Check the 5 lines (lowercase addresses, `\n` separators, Controller = borrower) and that you signed with the borrower wallet. Sign again with a **new** nonce.
@@ -111,7 +120,9 @@ The response is a `LoanDetail`: `id`, `status`, `vault`, `note`, `terms`, `leadM
 
 Tell the user exactly what is about to happen: "This moves 100% of your fee share on <SYMBOL> to vault <VAULT>. Fees will pay down the loan. When the debt reaches zero, anyone (including you) can call `release()` to move the share back to you."
 
-If `pledgeTx` is `null`, fetch it with `GET $FD/api/loans/<ID>/pledge-tx`. Run the checks from Hard rule 2. Then submit with **one** of these options:
+**4a. Optional: claim accrued fees first.** If the apply response had a non-null `claimFirst`, offer it **before** the pledge: "You have <claimFirst.claimableWethRaw / 1e18> WETH of unclaimed fees. Claim them to your wallet first? If you skip this, they go to the vault and count as your first repayment." Only on a "yes", check `claimFirst.tx.chainId == 8453`, `claimFirst.tx.to` equals `inputs.feesManager` (case-insensitive) and `claimFirst.tx.data`, lowercased, is **exactly** `"0x817db73b"` + `loan.poolId` without `0x` (that is `collectFees(poolId)`, 74 characters). Submit it the same way as Option A below, with `claimFirst.tx` in place of `pledgeTx`, and wait for it to confirm. Then continue with the pledge. Skipping it is safe.
+
+**4b. Pledge.** If `pledgeTx` is `null`, fetch it with `GET $FD/api/loans/<ID>/pledge-tx`. Run the checks from Hard rule 2. Then submit with **one** of these options:
 
 **Option A: submit the raw transaction** `{ "to": pledgeTx.to, "chainId": 8453, "value": "0", "data": pledgeTx.data }`:
 - Inside Bankr: your built-in tool for submitting an arbitrary transaction, with exactly those fields.

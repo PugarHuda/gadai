@@ -162,13 +162,13 @@ Cancellation covers three cases: the borrower never pledged (keeper), a pledge w
    - Call `listLocations`, keep `paymentsEnabled`, drop `coordinate {0,0}`.
    - Add open hours, `listSpecials`/`listChallenges` for the top candidates, and the member's `listCheckIns`/`listMemberships`.
    - The Bankr LLM ranks the top 5 and writes a `reason` for each.
-4. **Draw:** `POST /api/loans/:id/dine/draw {amountUsdCents, locationId?, nonce, signature}`:
-   1. Verify the EIP-191 `drawMessage` from the borrower or controller, with a single-use nonce.
-   2. Check the loan is Active and `drawn + amount ≤ drawLimit`.
-   3. FLY amount = USD / FLY price. The price comes from the member wallet (`balanceUsd.value / balance.value`), and failing that from the app balance response. If neither gives a price, return 409 "cannot price FLY".
+4. **Draw:** `GET /api/loans/:id/dine/draw-message?amountUsdCents=N` returns `DrawQuote {message, amountRaw, nonce, deadline}`: the vault's own `drawMessage(amountRaw, drawNonce, deadline)` (deadline = chain time + 15 min). The borrower personal_signs `message`, then `POST /api/loans/:id/dine/draw {amountUsdCents, locationId?, nonce, deadline, signature}`:
+   1. Verify the signature is the borrower's (EIP-191, or EIP-1271 for a contract wallet) over that exact vault message; `nonce` must equal the vault's current `drawNonce` and `deadline` must not have passed.
+   2. Check the loan is Active and `drawn + amount ≤ drawLimit`. One open draw per loan.
+   3. FLY amount = USD / FLY price. The price comes from the app balance, and failing that from the member wallet (`balanceUsd.value / balance.value`, at least $1 of FLY). If neither gives a price, return 409 "cannot price FLY".
    4. Check the app FLY float with `rewards.getBalance()`. If it's short, return 409 "desk FLY float insufficient".
-   5. `rewards.issueReward({userId: sub, amount, idempotencyKey:"draw-<loan>-<nonce>"})`.
-   6. The agent wallet calls `vault.addDraw(usdcRaw)`. If this tx fails, the draw is stored `issued` with `txHash null` and the flynet loop retries it.
+   5. The agent wallet calls `vault.addDraw(usdcRaw, deadline, borrowerSig)`; the vault re-derives the message and checks the signature on-chain, so the keeper cannot add debt the borrower did not sign. Debt first: the draw row is `pending`, then `recorded`.
+   6. `rewards.issueReward({userId: sub, amount, idempotencyKey:"feedesk-draw-<drawId>"})` → `issued`. An unknown `addDraw` outcome is decided by on-chain state: `drawNonce` past the signed nonce means it landed; past the deadline means it never can (`failed`); otherwise the loop resends the same signed args.
    7. The borrower pays at the restaurant in the Blackbird app (the only payee path the docs allow). The fee stream repays the draw through `payDesk`.
 5. **Settle leftover FLY:** `POST /api/loans/:id/dine/settle` → `createPaymentIntent` + `confirmPaymentIntent` to our own merchant (member token), which pulls leftover FLY back. The agent then pays the equivalent USDC into the vault from the desk wallet, which reduces `drawDebt` through `payDesk` accounting.
 
@@ -214,7 +214,7 @@ Validation:
 - `maxNotePrice ∈ [floorPrice, 1]`
 - otherwise it counts as a parse failure (fail closed)
 
-The raw text is stored in `memos.raw_text`. HTTP 401 and 402 errors surface as `"Bankr LLM credits/key: …"`.
+The raw text is stored in `memos.raw_text`. A 401 fails as `"Bankr LLM key rejected (401): …"` and apply returns 502. A 402 or `insufficient_credits` fails the same way (`"Bankr LLM out of credits (…)"`) unless `UNDERWRITER_ENGINE_ONLY=1`: then each persona falls back to its deterministic rule set (`engine.ts ruleMemo`). Those memos are labeled model `"rules (Bankr LLM unavailable)"`, the UI tags them "no LLM review", and their signals queue no follower mirror orders (`mirrorable: false` plus a `mirrorNote`). A 401 never falls back.
 
 ## 5. Agent modules: ownership and exports
 
@@ -232,7 +232,7 @@ The contract in `agent/src/ctx.ts` applies. Each `src/<m>/index.ts` may export `
 | `flash` (agent-social-flash) | `flash(path, body?, method?)` (throws on non-2xx with the Flash error) · `searchToken(token): Promise<{priceUsd: number; riskFlagged: boolean}>` · `twapSellTokenLeg(ctx, loan, amount: bigint): Promise<{orderId: string}>` (both modes) · `pollFlashOrders(ctx): Promise<void>` |
 | `social` (agent-social-flash) | `publishSignals(ctx, loanId, memos: Memo[], quote: Quote): Signal[]` (also queues mirrors) · `register`: `/api/signals`, `/api/leaderboard`, `/api/follows*`, `/api/mirrors*`, `/api/dynamic/webhook` · `start`: mirror poller + auto-mirror executor |
 | `cca` (agent-flynet-cca) | `launchAuction(ctx, loan): Promise<{auction: Address; txHash: Hex}>` (includes the anchor bid) · `auctionState(ctx, loan): Promise<AuctionState>` · `bidPlan(ctx, loan, req: BidPlanRequest): Promise<BidPlan>` · `exitPlan(ctx, loan, req): Promise<ExitPlan>` · `start`: settle watcher (disburse/cancel, desk exit + claim) · `register`: `/api/loans/:id/auction*` |
-| `flynet` (agent-flynet-cca) | `recommend(ctx, loanId): Promise<Recommendation[]>` · `register`: `/api/flynet/*`, `/api/loans/:id/dine*` · `start`: retries `addDraw` for `issued` draws with no tx, and refreshes tokens |
+| `flynet` (agent-flynet-cca) | `recommend(ctx, loanId): Promise<Recommendation[]>` · `register`: `/api/flynet/*`, `/api/loans/:id/dine*` · `start`: reconciles `pending` draws against the vault (`drawNonce`, deadline), issues FLY for `recorded` ones, pays settle credits, and refreshes tokens |
 
 ## 6. Data model (`agent/src/db/schema.sql`, owned by agent-core; other modules request changes via COORDINATION)
 
@@ -304,8 +304,9 @@ DTO names refer to `shared/src/index.ts`.
 | GET `/api/flynet/callback?code&state` | flynet | none | 302 to `${WEB_URL}/dine/:loanId` |
 | GET `/api/flynet/restaurants?loanId` | flynet | none | `Recommendation[]` |
 | GET `/api/loans/:id/dine` | flynet | none | `DineState` |
+| GET `/api/loans/:id/dine/draw-message?amountUsdCents` | flynet | none | `DrawQuote` |
 | POST `/api/loans/:id/dine/draw` | flynet | `DrawRequest` | `Draw` |
-| POST `/api/loans/:id/dine/settle` | flynet | `{nonce, signature}` (`drawMessage` with amount 0) | `DineState` |
+| POST `/api/loans/:id/dine/settle` | flynet | `{nonce, signature}` (`diningSettleMessage`) | `DineState` |
 
 **Leaderboard score** (social):
 - `repaidPct` = Σ(face − outstanding) / Σ face over loans the persona approved that reached Active, read on-chain.

@@ -21,8 +21,10 @@ export async function api<T>(path: string, init?: { method?: string; body?: unkn
   } catch {
     /* non-JSON body */
   }
-  if (!r.ok && [502, 503, 504].includes(r.status)) throw new AgentOffline(`Agent at ${ENV.AGENT_URL} is not answering (HTTP ${r.status})`);
-  if (!r.ok) throw new Error((j as { error?: string } | null)?.error ?? `${r.status} ${text.slice(0, 200)}`);
+  // Only a gateway/tunnel failure (no JSON body from the agent) means offline; the agent's own 502/503 carry a real reason (missing key, access pending).
+  const agentError = (j as { error?: string } | null)?.error;
+  if (!r.ok && [502, 503, 504].includes(r.status) && !agentError) throw new AgentOffline(`Agent at ${ENV.AGENT_URL} is not answering (HTTP ${r.status})`);
+  if (!r.ok) throw new Error(agentError ?? `${r.status} ${text.slice(0, 200)}`);
   return j as T;
 }
 

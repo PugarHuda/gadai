@@ -1,15 +1,17 @@
 "use client";
 import { use, useState } from "react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { encodeFunctionData } from "viem";
 import { CHAIN_ID_BASE, type DeskInfo, type LoanDetail, type TxRequest } from "@feedesk/shared";
 import { api } from "@/lib/api";
 import { noteAbi, publicClient, vaultAbi } from "@/lib/chain";
 import { useSigner } from "@/lib/wallet";
 import { Addr, Btn, Card, Lifecycle, Loading, Pill, Tx, ago, pct, usdcRaw, useLoad } from "@/components/ui";
-import { Memos } from "@/components/memo";
+import { Memos, MirrorTag } from "@/components/memo";
 import { PledgePanel } from "@/components/pledge";
 import { AuctionPanel } from "@/components/auction";
+import { Erc8004Badge } from "@/components/erc8004";
 
 const KIND_LABEL: Record<string, string> = {
   applied: "applied",
@@ -30,6 +32,9 @@ const KIND_LABEL: Record<string, string> = {
   released: "lien released",
   cancelled: "cancelled",
   error: "error",
+  erc8004_registered: "borrower ERC-8004 agent linked",
+  erc8004_feedback: "repayment feedback (ERC-8004 reputation)",
+  erc8004_metadata: "loan outcome published (ERC-8004)",
 };
 const STAMP: Record<string, string> = { APPROVED: "text-violet", PLEDGED: "text-amber-ink", AUCTION: "text-amber-ink", ACTIVE: "text-desk", RELEASED: "text-violet", DECLINED: "text-stamp", CANCELLED: "text-stamp" };
 
@@ -43,7 +48,10 @@ function nextStep(l: LoanDetail): string {
     case "ACTIVE": return "USDC is disbursed. Fees collected into the vault repay the FeeNotes; noteholders redeem 1:1 as they arrive.";
     case "RELEASED": return "Repaid and released. The fee rights are back with the borrower.";
     case "DECLINED": return "The lead underwriter declined this application. The memos below explain why.";
-    case "CANCELLED": return "The auction did not fund the loan, so cancel() returned the fee rights to the borrower.";
+    case "CANCELLED":
+      if (!l.vault) return "Approved, but the loan was never opened on-chain (no vault was created). Nothing was pledged or moved.";
+      if (!l.auction) return "The vault was closed before any auction: the fee rights were never pledged, or were returned to the borrower by cancel().";
+      return "The auction did not fund the loan, so cancel() returned the fee rights to the borrower.";
     default: return l.status;
   }
 }
@@ -51,6 +59,7 @@ const KEEPER = new Set(["collected", "swapped", "flash_twap", "token_leg_sent", 
 
 export default function LoanPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  if (!/^[1-9]\d{0,14}$/.test(id)) notFound();
   const s = useSigner();
   const desk = useLoad(() => api<DeskInfo>("/api/desk"));
   const q = useLoad(() => api<LoanDetail>(`/api/loans/${id}`), [id], 15_000);
@@ -63,6 +72,8 @@ export default function LoanPage({ params }: { params: Promise<{ id: string }> }
   const [redeemAmt, setRedeemAmt] = useState("");
 
   return (
+    <>
+    {!loan && <h1 className="h1 mb-6">Loan #{id}</h1>}
     <Loading l={q.loading} e={q.error} retry={q.reload} what="loan details">
       {loan && (
         <div className="space-y-6">
@@ -73,6 +84,7 @@ export default function LoanPage({ params }: { params: Promise<{ id: string }> }
                   ${loan.symbol} <span className="num align-middle text-xl font-normal text-mute">loan #{loan.id}</span>
                 </h1>
                 <p className="mt-3 text-sm text-mute">Filed via {loan.via}</p>
+                <Erc8004Badge />
               </div>
               <span key={loan.status} className={`stamp-mark ${STAMP[loan.status] ?? "text-mute"}`} aria-label={`Status: ${loan.status}`}>
                 {loan.status}
@@ -209,6 +221,7 @@ export default function LoanPage({ params }: { params: Promise<{ id: string }> }
                         <span><Pill s={sg.decision} /> <span className="num ml-1">{Math.round(sg.score)}</span></span>
                       </div>
                       <p className="text-xs text-mute">{sg.rationale}</p>
+                      <MirrorTag s={sg} />
                     </li>
                   ))}
                 </ul>
@@ -219,6 +232,7 @@ export default function LoanPage({ params }: { params: Promise<{ id: string }> }
         </div>
       )}
     </Loading>
+    </>
   );
 }
 

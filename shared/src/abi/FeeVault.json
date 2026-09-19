@@ -56,8 +56,18 @@
             "name": "noteSymbol",
             "type": "string",
             "internalType": "string"
+          },
+          {
+            "name": "keeperTokenCustody",
+            "type": "bool",
+            "internalType": "bool"
           }
         ]
+      },
+      {
+        "name": "maxOracleAge_",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "nonpayable"
@@ -155,19 +165,6 @@
   },
   {
     "type": "function",
-    "name": "MAX_ORACLE_AGE",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "MAX_START_DELAY_BLOCKS",
     "inputs": [],
     "outputs": [
@@ -252,6 +249,16 @@
         "name": "usdcAmount",
         "type": "uint256",
         "internalType": "uint256"
+      },
+      {
+        "name": "deadline",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "borrowerSig",
+        "type": "bytes",
+        "internalType": "bytes"
       }
     ],
     "outputs": [],
@@ -525,6 +532,48 @@
   },
   {
     "type": "function",
+    "name": "drawMessage",
+    "inputs": [
+      {
+        "name": "usdcAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "nonce",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "deadline",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "drawNonce",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "drawn",
     "inputs": [],
     "outputs": [
@@ -662,7 +711,33 @@
   },
   {
     "type": "function",
+    "name": "keeperTokenCustody",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "loanId",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "maxOracleAge",
     "inputs": [],
     "outputs": [
       {
@@ -1048,6 +1123,19 @@
   },
   {
     "type": "event",
+    "name": "KeeperTokenCustodyEnabled",
+    "inputs": [
+      {
+        "name": "keeper",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "Pledged",
     "inputs": [
       {
@@ -1153,6 +1241,11 @@
   },
   {
     "type": "error",
+    "name": "BadDrawSignature",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "BadFlashOrder",
     "inputs": []
   },
@@ -1186,6 +1279,16 @@
   {
     "type": "error",
     "name": "CannotRelease",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "CustodyDisabled",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "DrawExpired",
     "inputs": []
   },
   {

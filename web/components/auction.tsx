@@ -49,8 +49,8 @@ export function AuctionPanel({ loan, personas, onChange }: { loan: LoanDetail; p
       <Loading l={st.loading} e={st.error} retry={st.reload} what="the live auction state">
         {a && (
           <div className="grid gap-6 md:grid-cols-[1.2fr_1fr]">
-            <div>
-              <div className="flex items-end justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
                 <div>
                   <div className="label">raised / required</div>
                   <div className="num text-3xl">{usdcRaw(a.currencyRaisedRaw)} <span className="text-base text-mute">/ {usdcRaw(a.requiredRaw)}</span></div>
@@ -71,9 +71,10 @@ export function AuctionPanel({ loan, personas, onChange }: { loan: LoanDetail; p
               <dl className="mt-3 grid grid-cols-3 gap-2 text-sm">
                 <div><dt className="label">floor</dt><dd className="num">{a.floorPrice.toFixed(4)}</dd></div>
                 <div><dt className="label">notes offered</dt><dd className="num">{usdcRaw(a.totalSupplyRaw)}</dd></div>
-                <div><dt className="label">auction</dt><dd><Addr a={a.auction} /></dd></div>
+                <div className="min-w-0"><dt className="label">auction</dt><dd className="break-all"><Addr a={a.auction} /></dd></div>
               </dl>
-              <table className="tbl mt-4">
+              <div className="mt-4 overflow-x-auto">
+              <table className="tbl">
                 <thead><tr><th>bid</th><th>owner</th><th className="text-right">max px</th><th className="text-right">amount</th><th className="text-right">filled</th><th /></tr></thead>
                 <tbody>
                   {a.bids.map((b) => (
@@ -89,6 +90,7 @@ export function AuctionPanel({ loan, personas, onChange }: { loan: LoanDetail; p
                   {a.bids.length === 0 && <tr><td colSpan={6} className="text-mute">No bids yet.</td></tr>}
                 </tbody>
               </table>
+              </div>
             </div>
 
             <div className="space-y-4">

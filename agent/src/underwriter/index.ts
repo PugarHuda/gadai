@@ -1,13 +1,13 @@
 // Underwriter: Bankr fee data → deterministic engine (engine.ts) → one credit memo per persona via Bankr LLM Gateway.
-// The lead persona (PERSONAS[0]) is binding. The LLM may only decline or lower the principal.
+// The lead persona (PERSONAS[0]) is binding. The LLM (or, engine-only, its rule set) may only decline or lower the principal.
 import { HTTPException } from "hono/http-exception";
 import { parseAbi, parseUnits, zeroAddress } from "viem";
 import type { Address, FeeInputs, Memo, Persona, Quote, Terms } from "@feedesk/shared";
 import { ADDR, ERC20_ABI, FEE_DESK_ABI } from "@feedesk/shared";
 import type { Ctx } from "../ctx.ts";
 import { opt } from "../ctx.ts";
-import { claimableFees, llmChat, tokenFees } from "../bankr/index.ts";
-import { HORIZON_DAYS, MIN_HISTORY_DAYS, beneficiaryFactor, computeTerms, parseMemo, type TermsResult } from "./engine.ts";
+import { claimableFees, dust, llmChat, LlmNoCredits, tokenFees } from "../bankr/index.ts";
+import { HORIZON_DAYS, MIN_HISTORY_DAYS, RULES_MODEL, beneficiaryFactor, computeTerms, parseMemo, reputationFactor, ruleMemo, type Reputation, type TermsResult } from "./engine.ts";
 
 export const PERSONAS: Persona[] = [
   { id: "prudent", name: "Prudent", model: opt("BANKR_LLM_MODEL", "claude-sonnet-4.6"), advanceRatePct: 30, style: "lifetime-weighted, penalizes decay" },
@@ -29,9 +29,10 @@ async function ethUsd(): Promise<number> {
 /** Engine-only quote (no LLM). Hard rejects are returned as eligible:false + reasons, never thrown. */
 export async function quote(ctx: Ctx, token: Address, borrower: Address): Promise<Quote> {
   const reasons: string[] = [];
-  const fees = await tokenFees(token, 30);
-  const t = fees.tokens.find((x) => lc(x.tokenAddress) === lc(token) && x.chain === "base" && x.source === "doppler");
-  if (!t) return { eligible: false, reasons: ["not a Base Doppler token (Bankr token-launches fees)"], inputs: null, terms: null, formula: "" };
+  // Bankr 404s "Token fee data not found" for anything it never launched (e.g. WETH, USDC): ineligible, not a 500
+  const fees = await tokenFees(token, 30).catch((e: Error & { status?: number }) => { if (e.status === 404) return null; throw e; });
+  const t = fees?.tokens.find((x) => lc(x.tokenAddress) === lc(token) && x.chain === "base" && x.source === "doppler");
+  if (!fees || !t) return { eligible: false, reasons: ["not a Base Doppler token (Bankr token-launches fees)"], inputs: null, terms: null, formula: "" };
   if (lc(t.numeraire) !== lc(ADDR.WETH)) reasons.push(`numeraire ${t.numeraire} is not WETH`);
   if (lc(fees.address) !== lc(borrower)) reasons.push(`fee history belongs to beneficiary ${fees.address}, not ${borrower}`);
 
@@ -46,10 +47,11 @@ export async function quote(ctx: Ctx, token: Address, borrower: Address): Promis
 
   const wethIs0 = !t.tokenIsToken0;
   const cf = claim.eligible ? claim.claimableFees : { token0: "0", token1: "0" };
-  const claimableWeth = wethIs0 ? cf.token0 : cf.token1;
-  const claimableTok = wethIs0 ? cf.token1 : cf.token0;
-  const allTimeSum = fees.allTimeDailyEarnings.reduce((s, d) => s + Number(d.weth), 0);
-  const factor = beneficiaryFactor(allTimeSum, Number(fees.totals.claimedWeth), Number(fees.totals.claimableWeth), parseFloat(t.share));
+  const claimableWeth = dust(wethIs0 ? cf.token0 : cf.token1);
+  const claimableTok = dust(wethIs0 ? cf.token1 : cf.token0);
+  const claimedW = Number(dust(fees.totals.claimedWeth)), claimableW = Number(dust(fees.totals.claimableWeth));
+  const allTimeSum = fees.allTimeDailyEarnings.reduce((s, d) => s + Number(dust(d.weth)), 0);
+  const factor = beneficiaryFactor(allTimeSum, claimedW, claimableW, parseFloat(t.share));
   const ageDays = fees.allTimeDailyEarnings.length; // calendar days of history (API lifetimeDays counts only nonzero days)
 
   const inputs: FeeInputs = {
@@ -57,18 +59,18 @@ export async function quote(ctx: Ctx, token: Address, borrower: Address): Promis
     feesManager: t.feesContract ?? t.initializer, sharePct: parseFloat(t.share), numeraire: t.numeraire, tokenIsToken0: t.tokenIsToken0,
     claimableWethRaw: parseUnits(claimableWeth, 18).toString(),
     claimableTokenRaw: parseUnits(claimableTok, Number(decimals)).toString(),
-    weth30d: fees.dailyEarnings.reduce((s, d) => s + Number(d.weth), 0) * factor,
-    wethLifetime: Number(fees.lifetimeEarnedWeth) * factor,
-    wethOwn: Number(fees.totals.claimedWeth) + Number(fees.totals.claimableWeth), // already this beneficiary's: no share factor
+    weth30d: fees.dailyEarnings.reduce((s, d) => s + Number(dust(d.weth)), 0) * factor,
+    wethLifetime: Number(dust(fees.lifetimeEarnedWeth)) * factor,
+    wethOwn: claimedW + claimableW, // already this beneficiary's: no share factor
     lifetimeDays: ageDays,
-    dailyWeth: fees.dailyEarnings.map((d) => ({ date: d.date, weth: Number(d.weth) * factor })),
+    dailyWeth: fees.dailyEarnings.map((d) => ({ date: d.date, weth: Number(dust(d.weth)) * factor })),
     ethUsd: ethPx,
   };
   if (ageDays < MIN_HISTORY_DAYS) reasons.push(`fee history ${ageDays}d < ${MIN_HISTORY_DAYS}d`);
 
   const shareNote = factor === 1
     ? `dailyEarnings Σall-time ${allTimeSum.toFixed(6)} ≈ claimed+claimable → already beneficiary share`
-    : `dailyEarnings Σall-time ${allTimeSum.toFixed(6)} ≠ claimed+claimable ${(Number(fees.totals.claimedWeth) + Number(fees.totals.claimableWeth)).toFixed(6)} → scaled by share ${t.share}`;
+    : `dailyEarnings Σall-time ${allTimeSum.toFixed(6)} ≠ claimed+claimable ${(claimedW + claimableW).toFixed(6)} → scaled by share ${t.share}`;
   const r = computeTerms(inputs, lead.advanceRatePct, capUsdc());
   if (r.analysis.rateUsed === 0) reasons.push("fee rate is 0");
   else if (isErr(r)) reasons.push(r.error);
@@ -84,7 +86,7 @@ Reply with ONLY this JSON object, no prose, no code fences:
 
 type MemoRun = { memo: Memo; raw: string; terms: Terms };
 
-async function runPersona(p: Persona, q: Quote): Promise<MemoRun | null> {
+export async function runPersona(p: Persona, q: Quote): Promise<MemoRun | null> {
   const inp = q.inputs!;
   const r = computeTerms(inp, p.advanceRatePct, capUsdc());
   if (isErr(r)) return null; // this persona's advance rate yields < $1: nothing to ask
@@ -100,11 +102,11 @@ async function runPersona(p: Persona, q: Quote): Promise<MemoRun | null> {
   let model = p.model;
   const raw = await llmChat([{ role: "system", content: SYSTEM(p) }, { role: "user", content: JSON.stringify(facts) }], { model: p.model, maxTokens: 800 })
     .catch((e: Error) => {
-      // ponytail: no credits/key → engine-only memo, labeled in `model` so the UI never passes it off as LLM output
-      if (!e.message.startsWith("Bankr LLM credits/key")) throw e;
-      model = "engine-only (Bankr LLM unavailable)";
-      return JSON.stringify({ decision: "approve", principalUsdc: facts.maxPrincipalUsdc, maxNotePrice: r.terms.floorPrice, confidence: 0.5,
-        rationale: `Deterministic engine terms, no LLM review (${e.message.slice(0, 60)}). ${r.formula}`, risks: ["no LLM review"] });
+      // Fail closed: only "out of credits" (402/insufficient_credits) AND an explicit UNDERWRITER_ENGINE_ONLY=1 opt-in fall back
+      // to the persona's deterministic rules (engine.ts ruleMemo), labeled RULES_MODEL so the UI never passes it off as LLM output.
+      if (!(e instanceof LlmNoCredits) || process.env.UNDERWRITER_ENGINE_ONLY !== "1") throw e;
+      model = RULES_MODEL;
+      return JSON.stringify(ruleMemo(p.id, inp, r, p.advanceRatePct, capUsdc()));
     });
   const m = parseMemo(raw, facts.maxPrincipalUsdc, r.terms.floorPrice);
   const terms = m.decision === "approve" ? (computeTerms(inp, p.advanceRatePct, capUsdc(), m.principalUsdc) as TermsResult).terms : r.terms;
@@ -121,7 +123,7 @@ async function runPersona(p: Persona, q: Quote): Promise<MemoRun | null> {
  * Quote + all persona memos. Throws 422 if the quote is ineligible, 502 if the lead memo fails (no loan is created).
  * `terms` = lead terms at the lead's principal (what goes on-chain); `rawText` by personaId for memos.raw_text.
  */
-export async function underwrite(ctx: Ctx, token: Address, borrower: Address) {
+export async function underwrite(ctx: Ctx, token: Address, borrower: Address, opts: { erc8004AgentId?: bigint } = {}) {
   const q = await quote(ctx, token, borrower);
   if (!q.eligible) throw new HTTPException(422, { message: `not eligible: ${q.reasons.join("; ")}` });
   const runs = await Promise.allSettled(PERSONAS.map((p) => runPersona(p, q)));
@@ -133,6 +135,13 @@ export async function underwrite(ctx: Ctx, token: Address, borrower: Address) {
     if (r.status === "fulfilled" && r.value) ok.push(r.value);
     else if (r.status === "rejected") ctx.log("underwriter", `persona ${PERSONAS[i]!.id} memo skipped`, String(r.reason?.message ?? r.reason));
   });
+  if (opts.erc8004AgentId !== undefined) {
+    // ERC-8004: what this desk said on-chain about the borrower's agent. May only LOWER (or decline), never raise.
+    const rep = await readReputation(ctx, opts.erc8004AgentId);
+    const { factor, note } = reputationFactor(rep);
+    q.formula = `${q.formula}; ${note}`;
+    if (factor < 1) for (const run of ok) lowerRun(run, q, factor, note);
+  }
   return {
     quote: q,
     memos: ok.map((r) => r.memo),
@@ -143,3 +152,24 @@ export async function underwrite(ctx: Ctx, token: Address, borrower: Address) {
 }
 
 export type Underwriting = Awaited<ReturnType<typeof underwrite>>;
+
+async function readReputation(ctx: Ctx, agentId: bigint): Promise<Reputation> {
+  const deskWallet = (await ctx.pub.readContract({ address: ctx.deskAddress, abi: parseAbi(FEE_DESK_ABI), functionName: "keeper" })) as Address;
+  const m = (await import("../erc8004/index.ts")) as { borrowerReputation(ctx: Ctx, id: bigint, desk?: Address): Promise<Reputation> };
+  return m.borrowerReputation(ctx, agentId, deskWallet); // throws → apply fails (fail closed: never skip a named reputation)
+}
+
+/** Scale an approved memo's principal by the reputation factor (floor to cents); under $1 (or factor 0) it declines. */
+function lowerRun(run: MemoRun, q: Quote, factor: number, note: string) {
+  const m = run.memo;
+  if (m.decision !== "approve") return;
+  const p = PERSONAS.find((x) => x.id === m.personaId)!;
+  const cents = Math.floor((Number(m.principalRaw) / 1e6) * factor * 100);
+  const r = cents >= 100 ? computeTerms(q.inputs!, p.advanceRatePct, capUsdc(), cents / 100) : null;
+  if (!r || isErr(r)) {
+    Object.assign(m, { decision: "decline", principalRaw: "0", rationale: `${m.rationale} Declined by ${note} (< $1).` });
+    return;
+  }
+  run.terms = r.terms;
+  Object.assign(m, { principalRaw: r.terms.principalRaw, rationale: `${m.rationale} Lowered by ${note}.` });
+}

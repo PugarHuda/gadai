@@ -9,7 +9,7 @@ const sans = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-arc
 const mono = Chivo_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-chivo-mono" });
 
 export const metadata: Metadata = {
-  title: "Gadai · credit against Bankr creator fees",
+  title: { default: "Gadai · credit against Bankr creator fees", template: "%s · Gadai" },
   description: "USDC loans for Bankr agents, collateralized by Doppler fee rights on Base. Funded by FeeNote auctions.",
 };
 
@@ -32,6 +32,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </main>
         ) : (
           <Providers>
+            <a href="#main" className="sr-only z-[60] bg-ink px-3 py-2 text-paper focus:not-sr-only focus:fixed focus:left-2 focus:top-2">
+              Skip to content
+            </a>
             {ENV.DEMO_FORK && (
               <div role="note" className="sticky top-0 z-50 border-b border-ink bg-ink px-4 py-1.5 text-center text-xs text-paper">
                 <span className="pill mr-2 border-amber text-amber">Demo fork</span>
@@ -39,7 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
             )}
             <Nav />
-            <main className="mx-auto max-w-6xl px-4 pb-24 pt-8 sm:pt-10">{children}</main>
+            <main id="main" tabIndex={-1} className="mx-auto max-w-6xl px-4 pb-24 pt-8 sm:pt-10">{children}</main>
             <footer className="border-t border-rule">
               <div className="mx-auto flex max-w-6xl flex-wrap gap-x-6 gap-y-1 px-4 py-6 text-xs text-mute">
                 <span className="font-semibold text-ink">Gadai · Base 8453</span>

@@ -43,32 +43,30 @@ test("isRevert: clean reverts are final, timeouts are not", () => {
   assert.equal(isRevert(new Error("fetch failed")), false);
 });
 
-test("reconcilePending: a mined-but-unconfirmed addDraw is booked once, never re-sent", async () => {
+test("reconcilePending: decided by vault.drawNonce + deadline; a landed draw is booked once, never re-sent", async () => {
   const db = openDb(":memory:");
   const ctx = { db, log: () => {} } as unknown as Ctx;
-  const ins = (amt: string, status: string, ageMin: number) =>
-    Number(db.prepare("INSERT INTO draws (loan_id,amount_raw,fly_wei,status,created_at) VALUES (1,?,?,?,?)")
-      .run(amt, amt, status, new Date(Date.now() - ageMin * 60_000).toISOString()).lastInsertRowid);
+  const ins = (nonce: number, deadline: number, ageMin: number) =>
+    Number(db.prepare("INSERT INTO draws (loan_id,amount_raw,fly_wei,status,draw_nonce,deadline,borrower_sig,created_at) VALUES (1,'50','50','pending',?,?,'0x01',?)")
+      .run(String(nonce), String(deadline), new Date(Date.now() - ageMin * 60_000).toISOString()).lastInsertRowid);
   const st = (id: number) => (db.prepare("SELECT status FROM draws WHERE id = ?").get(id) as { status: string }).status;
   const resent: number[] = [];
   const resend = async (_: Ctx, id: number) => void resent.push(id);
 
-  ins("100", "issued", 60);
-  const p = ins("50", "pending", 10);
-  await reconcilePending(ctx, 1, 150n, resend); // drawn() already includes it → recorded, no resend
+  const p = ins(0, 1000, 10);
+  await reconcilePending(ctx, 1, { drawNonce: 1n, now: 500n }, resend); // nonce 0 consumed on-chain → recorded, no resend
   assert.equal(st(p), "recorded");
+  await reconcilePending(ctx, 1, { drawNonce: 1n, now: 500n }, resend); // idempotent
   assert.deepEqual(resent, []);
-  await reconcilePending(ctx, 1, 150n, resend); // idempotent
-  assert.equal(st(p), "recorded");
+  assert.equal(db.prepare("SELECT COUNT(*) n FROM loan_events WHERE kind = 'draw'").get()!.n, 1);
 
-  const q = ins("25", "pending", 1); // young & not on-chain: wait
-  await reconcilePending(ctx, 1, 150n, resend);
+  const q = ins(1, 1000, 1); // young & nonce unused: wait
+  await reconcilePending(ctx, 1, { drawNonce: 1n, now: 500n }, resend);
   assert.equal(st(q), "pending");
   db.prepare("UPDATE draws SET created_at = ? WHERE id = ?").run(new Date(Date.now() - 6 * 60_000).toISOString(), q);
-  await reconcilePending(ctx, 1, 150n, resend); // 6 min & not on-chain: dropped → resend
+  await reconcilePending(ctx, 1, { drawNonce: 1n, now: 500n }, resend); // 6 min & nonce unused: dropped → resend same signed args
   assert.deepEqual(resent, [q]);
-  db.prepare("UPDATE draws SET created_at = ? WHERE id = ?").run(new Date(Date.now() - 31 * 60_000).toISOString(), q);
-  await reconcilePending(ctx, 1, 150n, resend); // 31 min: final failure, no debt
+  await reconcilePending(ctx, 1, { drawNonce: 1n, now: 1001n }, resend); // past its deadline: can never land → failed
   assert.equal(st(q), "failed");
   assert.deepEqual(resent, [q]);
 });

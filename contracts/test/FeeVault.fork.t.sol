@@ -3,11 +3,12 @@ pragma solidity ^0.8.26;
 
 import {Test} from "forge-std/Test.sol";
 import {FeeDesk} from "../src/FeeDesk.sol";
-import {FeeVault, CreateLoanParams, FlashOrder} from "../src/FeeVault.sol";
+import {FeeVault, CreateLoanParams, FlashOrder, IChainlinkFeed} from "../src/FeeVault.sol";
 import {FeeNote} from "../src/FeeNote.sol";
 import {IFeesManager} from "../src/interfaces/IFeesManager.sol";
 import {ICCA} from "../src/interfaces/ICCA.sol";
 import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
+import {ForkDelegate} from "../src/demo/ForkDelegate.sol";
 
 interface IERC20 {
     function balanceOf(address) external view returns (uint256);
@@ -53,6 +54,7 @@ contract FeeVaultForkTest is Test {
     address keeper = makeAddr("feedesk.keeper");
     address treasury = makeAddr("feedesk.treasury");
     address lender = makeAddr("feedesk.lender");
+    uint256 walletOwnerKey;
     FeeDesk desk;
     IFeesManager fm = IFeesManager(FM);
     uint256 borrowerShares;
@@ -64,7 +66,11 @@ contract FeeVaultForkTest is Test {
         vm.deal(lender, 1 ether);
         vm.deal(BORROWER, 1 ether);
         vm.deal(makeAddr("feedesk.anyone"), 1 ether);
-        desk = new FeeDesk(keeper, treasury);
+        desk = new FeeDesk(keeper, treasury, 1 hours);
+        address walletOwner;
+        (walletOwner, walletOwnerKey) = makeAddrAndKey("feedesk.borrower.walletOwner");
+        // BORROWER is a 7702 EOA whose key we lack: give it the demo delegate so its wallet owner can sign draws (EIP-1271)
+        vm.etch(BORROWER, address(new ForkDelegate(walletOwner)).code);
         borrowerShares = fm.getShares(POOL, BORROWER);
         assertGt(borrowerShares, 0, "test pool beneficiary lost its shares");
     }
@@ -72,8 +78,12 @@ contract FeeVaultForkTest is Test {
     // ───────────── helpers ─────────────
 
     function _createLoan() internal returns (FeeVault v) {
+        return _createLoan(BORROWER, false);
+    }
+
+    function _createLoan(address b, bool custody) internal returns (FeeVault v) {
         CreateLoanParams memory p = CreateLoanParams({
-            borrower: BORROWER,
+            borrower: b,
             poolId: POOL,
             feesManager: FM,
             creatorToken: GITLAWB,
@@ -81,7 +91,8 @@ contract FeeVaultForkTest is Test {
             faceValue: FACE,
             drawLimit: DRAW_LIMIT,
             noteName: "FeeNote GITLAWB #1",
-            noteSymbol: "fnGITLAWB1"
+            noteSymbol: "fnGITLAWB1",
+            keeperTokenCustody: custody
         });
         vm.prank(keeper);
         (, address vault,) = desk.createLoan(p);
@@ -89,7 +100,7 @@ contract FeeVaultForkTest is Test {
     }
 
     function _pledge(FeeVault v) internal {
-        vm.prank(BORROWER);
+        vm.prank(v.borrower());
         fm.updateBeneficiary(POOL, address(v));
         v.confirmPledge();
     }
@@ -120,21 +131,51 @@ contract FeeVaultForkTest is Test {
     }
 
     function _fundedLoan() internal returns (FeeVault v, ICCA a, uint256 bidId) {
-        v = _createLoan();
+        return _fundedLoan(BORROWER, false);
+    }
+
+    function _fundedLoan(address b, bool custody) internal returns (FeeVault v, ICCA a, uint256 bidId) {
+        v = _createLoan(b, custody);
         _pledge(v);
         a = _startAuction(v);
         bidId = _bid(a, lender, uint128(PRINCIPAL + 5e6), 100 * TICK); // lender pays up to 1.00 / note
         vm.roll(block.number + AUCTION_BLOCKS);
-        uint256 before = IERC20(USDC).balanceOf(BORROWER);
+        uint256 before = IERC20(USDC).balanceOf(b);
         vm.prank(keeper);
         uint256 amt = v.disburse();
         assertGe(amt, PRINCIPAL, "raised < principal");
         emit log_named_uint("disbursed USDC raw", amt);
-        assertEq(IERC20(USDC).balanceOf(BORROWER) - before, amt, "borrower not paid");
+        assertEq(IERC20(USDC).balanceOf(b) - before, amt, "borrower not paid");
         assertEq(uint8(v.status()), uint8(FeeVault.Status.Active));
         // lender exits the bid (refund of unspent USDC) and claims its notes
         a.exitBid(bidId);
         a.claimTokens(bidId);
+    }
+
+    function _sign(uint256 key, bytes32 h) internal pure returns (bytes memory) {
+        (uint8 v_, bytes32 r, bytes32 s) = vm.sign(key, h);
+        return abi.encodePacked(r, s, v_);
+    }
+
+    function _drawSig(FeeVault v, uint256 key, uint256 amount, uint256 nonce, uint256 deadline)
+        internal
+        view
+        returns (bytes memory)
+    {
+        bytes memory m = bytes(v.drawMessage(amount, nonce, deadline));
+        return _sign(key, keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n", vm.toString(m.length), m)));
+    }
+
+    /// Keeper books a draw with the borrower's (smart wallet) signature over the vault's next nonce.
+    function _addDraw(FeeVault v, uint256 amount) internal {
+        _addDraw(v, walletOwnerKey, amount);
+    }
+
+    function _addDraw(FeeVault v, uint256 key, uint256 amount) internal {
+        uint256 dl = block.timestamp + 1 hours;
+        bytes memory sig = _drawSig(v, key, amount, v.drawNonce(), dl);
+        vm.prank(keeper);
+        v.addDraw(amount, dl, sig);
     }
 
     // ───────────── tests ─────────────
@@ -158,8 +199,7 @@ contract FeeVaultForkTest is Test {
         assertGt(wethGot, 0, "vault collected no WETH (pool had no pending fees at fork block)");
 
         // dining draw is junior: payDesk pays nothing while notes are uncovered
-        vm.prank(keeper);
-        v.addDraw(4e6);
+        _addDraw(v, 4e6);
         deal(USDC, address(v), notes / 2); // test fixture: stands in for WETH->USDC swap proceeds
         assertEq(v.payDesk(), 0, "desk paid before notes covered");
 
@@ -193,7 +233,7 @@ contract FeeVaultForkTest is Test {
     }
 
     function test_createLoan_guards() public {
-        CreateLoanParams memory p = CreateLoanParams(BORROWER, POOL, FM, GITLAWB, PRINCIPAL, FACE, DRAW_LIMIT, "n", "s");
+        CreateLoanParams memory p = CreateLoanParams(BORROWER, POOL, FM, GITLAWB, PRINCIPAL, FACE, DRAW_LIMIT, "n", "s", false);
         vm.expectRevert(FeeDesk.Unauthorized.selector);
         desk.createLoan(p);
         FeeVault v = _createLoan();
@@ -363,19 +403,21 @@ contract FeeVaultForkTest is Test {
 
     function test_drawLimitAndKeeperOnly() public {
         (FeeVault v,,) = _fundedLoan();
+        uint256 dl = block.timestamp + 1 hours;
+        bytes memory sig = _drawSig(v, walletOwnerKey, 1e6, 0, dl);
         vm.expectRevert(FeeVault.Unauthorized.selector);
-        v.addDraw(1e6);
+        v.addDraw(1e6, dl, sig);
+        sig = _drawSig(v, walletOwnerKey, DRAW_LIMIT + 1, 0, dl);
         vm.prank(keeper);
         vm.expectRevert(FeeVault.OverDrawLimit.selector);
-        v.addDraw(DRAW_LIMIT + 1);
-        vm.prank(keeper);
-        v.addDraw(DRAW_LIMIT);
+        v.addDraw(DRAW_LIMIT + 1, dl, sig);
+        _addDraw(v, DRAW_LIMIT);
         assertEq(v.drawDebt(), DRAW_LIMIT);
         assertEq(v.debtOutstanding(), v.note().totalSupply() + DRAW_LIMIT);
     }
 
     function test_tokenLegFallbackToKeeper() public {
-        (FeeVault v,,) = _fundedLoan();
+        (FeeVault v,,) = _fundedLoan(BORROWER, true);
         v.collect();
         uint256 t = IERC20(GITLAWB).balanceOf(address(v));
         if (t == 0) deal(GITLAWB, address(v), 1e18); // pool had no token-leg fees pending at this block
@@ -431,7 +473,7 @@ contract FeeVaultForkTest is Test {
     }
 
     function test_wethNeverLeavesExceptViaSwap() public {
-        (FeeVault v,,) = _fundedLoan();
+        (FeeVault v,,) = _fundedLoan(BORROWER, true); // custody on, so BadToken (not CustodyDisabled) is what stops WETH
         deal(WETH, address(v), 1 ether);
         vm.startPrank(keeper);
         vm.expectRevert(abi.encodeWithSelector(FeeVault.BadToken.selector, WETH));
@@ -476,8 +518,7 @@ contract FeeVaultForkTest is Test {
     function test_partialPayDesk_redeemAboveBalance_releaseBurnsHeldNotes() public {
         (FeeVault v,,) = _fundedLoan();
         FeeNote note = v.note();
-        vm.prank(keeper);
-        v.addDraw(4e6);
+        _addDraw(v, 4e6);
         uint256 ns = note.totalSupply();
 
         vm.prank(lender);
@@ -509,5 +550,137 @@ contract FeeVaultForkTest is Test {
         vm.prank(keeper);
         vm.expectRevert(FeeVault.BadFlashOrder.selector);
         v.authorizeFlashOrder(o);
+    }
+
+    // ───────────── trust-model hardening ─────────────
+
+    function _flashOrder(FeeVault v) internal view returns (FlashOrder memory) {
+        return FlashOrder(address(v), address(1), address(v), GITLAWB, USDC, 1e18, 7, block.timestamp + 1 hours);
+    }
+
+    function test_isValidSignature_deadAfterRelease() public {
+        (FeeVault v,,) = _fundedLoan();
+        vm.startPrank(keeper);
+        bytes32 d = v.authorizeFlashOrder(_flashOrder(v));
+        bytes32 c = v.authorizeFlashCancel("ord_1");
+        vm.stopPrank();
+        assertEq(v.isValidSignature(d, ""), bytes4(0x1626ba7e));
+        deal(USDC, address(v), v.note().totalSupply());
+        v.release();
+        assertTrue(v.approvedHash(d));
+        assertEq(v.isValidSignature(d, ""), bytes4(0xffffffff), "order still valid after release");
+        assertEq(v.isValidSignature(c, ""), bytes4(0xffffffff), "cancel still valid after release");
+    }
+
+    function test_isValidSignature_deadAfterCancel() public {
+        FeeVault v = _createLoan();
+        _pledge(v);
+        vm.prank(keeper);
+        bytes32 d = v.authorizeFlashOrder(_flashOrder(v));
+        assertEq(v.isValidSignature(d, ""), bytes4(0x1626ba7e), "valid while Pledged");
+        vm.prank(keeper);
+        v.cancel();
+        assertEq(v.isValidSignature(d, ""), bytes4(0xffffffff), "order still valid after cancel");
+    }
+
+    function test_oracleMaxAge_fromDesk() public {
+        (FeeVault v,,) = _fundedLoan();
+        assertEq(v.maxOracleAge(), 1 hours);
+        (,,, uint256 updatedAt,) = IChainlinkFeed(v.ETH_USD_FEED()).latestRoundData();
+        vm.warp(updatedAt + 1 hours);
+        assertGt(v.oracleMinUsdcOut(1 ether), 0); // exactly max age: still fresh
+        vm.warp(updatedAt + 1 hours + 1);
+        vm.expectRevert(FeeVault.BadOracle.selector);
+        v.oracleMinUsdcOut(1 ether);
+        _mockSwap(v, 0.1 ether);
+        vm.prank(keeper);
+        vm.expectRevert(FeeVault.BadOracle.selector);
+        v.swapWethToUsdc(abi.encodeCall(MockSwapProxy.swap, (0.1 ether, address(v), 1_000e6)), 0.1 ether, 1_000e6);
+
+        // a fork desk (86400) keeps swapping on a frozen feed
+        FeeDesk forkDesk = new FeeDesk(keeper, treasury, 1 days);
+        assertEq(forkDesk.maxOracleAge(), 1 days);
+        // ponytail: try/catch, not expectRevert: an expected CREATE revert ends a forge test early (it "passed" unrun)
+        try new FeeDesk(keeper, treasury, 0) {
+            fail();
+        } catch (bytes memory e) {
+            assertEq(bytes4(e), FeeDesk.BadParams.selector);
+        }
+    }
+
+    function test_addDraw_requiresBorrowerSignature() public {
+        (FeeVault v,,) = _fundedLoan();
+        uint256 dl = block.timestamp + 1 hours;
+        assertEq(
+            v.drawMessage(1e6, 0, dl),
+            string.concat(
+                "Gadai dining draw\nVault: ",
+                vm.toLowercase(vm.toString(address(v))),
+                "\nChain: 8453\nAmount (USDC raw): 1000000\nNonce: 0\nDeadline: ",
+                vm.toString(dl)
+            )
+        );
+        (, uint256 strangerKey) = makeAddrAndKey("feedesk.stranger");
+        // signatures built up front: _drawSig calls the vault, which would consume a prank / expectRevert
+        bytes memory sig = _drawSig(v, walletOwnerKey, 1e6, 0, dl);
+        bytes memory strangerSig = _drawSig(v, strangerKey, 1e6, 0, dl);
+        bytes memory expiredSig = _drawSig(v, walletOwnerKey, 1e6, 1, dl);
+        vm.startPrank(keeper);
+        vm.expectRevert(FeeVault.BadDrawSignature.selector); // keeper alone cannot book a draw
+        v.addDraw(1e6, dl, "");
+        vm.expectRevert(FeeVault.BadDrawSignature.selector); // someone else's key
+        v.addDraw(1e6, dl, strangerSig);
+        vm.expectRevert(FeeVault.BadDrawSignature.selector); // amount not what the borrower signed
+        v.addDraw(2e6, dl, sig);
+        vm.expectRevert(FeeVault.BadDrawSignature.selector); // deadline not what the borrower signed
+        v.addDraw(1e6, dl + 1, sig);
+
+        v.addDraw(1e6, dl, sig);
+        assertEq(v.drawNonce(), 1);
+        assertEq(v.drawDebt(), 1e6);
+        vm.expectRevert(FeeVault.BadDrawSignature.selector); // replay: nonce moved on
+        v.addDraw(1e6, dl, sig);
+
+        vm.warp(dl + 1);
+        vm.expectRevert(FeeVault.DrawExpired.selector);
+        v.addDraw(1e6, dl, expiredSig);
+        vm.stopPrank();
+    }
+
+    function test_addDraw_eoaBorrower() public {
+        (address eoa, uint256 key) = makeAddrAndKey("feedesk.borrower.eoa");
+        vm.deal(eoa, 1 ether);
+        vm.prank(BORROWER);
+        fm.updateBeneficiary(POOL, eoa);
+        (FeeVault v,,) = _fundedLoan(eoa, false);
+        uint256 dl = block.timestamp + 1 hours;
+        _addDraw(v, key, 3e6);
+        assertEq(v.drawDebt(), 3e6);
+        bytes memory other = _drawSig(v, walletOwnerKey, 1e6, 1, dl); // the smart wallet's owner is not this borrower
+        vm.prank(keeper);
+        vm.expectRevert(FeeVault.BadDrawSignature.selector);
+        v.addDraw(1e6, dl, other);
+    }
+
+    function test_tokenLegCustody_offByDefault() public {
+        (FeeVault v,,) = _fundedLoan();
+        assertFalse(v.keeperTokenCustody());
+        deal(GITLAWB, address(v), 1e18);
+        vm.prank(keeper);
+        vm.expectRevert(FeeVault.CustodyDisabled.selector);
+        v.sendTokenLegToKeeper(GITLAWB, 1e18);
+    }
+
+    function test_tokenLegCustody_enabledAtCreationEmits() public {
+        vm.expectEmit(true, false, false, false);
+        emit FeeVault.KeeperTokenCustodyEnabled(keeper);
+        FeeVault v = _createLoan(BORROWER, true);
+        assertTrue(v.keeperTokenCustody());
+        _pledge(v);
+        deal(GITLAWB, address(v), 1e18);
+        vm.expectEmit(true, false, false, true, address(v));
+        emit FeeVault.TokenLegSent(keeper, GITLAWB, 1e18);
+        vm.prank(keeper);
+        v.sendTokenLegToKeeper(GITLAWB, 1e18);
     }
 }

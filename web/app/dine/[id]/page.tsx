@@ -1,7 +1,8 @@
 "use client";
 import { use, useState } from "react";
 import Link from "next/link";
-import { drawMessage, flynetLinkMessage, type DineState, type Draw, type LoanDetail, type Recommendation } from "@feedesk/shared";
+import { notFound } from "next/navigation";
+import { diningSettleMessage, drawMessage, flynetLinkMessage, type DineState, type Draw, type DrawQuote, type LoanDetail, type Recommendation } from "@feedesk/shared";
 import { api } from "@/lib/api";
 import { ENV } from "@/lib/env";
 import { useSigner } from "@/lib/wallet";
@@ -9,6 +10,7 @@ import { Btn, Card, Loading, Tx, ago, usd, usdcRaw, useLoad } from "@/components
 
 export default function Dine({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  if (!/^[1-9]\d{0,14}$/.test(id)) notFound(); // /dine/abc is a 404, never "loan #NaN"
   const loanId = Number(id);
   const s = useSigner();
   const loan = useLoad(() => api<LoanDetail>(`/api/loans/${loanId}`), [loanId]);
@@ -26,14 +28,18 @@ export default function Dine({ params }: { params: Promise<{ id: string }> }) {
   const draw = async () => {
     const cents = Math.round(Number(amount) * 100);
     if (!(cents > 0)) throw new Error("Amount must be > 0");
-    const nonce = crypto.randomUUID();
-    const signature = await s.signMessage(drawMessage(loanId, cents, nonce));
-    await api<Draw>(`/api/loans/${loanId}/dine/draw`, { body: { amountUsdCents: cents, locationId: pick ?? undefined, nonce, signature } });
+    // The vault's own drawMessage (current drawNonce + deadline); FeeVault.addDraw re-checks this exact signature on-chain.
+    const q = await api<DrawQuote>(`/api/loans/${loanId}/dine/draw-message?amountUsdCents=${cents}`);
+    const vault = loan.data?.vault;
+    if (!vault || q.message !== drawMessage(vault, 8453, q.amountRaw, q.nonce, q.deadline))
+      throw new Error("Agent returned an unexpected draw message; not signing");
+    const signature = await s.signMessage(q.message);
+    await api<Draw>(`/api/loans/${loanId}/dine/draw`, { body: { amountUsdCents: cents, locationId: pick ?? undefined, nonce: q.nonce, deadline: q.deadline, signature } });
     st.reload();
   };
   const settle = async () => {
     const nonce = crypto.randomUUID();
-    const signature = await s.signMessage(drawMessage(loanId, 0, nonce));
+    const signature = await s.signMessage(diningSettleMessage(loanId, nonce));
     await api<DineState>(`/api/loans/${loanId}/dine/settle`, { body: { nonce, signature } });
     st.reload();
   };

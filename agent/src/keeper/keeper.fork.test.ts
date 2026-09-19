@@ -31,7 +31,7 @@ test("keeper on Base fork: full loan lifecycle driven by the keeper", { skip: !R
   await rpc("anvil_setBalance", [account.address, "0x8AC7230489E80000"]);
 
   const art = JSON.parse(readFileSync(new URL("../../../contracts/out/FeeDesk.sol/FeeDesk.json", import.meta.url), "utf8"));
-  const deployHash = await wc.deployContract({ abi: art.abi, bytecode: art.bytecode.object, args: [account.address, account.address] });
+  const deployHash = await wc.deployContract({ abi: art.abi, bytecode: art.bytecode.object, args: [account.address, account.address, 86400n] }); // keeper, treasury, maxOracleAge (fork: stale feed ok)
   const desk = (await pub.waitForTransactionReceipt({ hash: deployHash })).contractAddress as Address;
 
   const wallet: AgentWallet = {

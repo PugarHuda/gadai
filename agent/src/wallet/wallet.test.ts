@@ -50,3 +50,34 @@ test("jwtExpMs reads the exp claim", () => {
   assert.equal(jwtExpMs(jwt({ sub: "x" })), undefined);
   assert.equal(jwtExpMs("garbage"), undefined);
 });
+
+test("ERC-8021 builder suffix: code + length + 8021 marker at the calldata tail, no-op when unset", async () => {
+  const { builderSuffix, withBuilderCode } = await import("./index.ts");
+  const s = builderSuffix("bc_32d4pc8g")!;
+  assert.equal(s, "0x62635f33326434706338670b0080218021802180218021802180218021"); // "bc_32d4pc8g" | len 11 | schema 0 | 16-byte marker
+  assert.equal(withBuilderCode("0xdeadbeef", "bc_32d4pc8g"), `0xdeadbeef${s.slice(2)}`);
+  assert.equal(withBuilderCode("0xdeadbeef", ""), "0xdeadbeef");
+  assert.equal(builderSuffix(""), undefined);
+});
+
+test("siweGate: single-flight, backs off on 429 without hitting the network again, resets on success", async () => {
+  const { siweGate, resetSiweGate, DynamicRateLimited } = await import("./index.ts");
+  resetSiweGate();
+  let t = 1_000_000, calls = 0;
+  const now = () => t;
+  const ok = async () => { calls++; return "jwt"; };
+  const [a, b] = await Promise.all([siweGate(ok, now), siweGate(ok, now)]);
+  assert.equal(a, "jwt"); assert.equal(b, "jwt"); assert.equal(calls, 1); // concurrent callers share one sign-in
+  const limited = async () => { calls++; throw new Error("SIWE sign-in failed: status 429"); };
+  await assert.rejects(siweGate(limited, now), DynamicRateLimited);
+  await assert.rejects(siweGate(ok, now), (e: InstanceType<typeof DynamicRateLimited>) => e.retryInSec >= 48 && e.retryInSec <= 72);
+  assert.equal(calls, 2); // blocked: no network call while backing off
+  t += 73_000;
+  await assert.rejects(siweGate(limited, now), DynamicRateLimited); // second 429 → ~120s
+  await assert.rejects(siweGate(ok, now), (e: InstanceType<typeof DynamicRateLimited>) => e.retryInSec >= 96);
+  t += 145_000;
+  assert.equal(await siweGate(ok, now), "jwt");
+  await assert.rejects(siweGate(async () => { throw new Error("bad signature"); }, now), /bad signature/); // non-429: no backoff
+  assert.equal(await siweGate(ok, now), "jwt");
+  resetSiweGate();
+});

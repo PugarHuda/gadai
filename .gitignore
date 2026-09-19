@@ -11,3 +11,4 @@ broadcast/
 
 .vercel
 .env*
+.dynamic-session.json

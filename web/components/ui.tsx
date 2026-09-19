@@ -16,10 +16,15 @@ export const ago = (iso: string) => {
 
 export function Addr({ a, label }: { a?: string | null; label?: string }) {
   if (!a) return <span className="text-mute">—</span>;
-  return (
-    <a className="link font-mono" href={addrUrl(a)} target="_blank" rel="noreferrer" title={a}>
+  const u = addrUrl(a);
+  return u ? (
+    <a className="link font-mono" href={u} target="_blank" rel="noreferrer" title={a}>
       {label ?? short(a)}
     </a>
+  ) : (
+    <span className="font-mono" title={`${a} (Anvil fork: not linked to Basescan)`}>
+      {label ?? short(a)} <span className="tag text-mute">fork</span>
+    </span>
   );
 }
 

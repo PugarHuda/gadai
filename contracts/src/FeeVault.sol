@@ -4,6 +4,7 @@ pragma solidity ^0.8.26;
 import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
 import {ReentrancyGuard} from "solady/utils/ReentrancyGuard.sol";
 import {SignatureCheckerLib} from "solady/utils/SignatureCheckerLib.sol";
+import {LibString} from "solady/utils/LibString.sol";
 import {FeeNote} from "./FeeNote.sol";
 import {IFeesManager} from "./interfaces/IFeesManager.sol";
 import {ICCA, ICCAFactory, AuctionParameters} from "./interfaces/ICCA.sol";
@@ -18,6 +19,9 @@ struct CreateLoanParams {
     uint256 drawLimit; // USDC raw; Flynet dining line cap
     string noteName;
     string noteSymbol;
+    /// @dev Custodial Flash fallback (agent FLASH_TOKEN_LEG_MODE=keeper): lets sendTokenLegToKeeper move the creator
+    ///      token to the keeper. Fixed at creation; the borrower sees it before pledging.
+    bool keeperTokenCustody;
 }
 
 /// Definitive Flash order struct (EIP-712 type captured from a live Flash /quote, docs/integrations/flash.md).
@@ -69,9 +73,6 @@ contract FeeVault is ReentrancyGuard {
     /// @dev swapWethToUsdc must demand >= 95% of the oracle value. The keeper already rejects quotes >3% under the
     ///      oracle and sets minOut = quote - 0.5%, so honest swaps pass; a leaked keeper key cannot dump fees at ~0.
     uint256 public constant MIN_OUT_BPS_OF_ORACLE = 9_500;
-    /// @dev ponytail: 1 day, not the 20-min heartbeat, so a DEMO_FORK (feed frozen at the fork block) still swaps.
-    ///      A stale price can only make honest swaps revert or loosen the floor a little; tighten for production.
-    uint256 public constant MAX_ORACLE_AGE = 1 days;
     /// @dev startAuction bounds so the keeper cannot lock the lien / lender USDC indefinitely (~2s blocks on Base).
     uint64 public constant MAX_START_DELAY_BLOCKS = 300; // ~10 min
     uint64 public constant MAX_AUCTION_BLOCKS = 43_200; // ~1 day
@@ -98,12 +99,16 @@ contract FeeVault is ReentrancyGuard {
     uint256 public immutable faceValue;
     uint256 public immutable drawLimit;
     bool internal immutable wethIsToken0;
+    /// @dev Max Chainlink answer age, set by the desk (1h on mainnet; 1 day on a DEMO_FORK whose feed is frozen).
+    uint256 public immutable maxOracleAge;
+    bool public immutable keeperTokenCustody;
 
     Status public status;
     uint64 public pledgedAt;
     address public auction;
     uint256 public drawn; // cumulative dining draws
     uint256 public drawDebt; // unpaid dining draws (junior to notes)
+    uint256 public drawNonce; // next nonce the borrower must sign in drawMessage
     mapping(bytes32 => bool) public approvedHash; // EIP-1271 hashes the keeper authorized (Flash orders/cancels)
 
     event Pledged(address indexed borrower, uint256 shares);
@@ -113,6 +118,7 @@ contract FeeVault is ReentrancyGuard {
     event Swapped(uint256 wethIn, uint256 usdcOut);
     event FlashOrderAuthorized(bytes32 indexed digest, address fromToken, uint256 fromAmount);
     event TokenLegSent(address indexed keeper, address token, uint256 amount);
+    event KeeperTokenCustodyEnabled(address indexed keeper);
     event Drawn(uint256 amount, uint256 drawDebt);
     event DeskPaid(uint256 amount);
     event Redeemed(address indexed holder, uint256 notes);
@@ -132,6 +138,9 @@ contract FeeVault is ReentrancyGuard {
     error CannotRelease();
     error BadAuctionParams();
     error BadOracle();
+    error CustodyDisabled();
+    error DrawExpired();
+    error BadDrawSignature();
 
     modifier onlyKeeper() {
         if (msg.sender != IFeeDeskView(desk).keeper()) revert Unauthorized();
@@ -145,7 +154,7 @@ contract FeeVault is ReentrancyGuard {
         _;
     }
 
-    constructor(uint256 loanId_, CreateLoanParams memory p) {
+    constructor(uint256 loanId_, CreateLoanParams memory p, uint256 maxOracleAge_) {
         desk = msg.sender;
         loanId = loanId_;
         borrower = p.borrower;
@@ -155,6 +164,9 @@ contract FeeVault is ReentrancyGuard {
         principal = p.principal;
         faceValue = p.faceValue;
         drawLimit = p.drawLimit;
+        maxOracleAge = maxOracleAge_;
+        keeperTokenCustody = p.keeperTokenCustody;
+        if (p.keeperTokenCustody) emit KeeperTokenCustodyEnabled(IFeeDeskView(msg.sender).keeper());
         wethIsToken0 = WETH < p.creatorToken; // v4 orders currency0 < currency1
         // The pool must be creatorToken/WETH, otherwise fees would land in a token this vault never forwards.
         // getPoolKey is verified on the Doppler initializer; managers without it are accepted as-is.
@@ -182,8 +194,25 @@ contract FeeVault is ReentrancyGuard {
         return status == Status.Active && USDC.balanceOf(address(this)) >= noteSupply() + drawDebt;
     }
 
+    /// @dev Authorizations die with the lien: once Released/Cancelled no approved hash validates.
     function isValidSignature(bytes32 hash, bytes calldata) external view returns (bytes4) {
-        return approvedHash[hash] ? ERC1271_MAGIC : bytes4(0xffffffff);
+        return approvedHash[hash] && status < Status.Released ? ERC1271_MAGIC : bytes4(0xffffffff);
+    }
+
+    /// @notice EIP-191 text the borrower personal_signs to consent to one dining draw (vault = lowercase hex).
+    function drawMessage(uint256 usdcAmount, uint256 nonce, uint256 deadline) public view returns (string memory) {
+        return string.concat(
+            "Gadai dining draw\nVault: ",
+            LibString.toHexString(address(this)),
+            "\nChain: ",
+            LibString.toString(block.chainid),
+            "\nAmount (USDC raw): ",
+            LibString.toString(usdcAmount),
+            "\nNonce: ",
+            LibString.toString(nonce),
+            "\nDeadline: ",
+            LibString.toString(deadline)
+        );
     }
 
     function flashDomainSeparator() public view returns (bytes32) {
@@ -370,17 +399,22 @@ contract FeeVault is ReentrancyGuard {
     }
 
     /// @notice Fallback when Flash rejects 1271 funders: keeper runs the TWAP and transfers the USDC back.
-    ///         Creator token only (WETH goes through swapWethToUsdc with its oracle floor). This path is custodial:
-    ///         a leaked keeper key can take the token leg, which is why it is never used for WETH.
+    ///         Only if the desk created this vault with keeperTokenCustody. Creator token only (WETH goes through
+    ///         swapWethToUsdc with its oracle floor). Custodial: a leaked keeper key can take the token leg.
     function sendTokenLegToKeeper(address token, uint256 amount) external onlyKeeper whileOpen nonReentrant {
+        if (!keeperTokenCustody) revert CustodyDisabled();
         _checkLegToken(token);
         token.safeTransfer(msg.sender, amount);
         emit TokenLegSent(msg.sender, token, amount);
     }
 
-    /// @notice Keeper books a Flynet dining draw (FLY issued off-chain) as junior USDC debt.
-    function addDraw(uint256 usdcAmount) external onlyKeeper {
+    /// @notice Keeper books a Flynet dining draw (FLY issued off-chain) as junior USDC debt, with the borrower's
+    ///         EIP-191 (EOA) or EIP-1271 (contract wallet) signature over drawMessage(usdcAmount, drawNonce, deadline).
+    function addDraw(uint256 usdcAmount, uint256 deadline, bytes calldata borrowerSig) external onlyKeeper {
         if (status != Status.Active) revert BadStatus(status);
+        if (block.timestamp > deadline) revert DrawExpired();
+        bytes32 h = SignatureCheckerLib.toEthSignedMessageHash(bytes(drawMessage(usdcAmount, drawNonce++, deadline)));
+        if (!SignatureCheckerLib.isValidSignatureNowCalldata(borrower, h, borrowerSig)) revert BadDrawSignature();
         if (drawn + usdcAmount > drawLimit) revert OverDrawLimit();
         drawn += usdcAmount;
         drawDebt += usdcAmount;
@@ -462,7 +496,7 @@ contract FeeVault is ReentrancyGuard {
     /// @notice Lowest minUsdcOut swapWethToUsdc accepts for `wethIn` (USDC raw).
     function oracleMinUsdcOut(uint256 wethIn) public view returns (uint256) {
         (, int256 px8,, uint256 updatedAt,) = IChainlinkFeed(ETH_USD_FEED).latestRoundData();
-        if (px8 <= 0 || updatedAt + MAX_ORACLE_AGE < block.timestamp) revert BadOracle();
+        if (px8 <= 0 || updatedAt + maxOracleAge < block.timestamp) revert BadOracle();
         // WETH 18 dec * price 8 dec -> USDC 6 dec: / 1e20
         return wethIn * uint256(px8) * MIN_OUT_BPS_OF_ORACLE / 10_000 / 1e20;
     }

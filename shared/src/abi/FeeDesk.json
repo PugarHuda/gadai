@@ -11,6 +11,11 @@
         "name": "treasury_",
         "type": "address",
         "internalType": "address"
+      },
+      {
+        "name": "maxOracleAge_",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "nonpayable"
@@ -87,6 +92,11 @@
             "name": "noteSymbol",
             "type": "string",
             "internalType": "string"
+          },
+          {
+            "name": "keeperTokenCustody",
+            "type": "bool",
+            "internalType": "bool"
           }
         ]
       }
@@ -145,6 +155,19 @@
   {
     "type": "function",
     "name": "loanCount",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "maxOracleAge",
     "inputs": [],
     "outputs": [
       {

@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS oauth_states (state TEXT PRIMARY KEY, loan_id INTEGER
   created_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS draws (id INTEGER PRIMARY KEY, loan_id INTEGER NOT NULL, amount_raw TEXT NOT NULL,
   fly_wei TEXT NOT NULL, location_id TEXT, flynet_reward_id TEXT, tx_hash TEXT, status TEXT NOT NULL, error TEXT,
+  draw_nonce TEXT, deadline TEXT, borrower_sig TEXT, -- the signed FeeVault.addDraw args (resendable verbatim)
   created_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS nonces (nonce TEXT PRIMARY KEY, used_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL);

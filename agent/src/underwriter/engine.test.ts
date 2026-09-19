@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { FeeInputs } from "@feedesk/shared";
 import { Q96 } from "@feedesk/shared";
-import { analyzeRate, beneficiaryFactor, computeTerms, cv, parseMemo, slope } from "./engine.ts";
+import { analyzeRate, beneficiaryFactor, computeTerms, cv, parseMemo, PRUDENT_MAX_CV, ruleMemo, slope, writtenByLlm, RULES_MODEL, type TermsResult } from "./engine.ts";
 
 const inputs = (daily: number[], o: Partial<FeeInputs> = {}): FeeInputs => ({
   token: "0x5f980dcfc4c0fa3911554cf5ab288ed0eb13dba3", symbol: "T", name: "T",
@@ -125,4 +125,89 @@ test("rOwn: claim-timed windows are capped by the beneficiary's own lifetime rat
   const claimed = [...daily]; claimed[29]! += 0.1068;
   const b = analyzeRate(claimed.map((x) => x * 0.57), 0, 108.1737 * 0.57, 250, own);
   assert.equal(b.rate, a.rate);
+});
+
+// ─── rules-only persona memos ───
+const terms = (inp: FeeInputs, adv: number, cap = 250) => {
+  const r = computeTerms(inp, adv, cap);
+  assert.ok(!("error" in r), "fixture must produce terms");
+  return r as TermsResult;
+};
+const rule = (id: string, inp: FeeInputs, adv: number, cap = 250) => {
+  const r = terms(inp, adv, cap);
+  const m = ruleMemo(id, inp, r, adv, cap);
+  // every rule memo passes the same fail-closed validation as an LLM reply
+  assert.deepEqual(parseMemo(JSON.stringify(m), Number(r.terms.maxPrincipalRaw) / 1e6, r.terms.floorPrice), m);
+  return m;
+};
+
+test("rules/prudent: approves the engine terms; declines an extreme cv30d", () => {
+  const ok = rule("prudent", inputs(flat(0.01)), 30); // $40/day → 30% × 40 × 14 = $168, cv 0
+  assert.equal(ok.decision, "approve");
+  assert.equal(ok.principalUsdc, 168);
+  assert.equal(ok.maxNotePrice, 0.95);
+  assert.match(ok.rationale, /prudent\/approve.*cv30d 0 < 5/);
+  const lumpy = flat(0);
+  lumpy[26] = 3; // cv = √29 ≈ 5.39
+  const no = rule("prudent", inputs(lumpy, { claimableWethRaw: (10n ** 17n).toString() }), 30);
+  assert.equal(no.decision, "decline");
+  assert.equal(no.principalUsdc, 0);
+  assert.match(no.rationale, new RegExp(`prudent/extreme-cv fired: cv30d 5\.385 ≥ ${PRUDENT_MAX_CV}`));
+});
+
+test("rules/momentum: declines decay (slope<0 and r7<r30), approves otherwise", () => {
+  const falling = Array.from({ length: 30 }, (_, i) => 3 - i * (2 / 29)); // 3 → 1 WETH/day
+  const inp = (d: number[]) => inputs(d, { wethLifetime: 1e9, lifetimeDays: 1 });
+  const no = rule("momentum", inp(falling), 45);
+  assert.equal(no.decision, "decline");
+  assert.match(no.rationale, /momentum\/decay fired: slope30d -0\.0689\d* < 0 and r7 1\.\d+ < r30 2/);
+  const up = rule("momentum", inp([...falling].reverse()), 45);
+  assert.equal(up.decision, "approve");
+  assert.equal(up.principalUsdc, 250); // capped
+  const flatOk = rule("momentum", inputs(flat(0.01)), 45); // slope 0 is not decay
+  assert.equal(flatOk.decision, "approve");
+  assert.equal(flatOk.principalUsdc, 250); // 45% × 40 × 14 = $252, capped at $250
+});
+
+test("rules/skeptic: halves the fee rate; declines thin history or a sub-$1 halved principal", () => {
+  const ok = rule("skeptic", inputs(flat(0.01)), 20); // full: 20% × 40 × 14 = $112 → halved $56
+  assert.equal(ok.decision, "approve");
+  assert.equal(ok.principalUsdc, 56);
+  assert.match(ok.rationale, /skeptic\/halved fired: .*\$20\/day.*\$56\.00/);
+  const thin = rule("skeptic", inputs(flat(0.01), { lifetimeDays: 29 }), 20);
+  assert.equal(thin.decision, "decline");
+  assert.match(thin.rationale, /thin-history fired: history 29d < 30d/);
+  const dust = rule("skeptic", inputs(flat(0.000125)), 20); // $0.50/day: full max $1.40, halved $0.70
+  assert.equal(dust.decision, "decline");
+  assert.match(dust.rationale, /halved-too-small fired: .*\$0\.70 < \$1/);
+  // halving is applied before the cap: a big stream still approves at most the cap
+  assert.equal(rule("skeptic", inputs(flat(1)), 20).principalUsdc, 250);
+});
+
+test("rules: unknown persona fails closed; rules memos are never counted as LLM-written", () => {
+  assert.throws(() => ruleMemo("yolo", inputs(flat(0.01)), terms(inputs(flat(0.01)), 30), 30, 250), /no rule set/);
+  assert.equal(writtenByLlm({ model: RULES_MODEL }), false);
+  assert.equal(writtenByLlm({ model: "engine-only (Bankr LLM unavailable)" }), false);
+  assert.equal(writtenByLlm({ model: "claude-sonnet-4.6" }), true);
+});
+
+test("reputationFactor: only lowers; no feedback = no change; 0 = decline", async () => {
+  const { reputationFactor } = await import("./engine.ts");
+  const rep = (count: number, v: string, d = 0) => ({ agentId: "7", count, summaryValue: v, summaryValueDecimals: d });
+  assert.equal(reputationFactor(null).factor, 1);
+  assert.equal(reputationFactor(rep(0, "0")).factor, 1);
+  assert.equal(reputationFactor(rep(3, "100")).factor, 1);
+  assert.equal(reputationFactor(rep(3, "150")).factor, 1); // never raises
+  assert.equal(reputationFactor(rep(2, "5000", 2)).factor, 0.5); // avg 50.00
+  assert.equal(reputationFactor(rep(1, "-20")).factor, 0);
+  assert.match(reputationFactor(rep(2, "5000", 2)).note, /avg 50 → principal ×0\.5/);
+});
+
+test("terms: floorPriceQ96 × face ≥ principal × Q96 even when principal / floor divides evenly (FeeVault.startAuction check)", () => {
+  // 236.50 / 0.86 = 275 exactly; the Q96 floor is a hair under 0.86, so face must round up by 1 raw unit
+  for (const usd of [95, 190, 9.5, 236.5, 86, 1.9]) {
+    const r = computeTerms(inputs(flat(1)), 30, 250, usd) as TermsResult;
+    assert.ok(!("error" in r));
+    assert.ok(BigInt(r.terms.floorPriceQ96) * BigInt(r.terms.faceValueRaw) >= BigInt(r.terms.principalRaw) * Q96, `${usd}: ${JSON.stringify(r.terms)}`);
+  }
 });

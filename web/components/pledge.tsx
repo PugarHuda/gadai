@@ -1,22 +1,23 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import type { Hex } from "viem";
-import type { LoanDetail, TxRequest } from "@feedesk/shared";
+import { formatEther, type Hex } from "viem";
+import type { ClaimFirst, LoanDetail, TxRequest } from "@feedesk/shared";
 import { api } from "@/lib/api";
 import { ENV } from "@/lib/env";
 import { useSigner } from "@/lib/wallet";
 import { Btn, Card, Tx } from "./ui";
 
 /** SPEC flow B: three pledge paths, then POST /pledge (agent verifies shares on-chain and launches the CCA). */
-export function PledgePanel({ loan, onDone }: { loan: LoanDetail; onDone: (l: LoanDetail) => void }) {
+export function PledgePanel({ loan, claimFirst, onDone }: { loan: LoanDetail; claimFirst?: ClaimFirst | null; onDone: (l: LoanDetail) => void }) {
   const s = useSigner();
   const [hash, setHash] = useState<Hex | null>(null);
+  const [claimHash, setClaimHash] = useState<Hex | null>(null);
   const [copied, setCopied] = useState(false);
   const isBorrower = s.address?.toLowerCase() === loan.borrower.toLowerCase();
-  const cast = `cast rpc anvil_setBalance ${loan.borrower} 0xDE0B6B3A7640000 --rpc-url ${ENV.FORK_RPC_URL}
-cast rpc anvil_impersonateAccount ${loan.borrower} --rpc-url ${ENV.FORK_RPC_URL}
-cast send --unlocked --from ${loan.borrower} ${loan.pledgeTx?.to ?? loan.feesManager} "updateBeneficiary(bytes32,address)" ${loan.poolId} ${loan.vault} --rpc-url ${ENV.FORK_RPC_URL}`;
+  const cast = `cast rpc anvil_setBalance ${loan.borrower} 0xDE0B6B3A7640000 --rpc-url ${ENV.FORK_ADMIN_RPC_URL}
+cast rpc anvil_impersonateAccount ${loan.borrower} --rpc-url ${ENV.FORK_ADMIN_RPC_URL}
+cast send --unlocked --from ${loan.borrower} ${loan.pledgeTx?.to ?? loan.feesManager} "updateBeneficiary(bytes32,address)" ${loan.poolId} ${loan.vault} --rpc-url ${ENV.FORK_ADMIN_RPC_URL}`;
 
   return (
     <Card title="Pledge your fee rights" right={<span>FeeVault <span className="font-mono break-all">{loan.vault}</span></span>}>
@@ -24,6 +25,16 @@ cast send --unlocked --from ${loan.borrower} ${loan.pledgeTx?.to ?? loan.feesMan
         Move your Doppler beneficiary share to this loan&apos;s FeeVault. The vault can only give it back to you: <code>release()</code> is permissionless once the notes are repaid, and
         <code> cancel()</code> returns it if the auction fails. Any fees accrued but not yet collected go to the vault as your first repayment (claim-first).
       </p>
+      {claimFirst && (
+        <div className="mt-4 rounded-[3px] border border-dashed border-violet/50 p-3">
+          <div className="font-semibold">Optional first: claim {Number(formatEther(BigInt(claimFirst.claimableWethRaw))).toFixed(6)} WETH of accrued fees</div>
+          <p className="mt-1 max-w-[75ch] text-xs text-mute">{claimFirst.note}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <Btn kind="ghost" onClick={async () => setClaimHash(await s.sendTx(claimFirst.tx))}>{s.connected ? "Sign claim tx (before pledging)" : "Log in to sign"}</Btn>
+            {claimHash && <span className="text-xs">sent <Tx h={claimHash} /></span>}
+          </div>
+        </div>
+      )}
       <div className="mt-4 grid gap-4 md:grid-cols-3">
         <div className="box rounded-[3px] p-3">
           <div className="font-semibold">Connected wallet (Dynamic)</div>

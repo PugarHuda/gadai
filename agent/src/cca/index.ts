@@ -12,7 +12,7 @@ import {
   type Hex, type Loan, type TxRequest,
 } from "@feedesk/shared";
 import type { Ctx } from "../ctx.ts";
-import { opt } from "../ctx.ts";
+import { jsonBody, opt, posInt } from "../ctx.ts";
 import { addEvent, getLoan, listLoans, now, updateLoan } from "../db/index.ts";
 
 const auctionAbi = parseAbi(CCA_AUCTION_ABI);
@@ -398,10 +398,10 @@ async function deskExitAndClaim(ctx: Ctx, loanId: number): Promise<boolean> {
 
 // ─── routes + loop ───
 export function register(app: Hono, ctx: Ctx) {
-  const loanOf = (id: string) => getLoan(ctx.db, Number(id));
+  const loanOf = (id: string) => getLoan(ctx.db, posInt(id, "loan id"));
   app.get("/api/loans/:id/auction", async (c) => c.json(await auctionState(ctx, loanOf(c.req.param("id"))!)));
-  app.post("/api/loans/:id/auction/bid-plan", async (c) => c.json(await bidPlan(ctx, loanOf(c.req.param("id"))!, await c.req.json())));
-  app.post("/api/loans/:id/auction/exit-plan", async (c) => c.json(await exitPlan(ctx, loanOf(c.req.param("id"))!, await c.req.json())));
+  app.post("/api/loans/:id/auction/bid-plan", async (c) => c.json(await bidPlan(ctx, loanOf(c.req.param("id"))!, await jsonBody<BidPlanRequest>(c))));
+  app.post("/api/loans/:id/auction/exit-plan", async (c) => c.json(await exitPlan(ctx, loanOf(c.req.param("id"))!, await jsonBody<ExitPlanRequest>(c))));
 }
 
 export function start(ctx: Ctx): () => void {

@@ -7,7 +7,8 @@ import type { Ctx } from "../ctx.ts";
 import { insertLoan, openDb } from "../db/index.ts";
 import { assertVaultOrder, hasOpenFlashOrder } from "../flash/index.ts";
 import { applyWebhook, hasDelegation, verifyWebhook } from "./delegation.ts";
-import { publishSignals, validateFollow } from "./index.ts";
+import { publishSignals, quoteMirror, validateFollow } from "./index.ts";
+import { RULES_MODEL } from "../underwriter/engine.ts";
 
 const mkCtx = (): Ctx => ({ db: openDb(":memory:"), log: () => {} } as unknown as Ctx);
 const VAULT = "0x1074393effFCf1A15e306cD3931F48eDA9ABcd55", TOKEN = "0x5f980dcfc4c0fa3911554cf5ab288ed0eb13dba3";
@@ -90,4 +91,45 @@ test("publishSignals: approvals queue one mirror per follow, re-approvals of the
   ctx.db.prepare("UPDATE mirror_orders SET created_at = '2000-01-01T00:00:00.000Z'").run();
   publishSignals(ctx, loan(), [memo], quote); // after 24h the signal counts again
   assert.equal(mirrors(), 5);
+});
+
+test("publishSignals: rules-only (non-LLM) memos publish signals but never queue follower orders", () => {
+  const ctx = mkCtx();
+  ctx.db.prepare(`INSERT INTO follows (follower,persona_id,mode,size_usdc,tp_pct,sl_pct,dca_days,auto,active,created_at)
+    VALUES ('0x01','momentum','bracket',5,50,20,0,1,1,'t')`).run();
+  const loan = () => insertLoan(ctx.db, { status: "APPROVED", borrower: VAULT as any, token: TOKEN as any, symbol: "GITLAWB", poolId: "0x01" as any, feesManager: VAULT as any });
+  const m = (personaId: string, model: string): Memo => ({ personaId, model, decision: "approve", principalRaw: "1", maxNotePrice: 0.9, confidence: 0.5, rationale: "r", risks: [] });
+  const quote = { inputs: { token: TOKEN, symbol: "GITLAWB" } } as unknown as Quote;
+  const mirrors = () => Number((ctx.db.prepare("SELECT COUNT(*) n FROM mirror_orders").get() as any).n);
+
+  const sigs = publishSignals(ctx, loan(), [m("prudent", RULES_MODEL), m("momentum", "gemini-3-flash")], quote);
+  assert.equal(mirrors(), 0); // LLM momentum memo, but the binding lead memo came from rules
+  assert.deepEqual(sigs.map((s) => s.mirrorable), [false, false]);
+  assert.match(sigs[1]!.mirrorNote!, /lead memo not written by an LLM/);
+  const own = publishSignals(ctx, loan(), [m("prudent", "claude-sonnet-4.6"), m("momentum", RULES_MODEL)], quote);
+  assert.equal(mirrors(), 0); // LLM lead, but this persona's own memo came from rules
+  assert.match(own[1]!.mirrorNote!, /memo not written by an LLM/);
+  const ok = publishSignals(ctx, loan(), [m("prudent", "claude-sonnet-4.6"), m("momentum", "gemini-3-flash")], quote);
+  assert.equal(mirrors(), 1);
+  assert.equal(ok[1]!.mirrorable, true);
+  assert.equal(ok[1]!.mirrorNote, null);
+});
+
+test("quoteMirror: a failed risk gate is recorded but not terminal (unauthenticated route)", async () => {
+  const ctx = mkCtx(), realFetch = globalThis.fetch, realKey = process.env.FLASH_API_KEY;
+  process.env.FLASH_API_KEY ||= "dpka_test";
+  ctx.db.prepare(`INSERT INTO follows (id,follower,persona_id,mode,size_usdc,tp_pct,sl_pct,dca_days,auto,active,created_at)
+    VALUES (1,'0x01','prudent','bracket',5,50,20,0,0,1,'t')`).run();
+  ctx.db.prepare(`INSERT INTO mirror_orders (id,follow_id,signal_id,follower,token,symbol,mode,size_usdc,status,created_at,updated_at)
+    VALUES (1,1,1,'0x01',?,'GITLAWB','bracket',5,'pending_signature','t','t')`).run(TOKEN);
+  globalThis.fetch = (async () => Response.json({ assets: [{ address: TOKEN, price: "0.01", riskFlagged: true, decimals: 18, symbol: "G", liquidity: "1" }] })) as typeof fetch;
+  try {
+    await assert.rejects(quoteMirror(ctx, 1), /riskFlagged/);
+    const row = ctx.db.prepare("SELECT status, error FROM mirror_orders WHERE id = 1").get() as any;
+    assert.equal(row.status, "pending_signature");
+    assert.match(row.error, /riskFlagged/);
+  } finally {
+    globalThis.fetch = realFetch;
+    if (realKey === undefined) delete process.env.FLASH_API_KEY; else process.env.FLASH_API_KEY = realKey;
+  }
 });

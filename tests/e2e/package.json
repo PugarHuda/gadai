@@ -1,0 +1,14 @@
+{
+  "name": "gadai-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:local": "playwright test --project=local",
+    "test:prod": "playwright test --project=prod-smoke"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
+    "@playwright/test": "1.63.0"
+  }
+}

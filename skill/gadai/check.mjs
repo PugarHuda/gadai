@@ -63,4 +63,19 @@ for (const s of ["nonce already used", "re-apply after 24h", "fee rights not mov
 }
 assert.match(server, /bad\([^;]*applyMessage[^;]*, 401\)/, "server apply no longer 401s on a bad signature");
 ok("apply/pledge error strings present in server and SKILL.md");
+
+// 4. claim-first: offered before the pledge, with the collectFees(poolId) calldata rule the agent enforces (bankr assertClaimTx)
+assert.ok(server.includes("claimFirst"), "server apply no longer returns claimFirst");
+const iClaim = skill.indexOf("claimFirst.tx"), iPledge = skill.indexOf("**4b. Pledge.**");
+assert.ok(iClaim > 0 && iPledge > iClaim, "SKILL.md must offer claimFirst.tx before the pledgeTx step (4a before 4b)");
+assert.ok(skill.includes('"0x817db73b"') && skill.includes("74 characters"), "SKILL.md claimFirst calldata rule (collectFees selector 0x817db73b) changed");
+ok("claimFirst.tx offered before pledgeTx, collectFees rule present");
+
+// 5. the public API host must be filled in (placeholder left from the template)
+const placeholders = [["SKILL.md", skill], ["catalog.json", JSON.stringify(catalog)]].filter(([, s]) => s.includes("FEEDESK_API_HOST")).map(([f]) => f);
+if (placeholders.length) {
+  console.error(`FAIL  FEEDESK_API_HOST placeholder still in ${placeholders.join(" and ")}: set FD=https://<public agent host> (AGENT_PUBLIC_URL) before publishing the skill`);
+  process.exit(1);
+}
+ok("FD host filled in (no FEEDESK_API_HOST placeholder)");
 console.log("skill check passed");

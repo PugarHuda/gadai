@@ -13,12 +13,13 @@ export const erc20Abi = parseAbi(ERC20_ABI);
 
 /** Basescan link, or null for txs that only exist on the local fork. Addresses deployed before the fork block still resolve. */
 export const txUrl = (h: Hex) => (ENV.DEMO_FORK ? null : `${BASESCAN}/tx/${h}`);
-export const addrUrl = (a: string) => `${BASESCAN}/address/${a}`;
+/** On DEMO_FORK an address may exist only on the fork (vaults, notes, auctions): no Basescan link. */
+export const addrUrl = (a: string) => (ENV.DEMO_FORK ? null : `${BASESCAN}/address/${a}`);
 
 /** Fork only: advance blocks (CCA start/end) via anvil_mine. */
 export async function mineBlocks(n: number) {
   if (!ENV.DEMO_FORK) throw new Error("mineBlocks is DEMO_FORK only");
-  const r = await fetch(ENV.FORK_RPC_URL, {
+  const r = await fetch(ENV.FORK_ADMIN_RPC_URL, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "anvil_mine", params: ["0x" + n.toString(16)] }),

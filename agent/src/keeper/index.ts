@@ -7,7 +7,7 @@ import { timingSafeEqual } from "node:crypto";
 import type { Hono } from "hono";
 import { decodeEventLog, parseAbi, parseEther } from "viem";
 import { ADDR, ERC20_ABI, FEE_DESK_ABI, FEE_NOTE_ABI, FEE_VAULT_ABI, FEES_MANAGER_ABI, VAULT_STATUS, type Address, type DebtState, type Hex, type Loan, type Terms } from "@feedesk/shared";
-import { need, opt, type Ctx } from "../ctx.ts";
+import { jsonBody, need, opt, type Ctx } from "../ctx.ts";
 import { addEvent, getLoan, listLoans, updateLoan } from "../db/index.ts";
 import { claimableFees } from "../bankr/index.ts";
 import { buildVaultSwap, oracleEthUsd8, wethForDebt } from "../uniswap/index.ts";
@@ -31,6 +31,8 @@ export async function createLoanOnchain(
     borrower: a.borrower, poolId: a.poolId, feesManager: a.feesManager, creatorToken: a.creatorToken,
     principal: BigInt(a.terms.principalRaw), faceValue: BigInt(a.terms.faceValueRaw), drawLimit: BigInt(a.terms.drawLimitRaw),
     noteName: `FeeNote ${sym} #${next}`, noteSymbol: `fn${sym}${next}`, // ponytail: #n is a hint; LoanCreated below is authoritative
+    // Flash token-leg custody (FeeVault.sendTokenLegToKeeper) is fixed per vault at creation; only the "keeper" mode needs it.
+    keeperTokenCustody: opt("FLASH_TOKEN_LEG_MODE", "vault1271") === "keeper",
   };
   const { hash, receipt } = await w.write({ address: ctx.deskAddress, abi: deskAbi, functionName: "createLoan", args: [params] });
   const ev = receipt.logs
@@ -224,10 +226,26 @@ export async function runKeeperOnce(ctx: Ctx, loanId: number): Promise<void> {
   }
 
   if (STATUS_NAME[status] && STATUS_NAME[status] !== loan.status) updateLoan(ctx.db, loanId, { status: STATUS_NAME[status] });
+
+  // 6. Repaid (released by us or anyone): publish the outcome to ERC-8004 (idempotent per loan). Lazy so a
+  //    disabled erc8004 module never blocks servicing.
+  if (status === S.Released && erc8004On())
+    await step("erc8004", async () => {
+      const m = (await import("../erc8004/index.ts")) as { publishLoanOutcome(ctx: Ctx, loanId: number): Promise<void> };
+      await m.publishLoanOutcome(ctx, loanId);
+    });
 }
 
 const SERVICED: Loan["status"][] = ["APPROVED", "PLEDGED", "AUCTION", "ACTIVE"];
-const servicedIds = (ctx: Ctx) => SERVICED.flatMap((s) => listLoans(ctx.db, { status: s })).filter((l) => l.vault).map((l) => l.id);
+const liveIds = (ctx: Ctx) => SERVICED.flatMap((s) => listLoans(ctx.db, { status: s })).filter((l) => l.vault).map((l) => l.id);
+/** Released loans whose ERC-8004 outcome is not on-chain yet (a failed publish is retried next tick). */
+// same rule as src/index.ts: unset or empty FEEDESK_MODULES = every module
+const erc8004On = () => !process.env.FEEDESK_MODULES || process.env.FEEDESK_MODULES.split(",").map((s) => s.trim()).includes("erc8004");
+const unpublishedIds = (ctx: Ctx) =>
+  erc8004On()
+    ? listLoans(ctx.db, { status: "RELEASED" }).filter((l) => l.vault && !ctx.db.prepare("SELECT 1 FROM kv WHERE key = ?").get(`erc8004.metadata.${l.id}`)).map((l) => l.id)
+    : [];
+const servicedIds = (ctx: Ctx) => [...liveIds(ctx), ...unpublishedIds(ctx)];
 
 let running = false;
 async function runAll(ctx: Ctx, ids: number[]): Promise<number[]> {
@@ -254,7 +272,7 @@ export function register(app: Hono, ctx: Ctx): void {
   app.post("/api/admin/keeper/run", async (c) => {
     const got = Buffer.from(c.req.header("x-admin-token") ?? ""), want = Buffer.from(need("ADMIN_TOKEN"));
     if (got.length !== want.length || !timingSafeEqual(got, want)) return c.json({ error: "bad admin token" }, 401);
-    const body = (await c.req.json().catch(() => ({}))) as { loanId?: number };
+    const body = await jsonBody<{ loanId?: number }>(c, true);
     if (body.loanId !== undefined && !getLoan(ctx.db, Number(body.loanId))) return c.json({ error: `loan ${body.loanId} not found` }, 404);
     if (running) return c.json({ error: "keeper pass already running" }, 409);
     const ids = body.loanId !== undefined ? [Number(body.loanId)] : servicedIds(ctx);

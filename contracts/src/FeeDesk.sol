@@ -10,6 +10,8 @@ contract FeeDesk {
     address public owner;
     address public keeper;
     address public treasury;
+    /// @notice Max Chainlink ETH/USD age every vault accepts (swapWethToUsdc floor).
+    uint256 public immutable maxOracleAge;
     uint256 public loanCount;
     mapping(uint256 => address) public vaultOf; // loanId (from 1) => vault
     mapping(bytes32 => address) public activeVaultByPool; // one open loan per pool
@@ -36,8 +38,9 @@ contract FeeDesk {
     error PoolHasOpenLoan(address vault);
     error BorrowerHasNoShares();
 
-    constructor(address keeper_, address treasury_) {
-        if (keeper_ == address(0) || treasury_ == address(0)) revert BadParams();
+    constructor(address keeper_, address treasury_, uint256 maxOracleAge_) {
+        if (keeper_ == address(0) || treasury_ == address(0) || maxOracleAge_ == 0) revert BadParams();
+        maxOracleAge = maxOracleAge_;
         owner = msg.sender;
         keeper = keeper_;
         treasury = treasury_;
@@ -57,7 +60,7 @@ contract FeeDesk {
         if (IFeesManager(p.feesManager).getShares(p.poolId, p.borrower) == 0) revert BorrowerHasNoShares();
 
         loanId = ++loanCount;
-        FeeVault v = new FeeVault(loanId, p);
+        FeeVault v = new FeeVault(loanId, p, maxOracleAge);
         vault = address(v);
         note = address(v.note());
         vaultOf[loanId] = vault;

@@ -11,6 +11,12 @@ export function openDb(path: string): DatabaseSync {
   const db = new DatabaseSync(path);
   db.exec("PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;");
   db.exec(readFileSync(new URL("./schema.sql", import.meta.url), "utf8"));
+  // migration: signals.mirrorable/mirror_note (older DBs predate them; NULL = legacy row, reads as not mirrorable)
+  const cols = (db.prepare("PRAGMA table_info(signals)").all() as R[]).map((c) => c.name);
+  if (!cols.includes("mirrorable")) db.exec("ALTER TABLE signals ADD COLUMN mirrorable INTEGER; ALTER TABLE signals ADD COLUMN mirror_note TEXT;");
+  // migration: draws carry the borrower-signed addDraw args (FeeVault.addDraw(amount, deadline, sig))
+  if (!(db.prepare("PRAGMA table_info(draws)").all() as R[]).some((c) => c.name === "borrower_sig"))
+    db.exec("ALTER TABLE draws ADD COLUMN draw_nonce TEXT; ALTER TABLE draws ADD COLUMN deadline TEXT; ALTER TABLE draws ADD COLUMN borrower_sig TEXT;");
   return db;
 }
 
@@ -118,12 +124,17 @@ export function listMemos(db: DatabaseSync, loanId: number): Memo[] {
   }));
 }
 
+/** Signal DTO + whether followers' mirror orders were queued for it (and why not). */
+export type SignalRow = Signal & { mirrorable: boolean; mirrorNote: string | null };
+export const toSignal = (r: R): SignalRow => ({
+  id: Number(r.id), loanId: Number(r.loan_id), personaId: r.persona_id, token: r.token, symbol: r.symbol, decision: r.decision,
+  score: r.score, principalRaw: r.principal_raw, maxNotePrice: r.max_note_price, rationale: r.rationale, createdAt: r.created_at,
+  mirrorable: r.mirrorable === 1, mirrorNote: r.mirror_note ?? null,
+});
+
 /** Signals are written by the social module; read here for LoanDetail. */
-export function listLoanSignals(db: DatabaseSync, loanId: number): Signal[] {
-  return (db.prepare("SELECT * FROM signals WHERE loan_id = ? ORDER BY id").all(loanId) as R[]).map((r) => ({
-    id: Number(r.id), loanId: Number(r.loan_id), personaId: r.persona_id, token: r.token, symbol: r.symbol, decision: r.decision,
-    score: r.score, principalRaw: r.principal_raw, maxNotePrice: r.max_note_price, rationale: r.rationale, createdAt: r.created_at,
-  }));
+export function listLoanSignals(db: DatabaseSync, loanId: number): SignalRow[] {
+  return (db.prepare("SELECT * FROM signals WHERE loan_id = ? ORDER BY id").all(loanId) as R[]).map(toSignal);
 }
 
 /** Single-use nonce. Returns false if already used. */

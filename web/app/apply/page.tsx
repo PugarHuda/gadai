@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { isAddress, type Address } from "viem";
-import { TEST_POOL, applyMessage, type ApplyRequest, type DeskInfo, type LoanDetail, type Quote } from "@feedesk/shared";
+import { TEST_POOL, applyMessage, type ApplyRequest, type ApplyResponse, type ClaimFirst, type DeskInfo, type LoanDetail, type Quote } from "@feedesk/shared";
 import { api, creatorTokens, type CreatorToken } from "@/lib/api";
 import { ENV } from "@/lib/env";
 import { useSigner } from "@/lib/wallet";
@@ -19,10 +19,20 @@ export default function Apply() {
   const [tokErr, setTokErr] = useState<unknown>(null);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loan, setLoan] = useState<LoanDetail | null>(null);
+  const [claimFirst, setClaimFirst] = useState<ClaimFirst | null>(null);
+  const [agentId, setAgentId] = useState("");
+
+  // Deep link from the Credit Line Board: /apply?token=0x…&borrower=0x… (beneficiary)
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const t = q.get("token"), b = q.get("borrower");
+    if (t && isAddress(t)) setToken(t);
+    if (b && isAddress(b)) setBorrower(b);
+  }, []);
 
   // Default borrower = connected wallet. Any beneficiary can be quoted; applying needs the beneficiary's own signature.
   useEffect(() => {
-    if (s.address && !borrower) setBorrower(s.address);
+    if (s.address && !borrower && !new URLSearchParams(window.location.search).get("borrower")) setBorrower(s.address);
   }, [s.address, borrower]);
 
   useEffect(() => {
@@ -43,8 +53,14 @@ export default function Apply() {
     if (s.address.toLowerCase() !== borrower.toLowerCase())
       throw new Error(`Connected ${s.address} is not the beneficiary ${borrower}. Only the beneficiary can sign the application. If it's a Bankr wallet, ask your Bankr agent to apply with the Gadai skill.`);
     const b = borrower as Address, nonce = crypto.randomUUID();
-    const body: ApplyRequest = { token: token as Address, borrower: b, controller: b, via: "web", nonce, signature: await s.signMessage(applyMessage(token as Address, b, b, nonce)) };
-    setLoan(await api<LoanDetail>("/api/loans", { body }));
+    if (agentId && !/^\d+$/.test(agentId)) throw new Error("ERC-8004 agent ID must be a number");
+    const body: ApplyRequest = {
+      token: token as Address, borrower: b, controller: b, via: "web", nonce, signature: await s.signMessage(applyMessage(token as Address, b, b, nonce)),
+      ...(agentId ? { erc8004AgentId: agentId } : {}),
+    };
+    const r = await api<ApplyResponse>("/api/loans", { body });
+    setClaimFirst(r.claimFirst ?? null);
+    setLoan(r);
   };
 
   const inp = quote?.inputs;
@@ -88,6 +104,8 @@ export default function Apply() {
               {tokens.map((x) => (
                 <button
                   key={x.token}
+                  type="button"
+                  aria-pressed={token.toLowerCase() === x.token.toLowerCase()}
                   onClick={() => setToken(x.token)}
                   className={`rounded-[3px] border px-3 py-1.5 text-left text-xs transition-colors ${token.toLowerCase() === x.token.toLowerCase() ? "border-violet bg-violet-tint ring-1 ring-violet" : "border-rule bg-paper hover:border-mute"}`}
                 >
@@ -179,12 +197,19 @@ export default function Apply() {
             <pre className="mt-2 whitespace-pre-wrap bg-ground/60 p-3 font-mono text-xs">{quote.formula}</pre>
           </details>
           {quote.eligible && !loan && (
+            <>
+            <label className="mt-4 block max-w-xs">
+              <span className="label">ERC-8004 agent ID (optional)</span>
+              <input className="input mt-1" inputMode="numeric" placeholder="your agent's ID in the Base IdentityRegistry" value={agentId} onChange={(e) => setAgentId(e.target.value.trim())} />
+              <span className="mt-1 block text-xs text-mute">Must be owned by the beneficiary. Its Gadai repayment record can only lower the line; repaying adds feedback to it.</span>
+            </label>
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <Btn onClick={apply}>{s.connected ? "Sign & apply · ask the underwriters" : "Log in to apply"}</Btn>
               <span className="text-xs text-mute">
                 Calls the Bankr LLM Gateway ({desk.data?.personas.map((p) => p.model).join(", ") ?? "3 models"}). If approved, the Dynamic agent wallet opens your FeeVault on-chain.
               </span>
             </div>
+            </>
           )}
         </Card>
       )}
@@ -194,7 +219,7 @@ export default function Apply() {
           <Card title={`3. Loan #${loan.id}: credit memos`} right={<Pill s={loan.status} />}>
             <Memos memos={loan.memos} personas={desk.data?.personas} />
           </Card>
-          {loan.status === "APPROVED" && loan.vault && <PledgePanel loan={loan} onDone={setLoan} />}
+          {loan.status === "APPROVED" && loan.vault && <PledgePanel loan={loan} claimFirst={claimFirst} onDone={setLoan} />}
           {loan.status !== "APPROVED" && loan.status !== "DECLINED" && (
             <p className="text-sm">
               Pledge confirmed.{" "}

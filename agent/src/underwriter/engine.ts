@@ -86,7 +86,10 @@ export function computeTerms(inp: FeeInputs, advanceRatePct: number, capUsdc: nu
   // Floor on the 0.01 CCA tick grid, rounded DOWN; face rounded UP so floor × face ≥ principal (auction can graduate at floor).
   const floorCents = Math.floor(100 / (1 + feeRateNominal / 100) + 1e-9);
   const principalRaw = BigInt(cents) * 10_000n;
-  const faceRaw = (principalRaw * 100n + BigInt(floorCents) - 1n) / BigInt(floorCents);
+  // ceil against the ON-CHAIN floor (floorCents × ⌊Q96/100⌋ is a hair under floorCents/100): FeeVault.startAuction requires
+  // floorPriceQ96 × face ≥ principal × Q96, and a principal that divides evenly (e.g. 236.50 / 0.86 = 275) would miss it by 1 wei.
+  const floorQ96 = BigInt(floorCents) * (Q96 / 100n);
+  const faceRaw = (principalRaw * Q96 + floorQ96 - 1n) / floorQ96;
   const face = Number(faceRaw) / 1e6;
   const principal = cents / 100;
   const feeRatePct = f((face / principal - 1) * 100, 2);
@@ -97,7 +100,7 @@ export function computeTerms(inp: FeeInputs, advanceRatePct: number, capUsdc: nu
     faceValueRaw: faceRaw.toString(),
     feeRatePct,
     floorPrice: floorCents / 100,
-    floorPriceQ96: (BigInt(floorCents) * (Q96 / 100n)).toString(), // CCA grid: price % tickSpacing == 0 (cca TICK_Q96)
+    floorPriceQ96: floorQ96.toString(), // CCA grid: price % tickSpacing == 0 (cca TICK_Q96)
     tickSpacingQ96: (Q96 / 100n).toString(),
     termDays,
     drawLimitRaw: (BigInt(drawCents) * 10_000n).toString(),
@@ -135,4 +138,66 @@ export function parseMemo(text: string, maxPrincipalUsdc: number, floorPrice: nu
   if (principalUsdc < 1 || principalUsdc > maxPrincipalUsdc + 1e-9) throw new Error(`memo: principalUsdc ${principalUsdc} outside [1, ${maxPrincipalUsdc}]`);
   if (maxNotePrice < floorPrice - 1e-9 || maxNotePrice > 1) throw new Error(`memo: maxNotePrice ${maxNotePrice} outside [${floorPrice}, 1]`);
   return { ...base, principalUsdc, maxNotePrice };
+}
+
+// ─── rules-only persona memos (Bankr LLM out of credits AND UNDERWRITER_ENGINE_ONLY=1) ───
+// Each persona's `style` as a deterministic rule set over the engine analysis. These are NOT LLM output: the memo
+// model is labeled RULES_MODEL and the rationale names the rule that fired with its numbers.
+export const RULES_MODEL = "rules (Bankr LLM unavailable)";
+/** True when an LLM wrote the memo (not the rules fallback, nor the legacy "engine-only" label). */
+export const writtenByLlm = (m: { model: string }) => m.model !== RULES_MODEL && !m.model.startsWith("engine-only");
+/** Prudent declines when the 30d claim series is one lump: cv of 30 days maxes at √29 ≈ 5.39 (all fees on one day). */
+export const PRUDENT_MAX_CV = 5;
+/** Skeptic declines history shorter than this. */
+export const SKEPTIC_MIN_HISTORY_DAYS = 30;
+const RULES_CONFIDENCE = 0.5; // no model judgement behind it: neither confident nor doubtful
+
+/**
+ * r = computeTerms(inp, advanceRatePct, capUsdc) for this persona (its max principal at its advance rate).
+ * - prudent:  approve at the engine terms unless cv30d is non-finite (no 30d fees) or ≥ PRUDENT_MAX_CV.
+ * - momentum: decline when fees are decaying (slope30d < 0 AND r7 < r30), else approve at the engine terms.
+ * - skeptic:  assume fees halve → principal = min(cap, advance × usdPerDay/2 × 14d); decline if history < 30d or that < $1.
+ * Unknown persona ids throw (fail closed).
+ */
+export function ruleMemo(personaId: string, inp: FeeInputs, r: TermsResult, advanceRatePct: number, capUsdc: number): ParsedMemo {
+  const a = r.analysis, max = Number(r.terms.maxPrincipalRaw) / 1e6, floor = r.terms.floorPrice;
+  const f = (n: number, d = 6) => (Number.isFinite(n) ? Number(n.toFixed(d)) : "∞");
+  const nums = `r7=${f(a.r7)} r30=${f(a.r30)} rLife=${f(a.rLife)} WETH/day, slope30d=${f(a.slope, 8)}, cv30d=${f(a.cv, 3)}, ` +
+    `history ${inp.lifetimeDays}d, $${f(r.usdPerDay, 2)}/day, maxPrincipal $${max.toFixed(2)}`;
+  const approve = (principalUsdc: number, rule: string, risks: string[]): ParsedMemo =>
+    ({ decision: "approve", principalUsdc, maxNotePrice: floor, confidence: RULES_CONFIDENCE, rationale: `${rule}. ${nums}.`, risks: ["no LLM review", ...risks] });
+  const decline = (rule: string, risks: string[]): ParsedMemo =>
+    ({ decision: "decline", principalUsdc: 0, maxNotePrice: 0, confidence: RULES_CONFIDENCE, rationale: `${rule}. ${nums}.`, risks: ["no LLM review", ...risks] });
+
+  switch (personaId) {
+    case "prudent":
+      if (!Number.isFinite(a.cv) || a.cv >= PRUDENT_MAX_CV)
+        return decline(`Rule prudent/extreme-cv fired: cv30d ${f(a.cv, 3)} ≥ ${PRUDENT_MAX_CV} (30d fees are one lump or none)`, ["fee stream too lumpy to underwrite"]);
+      return approve(max, `Rule prudent/approve fired: cv30d ${f(a.cv, 3)} < ${PRUDENT_MAX_CV}, approving the engine terms at ${advanceRatePct}% advance`, ["claim-timed fee history"]);
+    case "momentum":
+      if (a.slope < 0 && a.r7 < a.r30)
+        return decline(`Rule momentum/decay fired: slope30d ${f(a.slope, 8)} < 0 and r7 ${f(a.r7)} < r30 ${f(a.r30)}`, ["fee volume decaying"]);
+      return approve(max, `Rule momentum/approve fired: no decay (slope30d ${f(a.slope, 8)}, r7 ${f(a.r7)} vs r30 ${f(a.r30)}), approving at ${advanceRatePct}% advance`, ["momentum can reverse"]);
+    case "skeptic": {
+      if (inp.lifetimeDays < SKEPTIC_MIN_HISTORY_DAYS)
+        return decline(`Rule skeptic/thin-history fired: history ${inp.lifetimeDays}d < ${SKEPTIC_MIN_HISTORY_DAYS}d`, ["thin fee history"]);
+      const halved = Math.floor(Math.min(capUsdc, max, (advanceRatePct / 100) * (r.usdPerDay / 2) * HORIZON_DAYS) * 100 + 1e-9) / 100;
+      if (halved < 1)
+        return decline(`Rule skeptic/halved-too-small fired: at half the fee rate ($${f(r.usdPerDay / 2, 2)}/day) principal is $${halved.toFixed(2)} < $1`, ["fees halve"]);
+      return approve(halved, `Rule skeptic/halved fired: assuming fees halve to $${f(r.usdPerDay / 2, 2)}/day, principal = ${advanceRatePct}% × that × ${HORIZON_DAYS}d = $${halved.toFixed(2)}`, ["fees halve"]);
+    }
+    default:
+      throw new Error(`ruleMemo: no rule set for persona ${personaId}`);
+  }
+}
+
+// ─── ERC-8004 repayment reputation (what THIS desk said about the borrower's agent). It may only LOWER a line. ───
+export type Reputation = { agentId: string; count: number; summaryValue: string; summaryValueDecimals: number };
+/** Multiplier on every approved principal: count 0 (no history with us) = 1; else average feedback / 100, clamped to [0, 1]
+ *  (100 = every loan repaid). 0 means decline. Never above 1: reputation can't raise a limit. */
+export function reputationFactor(r: Reputation | null): { factor: number; note: string } {
+  if (!r || r.count === 0) return { factor: 1, note: r ? `ERC-8004 agent #${r.agentId}: no Gadai feedback yet → no change` : "" };
+  const avg = Number(r.summaryValue) / 10 ** r.summaryValueDecimals;
+  const factor = Math.min(1, Math.max(0, avg / 100));
+  return { factor, note: `ERC-8004 agent #${r.agentId}: ${r.count} Gadai feedback, avg ${avg} → principal ×${Number(factor.toFixed(4))}` };
 }

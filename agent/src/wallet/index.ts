@@ -3,9 +3,11 @@
 // session key, and drives a 2-of-2 MPC wallet it owns. Every on-chain write the desk makes goes through here.
 // The Dynamic MPC SDK ships Linux/macOS native addons only, so it is imported lazily: the rest of the agent
 // (and its tests) still loads on Windows, and getAgentWallet() fails loudly there.
-import { createPublicClient, encodeFunctionData, http, parseAbi, type Abi, type Account, type Chain, type Transport, type WalletClient } from "viem";
+import { concat, createPublicClient, encodeFunctionData, http, parseAbi, type Abi, type Account, type Chain, type Transport, type WalletClient } from "viem";
+import { readFileSync, writeFileSync } from "node:fs";
 import { privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
+import { Attribution } from "ox/erc8021";
 import { ADDR, ERC20_ABI, FEE_DESK_ABI, type Address, type Hex } from "@feedesk/shared";
 import { need, type AgentWallet, type Ctx, type SentTx } from "../ctx.ts";
 
@@ -47,28 +49,93 @@ export async function signInAgent() {
   const client = new sdk.evm.DynamicEvmWalletClient({ environmentId, enableMPCAccelerator: false });
   const getSessionSignature = (m: string) => sdk.node.signSessionMessage(m, privateKeyJwk);
   let expiresAtMs = 0;
-  const login = async () => {
-    const r = await auth.wallet.signIn({
+  const siwe = async () => {
+    const r = await siweGate(() => auth.wallet.signIn({
       address: agent.address,
       signMessage: (message) => agent.signMessage({ message }),
       sessionPublicKey,
       statement: "Gadai underwriter agent sign-in",
-    });
+    }));
+    const exp = r.expiresAt < 1e12 ? r.expiresAt * 1000 : r.expiresAt; // seconds or ms; not specified in typings
     await client.authenticateJwt(r.jwt, { getSessionSignature });
-    expiresAtMs = r.expiresAt < 1e12 ? r.expiresAt * 1000 : r.expiresAt; // seconds or ms; not specified in typings
+    expiresAtMs = exp;
+    saveSession({ address: agent.address, jwt: r.jwt, expiresAtMs: exp });
+  };
+  /** Reuse the persisted JWT (same agent, same session key) until it expires; full SIWE only when there is none. */
+  const login = async () => {
+    const s = loadSession(agent.address);
+    if (s) {
+      try {
+        await client.authenticateJwt(s.jwt, { getSessionSignature });
+        expiresAtMs = s.expiresAtMs;
+        return;
+      } catch { /* revoked or bound to another session key: fall through to SIWE */ }
+    }
+    await siwe();
   };
   await login();
   /** Re-auth before expiry: refresh first, full SIWE sign-in if past refreshExp (no human needed). */
   const ensureFresh = async () => {
     if (Date.now() < expiresAtMs - 60_000) return;
     try {
-      expiresAtMs = jwtExpMs(await client.refreshAuthToken()) ?? Date.now() + 5 * 60_000; // no exp claim: re-check in 5 min
+      const jwt = await client.refreshAuthToken();
+      expiresAtMs = jwtExpMs(jwt) ?? Date.now() + 5 * 60_000; // no exp claim: re-check in 5 min
+      saveSession({ address: agent.address, jwt, expiresAtMs });
     } catch {
-      await login();
+      await siwe();
     }
   };
   return { sdk, client, agentAddress: agent.address, login, ensureFresh };
 }
+
+// ─── SIWE rate-limit hygiene: Dynamic 429s sign-ins, and a restart loop or retrying callers keep that alive ───
+/** Thrown (without touching the network) while a sign-in is backing off after a Dynamic 429. */
+export class DynamicRateLimited extends Error {
+  retryInSec: number;
+  constructor(retryInSec: number) { super(`Dynamic sign-in rate-limited (429); retry in ${retryInSec}s`); this.retryInSec = retryInSec; }
+}
+const SESSION_FILE = () => process.env.DYNAMIC_SESSION_CACHE || "./.dynamic-session.json";
+type Session = { address: string; jwt: string; expiresAtMs: number };
+function loadSession(address: string): Session | null {
+  try {
+    const s = JSON.parse(readFileSync(SESSION_FILE(), "utf8")) as Session;
+    return s.address === address && s.expiresAtMs - Date.now() > 2 * 60_000 ? s : null;
+  } catch { return null; }
+}
+function saveSession(s: Session) {
+  try { writeFileSync(SESSION_FILE(), JSON.stringify(s), { mode: 0o600 }); } catch { /* cache only */ }
+}
+const is429 = (e: unknown) => {
+  const x = e as { status?: number; response?: { status?: number }; message?: string };
+  return x?.status === 429 || x?.response?.status === 429 || /\b429\b/.test(String(x?.message ?? ""));
+};
+const retryAfterSec = (e: unknown) => {
+  const h = (e as { response?: { headers?: Record<string, string> } })?.response?.headers?.["retry-after"];
+  const n = Number(h);
+  return Number.isFinite(n) && n > 0 ? n : null;
+};
+let blockedUntil = 0, backoffMs = 0, inflight: Promise<unknown> | null = null;
+/** Single-flight SIWE with exponential backoff + jitter on 429 (honours Retry-After when exposed). Exported for tests. */
+export async function siweGate<T>(signIn: () => Promise<T>, now = Date.now): Promise<T> {
+  if (inflight) return inflight as Promise<T>;
+  const wait = blockedUntil - now();
+  if (wait > 0) throw new DynamicRateLimited(Math.ceil(wait / 1000));
+  const p = signIn().then(
+    (r) => { backoffMs = 0; return r; },
+    (e) => {
+      if (is429(e)) {
+        backoffMs = Math.min(backoffMs ? backoffMs * 2 : 60_000, 30 * 60_000);
+        const ra = retryAfterSec(e);
+        blockedUntil = now() + (ra ? ra * 1000 : backoffMs * (0.8 + Math.random() * 0.4));
+        throw new DynamicRateLimited(Math.ceil((blockedUntil - now()) / 1000));
+      }
+      throw e;
+    },
+  ).finally(() => { inflight = null; });
+  inflight = p;
+  return p;
+}
+export const resetSiweGate = () => { blockedUntil = 0; backoffMs = 0; inflight = null; };
 
 export function readWalletSecrets() {
   const hint = "(run `pnpm --filter @feedesk/agent bootstrap:dynamic` once and paste its output into .env)";
@@ -86,6 +153,16 @@ export function jwtExpMs(jwt: string): number | undefined {
     return typeof exp === "number" ? exp * 1000 : undefined;
   } catch { return undefined; }
 }
+
+/** ERC-8021 Base Builder Code suffix (docs.base.org/specifications/builder-codes/for-agent-developers), or none if unset.
+ *  Indexers read it from the calldata tail; ABI decoding ignores trailing bytes, so contracts are unaffected. */
+export const builderSuffix = (code = process.env.BASE_BUILDER_CODE): Hex | undefined =>
+  code ? (Attribution.toDataSuffix({ codes: [code] }) as Hex) : undefined;
+/** Append the builder-code suffix to calldata (no-op when unset). */
+export const withBuilderCode = (data: Hex, code = process.env.BASE_BUILDER_CODE): Hex => {
+  const s = builderSuffix(code);
+  return s ? concat([data, s]) : data;
+};
 
 const toAbi = (abi: Abi | readonly unknown[]): Abi =>
   (typeof abi[0] === "string" ? parseAbi(abi as readonly string[]) : abi) as Abi;
@@ -148,14 +225,17 @@ export async function getAgentWallet(ctx: Ctx): Promise<AgentWallet> {
     write: ({ address: to, abi, functionName, args = [], value }) =>
       serial(async () => {
         // simulate first: surfaces the decoded revert reason instead of a bare "reverted"
-        const { request } = await ctx.pub.simulateContract({ account: wc.account, address: to, abi: toAbi(abi), functionName, args, value });
-        const hash = await authed(() => wc.writeContract(request as never));
+        await ctx.pub.simulateContract({ account: wc.account, address: to, abi: toAbi(abi), functionName, args, value });
+        // single send chokepoint: encode ourselves and append the ERC-8021 suffix (wc.writeContract's dataSuffix
+        // depends on the Dynamic SDK's bundled viem honouring it; plain concat does not)
+        const data = withBuilderCode(encodeFunctionData({ abi: toAbi(abi), functionName, args } as never));
+        const hash = await authed(() => wc.sendTransaction({ to, data, value, account: wc.account, chain: base }));
         ctx.log("wallet", `${functionName} → ${to}`, { hash });
         return wait(hash);
       }),
     send: ({ to, data, value }) =>
       serial(async () => {
-        const hash = await authed(() => wc.sendTransaction({ to, data, value, account: wc.account, chain: base }));
+        const hash = await authed(() => wc.sendTransaction({ to, data: withBuilderCode(data), value, account: wc.account, chain: base }));
         ctx.log("wallet", `raw tx → ${to}`, { hash });
         return wait(hash);
       }),
