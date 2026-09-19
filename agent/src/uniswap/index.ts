@@ -54,7 +54,7 @@ export type QuoteRes = { requestId: string; routing: string; quote: { output: { 
 export const CHAINLINK_ETH_USD: Address = "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70";
 const feedAbi = parseAbi(["function latestRoundData() view returns (uint80, int256, uint256, uint256, uint80)"]);
 export const MAX_ORACLE_DEV_PCT = 3n; // quote may be at most 3% below Chainlink
-export const MAX_PRICE_IMPACT_PCT = 1; // quote.priceImpact is in percent
+export const MAX_PRICE_IMPACT_PCT = Number(process.env.UNISWAP_MAX_PRICE_IMPACT_PCT || 1); // quote.priceImpact is in percent; the Chainlink floor (MAX_ORACLE_DEV_PCT) still bounds the price
 export const DEBT_SWAP_BUFFER_PCT = 105n; // sell outstanding ÷ price × 1.05 (slippage + fees), never the whole balance
 
 /** ETH/USD with 8 decimals from Chainlink. Rejects a stale round (> 1 h vs chain time) except on DEMO_FORK, whose feed is frozen at the fork block. */
