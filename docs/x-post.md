@@ -47,27 +47,20 @@ Every credit call is a public signal you can mirror with @DefinitiveFi Flash bra
 https://gadai-six.vercel.app
 ```
 
-## 3. Video to attach
+## 3. VIDEO TO ATTACH
 
-**Upload the full demo:** `C:\Hackathons\bankrbot hackathon\web\public\gadai-demo.mp4` — 3:49 (228.8 s), 39.0 MB, H.264 1920x1080 + AAC. X Premium takes video up to 4 hours and far past 39 MB, so the cut is not needed; the full render is the one the judges are pointed at from `/demo`.
+Attach `web/public/gadai-demo.mp4` (absolute: C:/Hackathons/bankrbot hackathon/web/public/gadai-demo.mp4) — the current render: **4:49 (289.40 s), 43.2 MB**, H.264 1920x1080 + AAC, faststart. X Premium accepts it.
 
-**Fallback cut (still valid):** `C:\Hackathons\bankrbot hackathon\video\cuts\gadai-x.mp4` — 2:00.8, 23.9 MB, inside the free-tier 2:20 / 512 MB limit. Poster still: `video\cuts\gadai-x-poster.jpg` (1280x720).
+The same film is on the site at https://gadai-six.vercel.app/demo. An earlier 3:49 cut is on YouTube at https://youtu.be/F7joLyWWB0E — to make the post, the site and YouTube identical, re-upload the 4:49 file and use the new YouTube link everywhere.
 
-The cut was made on 2026-09-20 08:21 from the current render, and `web/public/gadai-demo.mp4` is byte-identical to `video/out/final.mp4` (md5 `494dc29c5ad96da2047e629e26870007`, mtime 2026-09-19 23:14), so it is in sync. `video/public/marks.json` and `data.json` were touched at 08:35–08:38 and carry an "equities" scene that the rendered MP4 does not have yet, so a new render may land. Before posting, re-check:
-
-```bash
-md5sum web/public/gadai-demo.mp4 video/out/final.mp4
-ffprobe -v error -show_entries format=duration,size -of csv=p=0 web/public/gadai-demo.mp4
-```
-
-If the hash or duration changed, the alt text below needs an onchain-equities line and the fallback cut must be re-cut from the new source (same segment recipe: 0.00–61.45, 129.60–159.80, 199.55–228.67, re-encoded segments joined with the concat demuxer).
+`video/cuts/gadai-x.mp4` (2:00) was cut from the older 3:49 render, so its beats no longer line up; keep it only as a fallback if an upload is rejected.
 
 ## 4. Video alt text (994 characters; X allows 1,000)
 
 Paste into X's "Add description" box on the attached video.
 
 ```
-Narrated 3:49 screen demo of Gadai, a lending desk for Bankr agents. It opens on live counters: 105 Bankr agents on Base, 593 WETH of creator fees and 19B LLM tokens in 30 days. A nine step diagram draws the loan: updateBeneficiary moves the fee share to a FeeVault, the lien; FeeNotes sell in a Uniswap Continuous Clearing Auction; USDC goes to the borrower; fees are swapped to USDC through the Uniswap Trading API; release() hands the fee rights back. Then the live Credit Line Board, three underwriter memos, the pledge, the auction with the desk's anchor bid, and a loan timeline on an Anvil fork of Base where the debt hits zero, release() fires and ERC-8004 reputation is written. A Follow the Desk screen shows the Definitive Flash TWAP the desk filled on Base mainnet, then the Dynamic MPC wallet paying 0.05 USDC over x402 for a honeypot verdict. A mainnet evidence screen lists four Basescan transactions: FeeDesk deployed, ERC-8004 agent #94699, the x402 payment and the Flash fill.
+Narrated 4:49 screen demo of Gadai, a lending desk for Bankr agents. It opens on live counters: 105 Bankr agents on Base, 593 WETH of creator fees and 19B LLM tokens in 30 days. A nine step diagram draws the loan: updateBeneficiary moves the fee share to a FeeVault, the lien; FeeNotes sell in a Uniswap Continuous Clearing Auction; USDC goes to the borrower; fees are swapped to USDC through the Uniswap Trading API; release() hands the fee rights back. Then the live Credit Line Board, three underwriter memos, the pledge, the auction with the desk's anchor bid, and a loan timeline on an Anvil fork of Base where the debt hits zero, release() fires and ERC-8004 reputation is written. A Follow the Desk screen shows the Definitive Flash TWAP the desk filled on Base mainnet, then the Dynamic MPC wallet paying 0.05 USDC over x402 for a honeypot verdict. A mainnet evidence screen lists the mainnet transactions: FeeDesk deployed, ERC-8004 agent #94699, the x402 payment, the Flash fill and the tokenized-equity buy on Robinhood Chain.
 ```
 
 ## 5. Posting steps (Premium, @BangDropID)
