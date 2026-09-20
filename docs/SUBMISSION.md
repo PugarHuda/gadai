@@ -1,15 +1,15 @@
 # Submission checklist: Gadai
 
-The deadline is **Sun 2026-09-20 03:00 WIB**. Tick a box only against evidence you can click (a file, a tx hash, a live URL or a video timestamp). Paste-ready text is in [READY_TO_PASTE.md](READY_TO_PASTE.md). Mainnet txs: [EVIDENCE.md](EVIDENCE.md).
+The deadline is **Sun 2026-09-20 11:00 WIB**. Tick a box only against evidence you can click (a file, a tx hash, a live URL or a video timestamp). Paste-ready text is in [READY_TO_PASTE.md](READY_TO_PASTE.md). Mainnet txs: [EVIDENCE.md](EVIDENCE.md).
 
 ## 0. Before submitting
 
 - [x] Repo is **public**: https://github.com/PugarHuda/gadai (skill/README/DEMO placeholders are already filled in).
 - [x] The agent behind the tunnel serves the **concierge + equity** build. Verified 01:19 UTC 2026-09-20: `/api/flynet/status` returns JSON with app "hackathon 2", `/api/flynet/trending` returns venues, `/api/flash/info` returns `integratorFeeBps 10`, `/api/signals/1` returns a card, `/api/risk/<token>` returns a cached-verdict shape, and `/api/board` has `robinhood` rows and the equity totals. If the tunnel hostname changes, update it in README.md, READY_TO_PASTE.md, both `grok/skills/*/SKILL.md`, `skill/gadai/` and the Vercel env.
-- [ ] **Restart the agent once more** so it also serves the FLY-checkout build that landed 2026-09-20: `curl .../api/flynet/status | grep -o '"state":"[a-z-]*"'` should print `"state":"pending-review"`. The live process still returns the older `payments:{enabled,reason}` shape.
+- [x] **Agent restarted** on the FLY-checkout build that landed 2026-09-20: `curl .../api/flynet/status` returns `payments.state: "pending-review"` (checked 02:3x UTC 2026-09-20).
 - [x] https://gadai-six.vercel.app/evidence is deployed (200 at 01:2x UTC on 2026-09-20). `/demo` and `/board` are 200 too.
-- [ ] https://gadai-six.vercel.app/deck (slides) returns 200. It was 404 at 01:2x UTC on 2026-09-20, so do not paste that link until it is live.
-- [ ] README line links match the code: `node docs/anchors.mjs` prints `README anchors OK`. After the last code change, run `node docs/anchors.mjs --write`.
+- [x] https://gadai-six.vercel.app/deck (slides) returns **200** (checked 02:3x UTC on 2026-09-20). Safe to paste.
+- [x] README line links match the code: `node docs/anchors.mjs` prints `README anchors OK (56 links)` (re-run at 02:4x UTC 2026-09-20). Re-run `node docs/anchors.mjs --write` after any further code change.
 - [ ] The skill matches the server: `node skill/gadai/check.mjs` passes.
 - [x] `pnpm --filter @feedesk/agent test` is green: **118 tests, 117 pass, 1 skipped, 0 fail** (run 2026-09-20). `pnpm contracts:test` (26 Foundry fork tests) was last run green by the contracts owner on 2026-09-19; it needs `forge` on `PATH` and a Base archive RPC, so re-run it from a shell that has both.
 - [ ] `.env` is **not** committed: `git ls-files | grep -c '^.env$'` prints `0`.
@@ -33,7 +33,7 @@ The deadline is **Sun 2026-09-20 03:00 WIB**. Tick a box only against evidence y
 | A real Bankr agent installs the skill from our public URL (screenshot of the reply) | ______ | [ ] |
 | Optional: PR to `BankrBot/skills` adding `gadai/` | PR URL ______ | [ ] |
 | Paid API on Bankr x402 Cloud | `curl -i` the gadai-credit URL → 402 | [x] |
-| Onchain equities: Bankr agents paid in tokenized stocks | `/board` prices them live (01:19 UTC 2026-09-20: 3 equity agents, $64,514 lifetime equity fees, $164.73 indicative), and the desk bought TSLA for real on chain 4663 (EVIDENCE #6) | [x] |
+| Onchain equities: Bankr agents paid in tokenized stocks | `/board` prices them live (02:35 UTC 2026-09-20: 4 equity agents — SPY, TSLA, MSTR, AMZN — $65,114 lifetime equity fees, $164.63 indicative, `totals.failed: 0`; live reads that drift), and the desk bought TSLA for real on chain 4663 (EVIDENCE #6) | [x] |
 | Bankr agent profile `gadai` | created; pending Bankr admin review (not public yet) | [ ] |
 
 ## 2. Dynamic: an agent that decides, then pays
@@ -45,7 +45,7 @@ The deadline is **Sun 2026-09-20 03:00 WIB**. Tick a box only against evidence y
 | Decision → payment in the loan flow | lead memo approves → `createLoan`, anchor bid, `disburse()` 239.75 USDC to the borrower, all signed by the agent wallet (fork, `/loans/1`, video 1:44–2:05) | [x] |
 | Embedded wallets for borrowers, lenders, followers | `web/lib/wallet.tsx`, pledge and bid panels | [x] |
 | Delegated access: **configured and live** | RSA credential uploaded in the Dynamic console, `DYNAMIC_AUTH_TOKEN` + `DYNAMIC_WEBHOOK_SECRET` set, webhook verified by Dynamic; unsigned `POST /api/dynamic/webhook` → `401 bad signature` (checked 2026-09-20). Code: `agent/src/social/delegation.ts` | [x] |
-| Delegated access: **one delegation actually granted** | Needs a human: log in to `/desk` with a Dynamic embedded wallet, tick auto-mirror, approve the prompt. Then the agent logs `dynamic webhook: stored`. Steps in README "Delegated access" and `docs/integrations/dynamic.md` §3 | [ ] |
+| Delegated access: **one delegation actually granted** | Done 2026-09-20: a user approved the prompt from embedded wallet `0x277aaE03…AFF9C`; Dynamic delivered the encrypted share to the HMAC-verified webhook, the agent stored it (02:10:49Z, `dynamic webhook: stored`) and the same user revoked it (02:16:12Z). EVIDENCE #7. The auto-mirror executor stays disabled on the fork, deliberately | [x] |
 | Agent tops up its own gas before paying | `RISK_AUTO_TOPUP` in `agent/src/risk` (EXACT_OUTPUT USDC→ETH via the Trading API, daily + per-tx caps, off on the fork) | [x] |
 | Two-chain wallet action: bridge + buy a tokenized stock | EVIDENCE #6 (`agent/src/demo/rh-equity-swap.ts`) | [x] |
 

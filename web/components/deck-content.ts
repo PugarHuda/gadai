@@ -5,29 +5,30 @@
  * both import this file, so a number is never written twice.
  *
  * Every figure here is a real reading, labelled with where it came from:
- *  - `AS_OF` numbers are the live `/api/board` snapshot the demo video was cut from
- *    (video/public/data.json, capturedAt 2026-09-19T15:26Z). Keeping the deck on the same
- *    snapshot is deliberate: the narration says "over 750 dollars" and the slides must agree.
+ *  - `AS_OF` numbers are one live `/api/board` read, taken at the timestamp below. The board
+ *    drifts with live fee data, so these are a labelled snapshot, not a constant. (The demo
+ *    video was cut from an earlier read, 2026-09-19T15:26Z, where credit was $755.31 —
+ *    the narration's "over 750 dollars" still holds.)
  *  - loan figures are loan #1 (GITLAWB) as it ran end to end on the Anvil fork of Base.
  *  - mainnet transactions are docs/EVIDENCE.md, verbatim.
  * ponytail: a snapshot, not a build-time fetch — /board is the live surface, the deck is the story.
  */
 
-export const AS_OF = "2026-09-19 15:26 UTC";
+export const AS_OF = "2026-09-20 02:35 UTC";
 
 /** Live Gadai agent `/api/board` → `totals`, read at AS_OF. */
 export const BOARD = {
   agents: 105,
   eligible: 14,
-  creditUsdc: 755.31,
-  lifetimeFeesWeth: 593.16,
-  claimableWeth: 9.67,
-  claimableUsd: 25534, // 9.670721 WETH x $2,640.47 ETH/USD (Uniswap Trading API quote in the same response)
-  llmTokens30d: 18.6, // billions, Bankr LLM Gateway, 30 days
-  ethUsd: 2640.47,
+  creditUsdc: 869.86,
+  lifetimeFeesWeth: 593.3,
+  claimableWeth: 10.14,
+  claimableUsd: 26440, // 10.138943 WETH x $2,607.78 ETH/USD (Uniswap Trading API quote in the same response)
+  llmTokens30d: 19.6, // billions, Bankr LLM Gateway, 30 days
+  ethUsd: 2607.78,
   robinhoodAgents: 17,
   equityAgents: 4,
-  equityFeesUsd: 65552, // docs: lifetime equity fees, beneficiary share, 2026-09-19
+  equityFeesUsd: 65114, // lifetime equity fees, beneficiary share, same read
 };
 
 /** Loan #1, GITLAWB, run end to end on an Anvil fork of Base against the real Bankr pool. */
@@ -92,7 +93,7 @@ export const SLIDES: Slide[] = [
       { value: `${BOARD.claimableWeth} WETH`, label: "Claimable, sitting idle", source: `≈ $${(BOARD.claimableUsd / 1000).toFixed(1)}k at $${BOARD.ethUsd.toLocaleString("en-US")}/ETH` },
     ],
     punch: "Bankr's own guidance when fees don't cover compute: cut operations, or top up by hand. Nothing lets a creator borrow against fees it has already earned.",
-    footnote: `live /api/board · ${AS_OF}`,
+    footnote: `live /api/board · read ${AS_OF} · a live read, it drifts`,
   },
   {
     kind: "diagram",
@@ -241,7 +242,7 @@ export const SLIDES: Slide[] = [
       ["Lifetime fees", `${BOARD.lifetimeFeesWeth} WETH`],
       ["Claimable, idle", `${BOARD.claimableWeth} WETH`],
     ],
-    footnote: `live /api/board · ${AS_OF} · a pre-approval, not a binding quote: the on-chain checks and memos run on apply`,
+    footnote: `live /api/board · read ${AS_OF}, it drifts · a pre-approval, not a binding quote: the on-chain checks and memos run on apply`,
   },
   {
     kind: "cards",
