@@ -283,6 +283,9 @@ export function DeckView() {
             <Link className="link ml-2 text-sm font-semibold" href="/demo">
               Download the video
             </Link>
+            <a className="link text-sm font-semibold" href="/Gadai.pptx" download>
+              Download the deck (PPTX)
+            </a>
             <Link className="link hidden text-sm font-semibold sm:inline" href="/">
               Exit deck
             </Link>

@@ -5,13 +5,18 @@ import { Card } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Evidence", description: "What Gadai ran on Base mainnet, what ran on a fork, and what is code only." };
 
-// Source of truth: docs/EVIDENCE.md (Base mainnet, 2026-09-19). Always Basescan links: these txs are on mainnet even when the UI runs on DEMO_FORK.
+// Source of truth: docs/EVIDENCE.md (Base mainnet + Robinhood Chain, 2026-09-19 → 2026-09-20). Always explorer links: these txs are on mainnet even when the UI runs on DEMO_FORK.
 const AGENT_WALLET = "0x81b73786BF2dE819e66BB57d08effADe0085305D";
 const FEE_DESK = "0xa4f21ace41923bccfdebf1c6ab49659d80476b4f";
+const RH_SCAN = "https://robinhoodchain.blockscout.com"; // Robinhood Chain (4663) explorer
+const TSLA = "0x322F0929c4625eD5bAd873c95208D54E1c003b2d";
+const USER_WALLET = "0x277aaE03de02F5C9d33a6290Daba50E7792AFF9C";
 
-const Scan = ({ h, kind = "tx", full }: { h: string; kind?: "tx" | "address"; full?: boolean }) => (
-  <a className="link font-mono" href={`${BASESCAN}/${kind}/${h}`} target="_blank" rel="noreferrer" title={h}>
-    {full ? h : `${h.slice(0, 10)}…${h.slice(-6)}`}
+const short = (h: string) => `${h.slice(0, 10)}…${h.slice(-6)}`;
+
+const Scan = ({ h, kind = "tx", full, base = BASESCAN }: { h: string; kind?: "tx" | "address" | "token"; full?: boolean; base?: string }) => (
+  <a className="link font-mono" href={`${base}/${kind}/${h}`} target="_blank" rel="noreferrer" title={h}>
+    {full ? h : short(h)}
   </a>
 );
 
@@ -54,19 +59,49 @@ const ROWS: { what: React.ReactNode; why: string; tx: React.ReactNode }[] = [
       </>
     ),
   },
+  {
+    what: (
+      <>
+        <b>Onchain equities, for real</b>: the desk bridges <b>0.0002 ETH</b> from Base to <b>Robinhood Chain (4663)</b> through Relay, then buys{" "}
+        <b>0.000789621985268726 TSLA</b> (&ldquo;Tesla · Robinhood Token&rdquo;, <Scan kind="token" base={RH_SCAN} h={TSLA} />) for 0.000109976 ETH through the{" "}
+        <span className="font-mono">Uniswap Trading API</span> on chain 4663
+      </>
+    ),
+    why: "The Credit Line Board prices Bankr agents whose creator fees are paid in tokenized stocks; this proves that leg is tradable, not theoretical",
+    tx: (
+      <>
+        bridge (Base) <Scan h="0xc65bd93a23bdf9756dec9503aeb40ff902d9beeb53200a6068c99cab2e5af2d4" /> · swap (4663){" "}
+        <Scan base={RH_SCAN} h="0xbfbe9702dd40ed28e734d1ebc319a7ace9d27b30f77eb5185179de01366dd708" />
+      </>
+    ),
+  },
+  {
+    what: (
+      <>
+        <b>Dynamic delegated access, granted by a user</b>: from the browser, a user with the embedded wallet <Scan kind="address" h={USER_WALLET} /> approved automations on
+        their behalf. Dynamic delivered the encrypted key share to the desk&apos;s HMAC-verified webhook (an unsigned POST returns 401) and the agent stored it at{" "}
+        <span className="font-mono">2026-09-20T02:10:49Z</span>; the same user revoked it from the Dynamic widget and the desk logged{" "}
+        <span className="font-mono">revoked</span> at <span className="font-mono">2026-09-20T02:16:12Z</span>
+      </>
+    ),
+    why: "An assistant that acts for a user inside their approved wallet permissions — user-owned, scoped, and revocable from the same widget",
+    tx: <span className="text-mute">no chain tx — the grant lives in Dynamic and our vault; the webhook events are stored server-side</span>,
+  },
 ];
 
 const SPLIT: [string, string, string, string[]][] = [
   [
     "Base mainnet",
     "text-desk bg-desk/5",
-    "Real transactions and live services, linked above.",
+    "Real transactions and live services, linked above (one leg lands on Robinhood Chain 4663).",
     [
       "FeeDesk deployment",
       "ERC-8004 registration (desk #94699)",
       "x402 risk payment by the Dynamic agent wallet",
       "Flash TWAP order",
       "Uniswap Trading API swap",
+      "Relay bridge to Robinhood Chain + TSLA buy on chain 4663",
+      "Dynamic delegated access: granted by a user, delivered to our webhook, revoked",
       "x402 credit report service (Bankr x402 Cloud)",
       "Flynet production data (dining catalog, read-only)",
     ],
@@ -82,7 +117,7 @@ const SPLIT: [string, string, string, string[]][] = [
     "text-mute",
     "Written and tested, not exercised end to end.",
     [
-      "Dynamic delegated auto-mirror",
+      "Auto-mirror executor: deliberately disabled while the desk runs on the fork, so a live delegation cannot move funds here",
       "Flynet payments (needs Blackbird partner review)",
       "LLM memos (Bankr LLM credits are $0, so memos come from rule personas)",
     ],
@@ -96,11 +131,12 @@ export default function Evidence() {
         <h1 className="h1">Evidence</h1>
         <p className="mt-3 max-w-[68ch] text-mute">
           What ran on Base mainnet, what ran on a fork, and what is code only. Every mainnet transaction was signed by the desk&apos;s Dynamic agent wallet{" "}
-          <Scan kind="address" h={AGENT_WALLET} />. The full loan lifecycle runs on the fork; see the <Link className="link" href="/demo">demo video</Link>.
+          <Scan kind="address" h={AGENT_WALLET} /> — except the last row, where a user granted the desk delegated access from their own embedded wallet. The full loan lifecycle
+          runs on the fork; see the <Link className="link" href="/demo">demo video</Link>.
         </p>
       </header>
 
-      <Card title="Base mainnet transactions" right="Basescan · 2026-09-19">
+      <Card title="Mainnet evidence" right="Basescan · Robinhood Chain · 2026-09-19 → 2026-09-20">
         <div className="-mx-4 overflow-x-auto px-4 sm:-mx-5 sm:px-5">
           <table className="tbl">
             <thead>

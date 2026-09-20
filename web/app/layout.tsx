@@ -5,13 +5,19 @@ import { missingEnv, ENV } from "@/lib/env";
 import { Providers } from "@/lib/wallet";
 import Link from "next/link";
 import { Nav } from "@/components/nav";
+import { SITE } from "@/components/share";
+
+const description = "USDC loans for Bankr agents, collateralized by Doppler fee rights on Base. Funded by FeeNote auctions.";
 
 const sans = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-archivo" });
 const mono = Chivo_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-chivo-mono" });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE),
   title: { default: "Gadai · credit against Bankr creator fees", template: "%s · Gadai" },
-  description: "USDC loans for Bankr agents, collateralized by Doppler fee rights on Base. Funded by FeeNote auctions.",
+  description,
+  openGraph: { type: "website", url: "/", siteName: "Gadai", title: "Gadai · credit against Bankr creator fees", description },
+  twitter: { card: "summary_large_image", title: "Gadai · credit against Bankr creator fees", description },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
