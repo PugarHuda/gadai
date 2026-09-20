@@ -7,9 +7,10 @@ test.describe("/evidence", () => {
     expect(res?.status()).toBe(200);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Evidence");
     const table = page.locator("section.card").filter({ hasText: "Base mainnet transactions" });
-    await expect(table.locator("tbody tr")).toHaveCount(5);
+    const rows = table.locator("tbody tr");
+    expect(await rows.count()).toBeGreaterThanOrEqual(5);
     const txs = table.locator('a[href*="basescan.org/tx/"]');
-    // five rows, row 5 also links the Flash approval tx
+    // one tx link per row at least, and the Flash row also links its approval tx
     expect(await txs.count()).toBeGreaterThanOrEqual(5);
     for (const a of await txs.all()) {
       const href = (await a.getAttribute("href"))!;
@@ -18,7 +19,13 @@ test.describe("/evidence", () => {
       expect(await a.getAttribute("target")).toBe("_blank");
       expect(await a.getAttribute("rel")).toMatch(/noreferrer|noopener/);
     }
-    for (const row of await table.locator("tbody tr").all()) await expect(row.locator('a[href*="basescan.org/tx/"]').first()).toBeVisible();
+    // Every row is evidence: either a Basescan tx or, for an off-chain event (e.g. the Dynamic
+    // delegation grant/revoke, which has no tx), a stated "why it matters".
+    for (const row of await rows.all()) {
+      const tx = row.locator('a[href*="basescan.org/tx/"]').first();
+      if (await tx.count()) await expect(tx).toBeVisible();
+      else await expect(row.locator("td").nth(2)).not.toBeEmpty();
+    }
     // Honest split: what is mainnet, fork, or code only.
     const split = page.locator("section.card").filter({ hasText: "Live vs simulated" });
     for (const w of ["Base mainnet", "Fork", "Code only"]) await expect(split.getByText(w, { exact: true })).toBeVisible();
@@ -42,12 +49,16 @@ test.describe("/demo", () => {
     await expect(v).toHaveAttribute("src", "/gadai-demo.mp4");
     await expect(v).toHaveAttribute("poster", "/gadai-demo-poster.jpg");
     await expect(v).toHaveAttribute("controls", "");
-    await expect(page.locator("figcaption")).toContainText("3:49");
+    // The caption's duration is checked against the file itself, so replacing the MP4 without
+    // re-probing fails here instead of shipping a wrong number.
+    await expect(page.locator("figcaption")).toContainText(/\b\d+:\d{2}\b/);
     const secs = await v.evaluate(
       (el: HTMLVideoElement) => new Promise<number>((ok) => (el.readyState >= 1 ? ok(el.duration) : el.addEventListener("loadedmetadata", () => ok(el.duration), { once: true }))),
     );
-    expect(`${Math.floor(Math.round(secs) / 60)}:${String(Math.round(secs) % 60).padStart(2, "0")}`).toBe("3:49");
+    const mmss = `${Math.floor(Math.round(secs) / 60)}:${String(Math.round(secs) % 60).padStart(2, "0")}`;
+    await expect(page.locator("figcaption"), `MP4 is ${mmss} (${Math.round(secs)}s)`).toContainText(mmss);
     await expect(page.getByRole("link", { name: "Download the MP4" })).toHaveAttribute("href", "/gadai-demo.mp4");
+    await expect(page.getByRole("link", { name: "Watch on YouTube" })).toHaveAttribute("href", "https://youtu.be/F7joLyWWB0E");
     for (const h of ["/evidence", "/board", "/desk", "/dine"]) await expect(page.getByRole("main").locator(`a[href="${h}"]`)).toBeVisible();
   });
 

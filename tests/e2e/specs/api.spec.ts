@@ -291,7 +291,7 @@ test.describe("agent API: social (Follow the Desk)", () => {
 });
 
 test.describe("agent API: Flynet (dine concierge)", () => {
-  test("GET /api/flynet/status: app scopes and the live FLY payment state", async ({ request }) => {
+  test("GET /api/flynet/status: app scopes and the live FLY payment state @smoke", async ({ request }) => {
     const r = await request.get(`${AGENT}/api/flynet/status`);
     expect(r.status()).toBe(200);
     const s = await r.json();
@@ -303,7 +303,7 @@ test.describe("agent API: Flynet (dine concierge)", () => {
     expect(typeof s.memberLogin.available).toBe("boolean");
   });
 
-  test("GET /api/loans/1/dine is DineState: budget, no draws, honest payment + save-to-list notes", async ({ request }) => {
+  test("GET /api/loans/1/dine is DineState: budget, no draws, honest payment + save-to-list notes @smoke", async ({ request }) => {
     const d = await (await request.get(`${AGENT}/api/loans/1/dine`)).json();
     expect(d.loanId).toBe(1);
     expect(d.budgetRaw).toMatch(/^\d+$/);
@@ -338,7 +338,7 @@ test.describe("agent API: Flynet (dine concierge)", () => {
     await expectError(await request.get(`${AGENT}/api/flynet/trending?region=${"x".repeat(81)}`), 400, /region too long/);
   });
 
-  test("GET /api/flynet/restaurants + trending return live venues (or a stale copy)", async ({ request }) => {
+  test("GET /api/flynet/restaurants + trending return live venues (or a stale copy) @smoke", async ({ request }) => {
     test.setTimeout(120_000);
     const r = await request.get(`${AGENT}/api/flynet/restaurants?page=0`, { timeout: 90_000 });
     expect(r.status(), await r.text()).toBe(200);
@@ -452,7 +452,7 @@ test.describe("agent API: risk (x402 verdicts)", () => {
 });
 
 test.describe("agent API: signal cards", () => {
-  test("GET /api/signals/1 is a SignalCard; bad id 400, unknown 404", async ({ request }) => {
+  test("GET /api/signals/1 is a SignalCard; bad id 400, unknown 404 @smoke", async ({ request }) => {
     const c = await (await request.get(`${AGENT}/api/signals/1`)).json();
     expect(c.id).toBe(1);
     expect(["approve", "decline"]).toContain(c.decision);

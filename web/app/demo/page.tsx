@@ -24,7 +24,7 @@ export default function Demo() {
       <figure>
         <video className="w-full border border-rule bg-ink" src="/gadai-demo.mp4" poster="/gadai-demo-poster.jpg" controls playsInline preload="metadata" />
         <figcaption className="mt-2 text-sm text-mute">
-          <a className="link" href="https://youtu.be/F7joLyWWB0E">Watch on YouTube</a> · <a className="link" href="/gadai-demo.mp4" download>Download the MP4</a> · <span className="num">4:49</span> · narrated, subtitled
+          <a className="link" href="https://youtu.be/F7joLyWWB0E" target="_blank" rel="noreferrer">Watch on YouTube</a> · <a className="link" href="/gadai-demo.mp4" download>Download the MP4</a> · <span className="num">4:49</span> · narrated, subtitled
         </figcaption>
       </figure>
       <section>

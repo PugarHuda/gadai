@@ -28,7 +28,7 @@ export const NOBODY = "0x1111111111111111111111111111111111111111"; // no Bankr 
 
 export const ROUTES = ["/", "/apply", "/board", "/notes", "/desk", "/dine", "/dine/1", "/loans/1"] as const;
 /** Main nav labels, in order. */
-export const NAV = ["Loan book", "Borrow", "Credit lines", "Lend", "Follow the Desk", "Dine", "Demo", "Evidence"];
+export const NAV = ["Loan book", "Borrow", "Credit lines", "Lend", "Follow the Desk", "Dine", "Deck", "Demo", "Evidence"];
 /** Headline per route, so a route test knows the page really rendered. */
 export const H1: Record<string, RegExp> = {
   "/": /Borrow USDC against your token/,

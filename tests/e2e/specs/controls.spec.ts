@@ -231,14 +231,17 @@ test.describe("/dine and /dine/1", () => {
     await expect(page.getByText("Gadai moves no money for dining", { exact: false })).toBeVisible();
   });
 
-  test("/dine/1 shows the budget, the honest payment note and a back link", async ({ page }) => {
+  test("/dine/1 shows the budget, the honest payment note and a back link @smoke", async ({ page }) => {
     await page.goto("/dine/1");
     await settled(page);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(/^Dine on \$\w+ fees$/);
     const budget = page.locator("section.card").filter({ hasText: "Dining budget" });
     await expect(budget).toContainText(/\$[\d.,]+/);
-    await expect(budget).toContainText("Payment: not enabled.");
+    // Honest live state from GET /api/flynet/status, not a hard-coded line.
+    await expect(budget).toContainText(/FLY payments: (enabled|pending Blackbird review|unknown)\./);
     await expect(page.getByText(/No draws yet|drawn of/)).toHaveCount(0); // FLY draws were removed
+    // Logged out there is no way to move money: the FLY checkout needs a Blackbird member session.
+    await expect(page.getByRole("button", { name: /Pay .* FLY with Blackbird/ })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Back to loan #1" })).toHaveAttribute("href", "/loans/1");
     await page.getByRole("button", { name: "Log in with Dynamic first" }).click();
     await authOpened(page);
