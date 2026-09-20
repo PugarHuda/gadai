@@ -86,6 +86,12 @@ A single "request rules" table on the integration guide would save time.
 - **The problem:** we found it only by reading the OpenAPI spec.
 - **Suggested fix:** a line in the "for agents" material.
 
+### 13. On chain 4663 (Robinhood Chain) the router-version header has to be left off, and the failure doesn't say so
+- **What we were doing:** pricing and then buying Robinhood tokenized stocks (SPY, TSLA, MSTR) through the Trading API on chain 4663. Some Bankr/Doppler pools are quoted in those tokens, so a creator's fees arrive as shares, and we value and liquidate them with the same API we use on Base.
+- **What happened:** our Base client always sends `x-universal-router-version: 2.0` (per the rule that it must be identical on every call of one swap). Sent on 4663, `/quote` returns no route. Omitting the header entirely works, and the swap then executes: [`0xbfbe9702…66dd708`](https://robinhoodchain.blockscout.com/tx/0xbfbe9702dd40ed28e734d1ebc319a7ace9d27b30f77eb5185179de01366dd708), 0.00011 ETH → 0.00078962 TSLA. The chain's Universal Router there is 2.1.1 (`0x204FAca1…0498`).
+- **Why it cost time:** the error reads like a liquidity problem ("no route"), not a header problem, so we went looking at pools first. Two related surprises on the same chain: a 1-share quote returned `NoRouteFoundError` while 0.1 routed, and the accepted values of `x-universal-router-version` are per-chain but not listed per-chain.
+- **Suggested fix:** document the supported router versions per chain (or make the API fall back to the chain default instead of returning an empty route), and return a distinguishable error when the requested router version doesn't exist on the requested chain.
+
 ## What worked well
 - **The SwapProxy flow.** One header switches the whole API to plain ERC-20 approvals. That is exactly what a vault needs.
 - **The CCA itself.** It gives price discovery and a hard graduation threshold, plus clean refunds on failure (`exitBid`). With these, "the auction didn't fill, so the loan is cancelled and the lien is returned" is a real code path, not a fake one.

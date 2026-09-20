@@ -229,7 +229,27 @@ export function PledgeButton({ feesManager, poolId, feeVault }: { feesManager: `
 Verified: `useDynamicContext()` → `{ primaryWallet, user, handleLogOut }`, `isEthereumWallet` from `@dynamic-labs/ethereum`, `primaryWallet.getWalletClient()`, `primaryWallet.getPublicClient()`, `walletClient.sendTransaction(...)`, `primaryWallet.getNetwork()`, `<DynamicWidget />`.
 **UNVERIFIED:** whether `writeContract` needs the `chain`/`account` args as shown (it is standard viem; the docs only demonstrate `sendTransaction`).
 
-## 3. Optional: delegated access for "Follow the Desk" auto-mirroring
+## 3. Delegated access for "Follow the Desk" auto-mirroring — CONFIGURED AND LIVE (2026-09-20)
+
+**Status: configured; awaiting one user approval.** Done: the RSA credential is generated and uploaded in the Dynamic console (private key in `DYNAMIC_DELEGATION_PRIVATE_KEY`), `DYNAMIC_AUTH_TOKEN` and `DYNAMIC_WEBHOOK_SECRET` are set, and the webhook `https://aqua-economic-moss-modes.trycloudflare.com/api/dynamic/webhook` is registered and verified by Dynamic. It enforces the HMAC:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' -X POST -H 'content-type: application/json' -d '{}' \
+  https://aqua-economic-moss-modes.trycloudflare.com/api/dynamic/webhook   # → 401  {"error":"bad signature"}
+```
+
+Not done: no delegation exists yet, because only a human can grant one. The exact steps:
+
+1. Open https://gadai-six.vercel.app/desk and log in with a Dynamic **embedded** wallet. External wallets (MetaMask and friends) cannot delegate; the form says so and refuses.
+2. Fill in the follow form (persona, bracket or DCA, size), tick **auto-mirror**, submit. The page calls `initDelegationProcess()` and Dynamic shows its delegation prompt. `POST /api/follows` with `auto:true` is refused with a 503 naming any missing env var, so a misconfigured desk can never silently fall back.
+3. Approve the prompt. The page polls `getWalletsDelegatedStatus()` for up to 5 s and only then creates the follow; if the status never becomes `delegated` it errors out instead of following.
+4. Dynamic posts `wallet.delegation.created` to the webhook with `{walletId, publicKey, userId, encryptedDelegatedShare, encryptedWalletApiKey}`. The agent verifies the HMAC in constant time (raw body or re-serialized), rejects a replayed `eventId`, refuses a `created` event older than a stored revoke, stores the **ciphertext only**, and logs `social: dynamic webhook: stored`.
+5. From then on the desk signs that follower's approvals and Flash orders itself (`delegatedSignTransaction` / `delegatedSignTypedData`, decrypting the share per signature). The mirror row shows `auto · delegated`, and the one-click quote/submit routes 409 on it so two paths can never both sign.
+6. Revoking in Dynamic posts `wallet.delegation.revoked`; the row is marked revoked and auto mode stops for that follower.
+
+Evidence to capture when it happens: the agent log line, the `delegations` row, and the resulting mirror order id. Until then, claim the plumbing, not a granted delegation.
+
+### Reference
 
 Client side: `useWalletDelegation()` from `@dynamic-labs/sdk-react-core` (v4.37.0+) → `initDelegationProcess()`, `getWalletsDelegatedStatus()`, `delegateKeyShares()`, `revokeDelegation()` (https://www.dynamic.xyz/docs/react/reference/hooks/embedded-wallets/usewalletdelegation.md).
 
@@ -250,7 +270,9 @@ await publicClient.sendRawTransaction({ serializedTransaction: signed as `0x${st
 
 Sources: https://www.dynamic.xyz/docs/react/wallets/embedded-wallets/mpc/delegated-access/receiving-delegation.md and https://www.dynamic.xyz/docs/node/evm/delegated-access.md.
 
-Delegated access only works for Dynamic **embedded (MPC) wallets**, not for MetaMask-type external wallets. It also needs a public HTTPS webhook, so localhost will not do; use a tunnel or the deployed URL. Treat it as a stretch goal. The core Dynamic track story is covered by sections 1 and 2.
+Delegated access only works for Dynamic **embedded (MPC) wallets**, not for MetaMask-type external wallets. It also needs a public HTTPS webhook, so localhost will not do; we point it at the Cloudflare quick tunnel, which means the webhook URL in the Dynamic console must be updated whenever that tunnel restarts.
+
+Implementation in this repo: `agent/src/social/delegation.ts` (verify, store, sign), `agent/src/social/index.ts` (`POST /api/dynamic/webhook`, the auto executor), `web/app/desk/page.tsx` (`useWalletDelegation`).
 
 ## Gotchas
 

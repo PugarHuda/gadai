@@ -139,6 +139,8 @@ Fail loudly if any value is missing. Never mock. Do not send the API key, `clien
 
 ## 10. [flynet2] Production app "hackathon 2" (verified live 2026-09-19)
 
+**Live check, 2026-09-20 01:19 UTC** — `curl https://aqua-economic-moss-modes.trycloudflare.com/api/flynet/status` returns `env: "production"`, `appName: "hackathon 2"`, the eleven allowed scopes below, `memberLogin: {"available": true}` (so `FLYNET_CLIENT_SECRET` is set on the live desk) and `payments.enabled: false` with the pending-review reason. `GET /api/flynet/trending` returns ranked venues. Note that this process predates the §11 FLY-checkout build, so its `payments` object is still the old `{enabled, reason}` shape; restart the agent to serve `{state, enabled, maxFly, reason}`.
+
 - `GET /app` (production, `x-api-key`) returns:
   - name: `hackathon 2`
   - client id: `ba3ca201-5d5c-4a51-bbdb-f905df5ca146`

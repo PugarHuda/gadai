@@ -293,13 +293,26 @@ UNISWAP_SWAP_PROXY=0x0000000085E102724e78eCd2F45DC9cA239Affad
 ```
 Hardcoding the addresses is also fine because they are immutable CREATE2 deployments. Keep the env override only for DEMO_FORK.
 
+## 4b. The Trading API on chain 4663 (Robinhood Chain): RWA pricing and a real buy [V 2026-09-20]
+
+Some Bankr/Doppler pools are quoted in Robinhood **tokenized stocks**, so the creator's fees arrive as shares (EARN in SPY, TESLR in TSLA, MINR in MSTR). The board values those streams, and the desk has now traded one.
+
+- **Pricing** (`agent/src/board/index.ts`): `/quote` for **0.1 share → WETH on 4663**, multiplied by the Base ETH/USD quote. 0.1 routes where 1.0 returned `NoRouteFoundError` on 2026-09-19. A failed quote becomes a row `error`; nothing is estimated.
+- **Executing** (`agent/src/demo/rh-equity-swap.ts`): bridge Base ETH → 4663 with Relay `POST https://api.relay.link/quote/v2` (the deposit tx is sent exactly as quoted, and its target must be one of Relay's advertised Base addresses), wait for arrival, then `/quote` + `/swap` ETH → TSLA on 4663. Executed 2026-09-20: bridge `0xc65bd93a…5af2d4` on Base (0.0002 ETH to the Relay Depository `0x4cD0…BC31`), swap `0xbfbe9702…66dd708` on 4663 (0.000109976 ETH → 0.00078962 TSLA).
+- **Header rule, the hard-won one: do NOT send `x-universal-router-version` on 4663.** Our Base client pins `2.0`; sent on 4663 the API returns no route. Omit it and the chain's default Universal Router 2.1.1 (`0x204FAca1…0498`) is used and the swap goes through. This is in `FEEDBACK.md` §13.
+- **Network note:** `rpc.mainnet.chain.robinhood.com` and `docs.robinhood.com` are hijacked by the local ISP on this machine (a TLS cert for `internetbaik.telkomsel.com`), so the scripts default `RH_RPC_URL` to `https://robinhood-rpc.publicnode.com` (listed on chainid.network; `eth_chainId` = 4663). `robinhoodchain.blockscout.com` sits behind a Cloudflare challenge, so re-check receipts over the RPC, not the explorer API.
+- Guards: `--eth` capped at 0.00025, a per-tx gas cap (`MAX_SPEND_ETH`), `RH_GAS_RESERVE_ETH` held back on 4663 for the swap gas, `symbol()` read on-chain before trusting the token address, and dry-run by default (`--execute` sends, WSL only).
+
 ## 5. Hackathon deliverables for the Uniswap track (from the task brief)
 - Public repo.
-- `FEEDBACK.md` with genuine notes. Candidates I hit:
+- `FEEDBACK.md`, written and covering 13 items. The ones that cost the most time:
   - the step-packing mismatch between the docs and `StepLib`;
   - the `initializeDistribution` vs `create` naming in the docs;
   - no CCA lens deployed on Base;
-  - it is unclear whether a contract `swapper` works with the proxy flow when simulation is enabled.
+  - whether a contract `swapper` works with the proxy flow when simulation is enabled;
+  - the SwapProxy address moving under us mid-hackathon;
+  - `x-universal-router-version: 2.0` silently yielding no route on chain 4663 (§13).
+- Mainnet txs to cite: the Base Trading API swap (EVIDENCE #1) and the Robinhood Chain TSLA buy (EVIDENCE #6).
 - The README should point to exact files and lines: the keeper swap module, `FeeVault.swapWethToUsdc`, the FeeNote CCA creation, and the bid UI.
 
 ## 6. What is NOT possible, or what we must not claim

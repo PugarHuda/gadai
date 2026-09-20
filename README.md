@@ -9,7 +9,7 @@ Built for Runtime Agent Week (Bankr x Propaganda). Chain: Base (8453).
 ### Judges: verify in 5 minutes
 
 1. **Site:** https://gadai-six.vercel.app (live data from the Gadai agent, which runs in `DEMO_FORK` on an Anvil fork of Base; every page shows a DEMO_FORK banner).
-2. **Video (3:49, narrated):** https://gadai-six.vercel.app/demo
+2. **Video (narrated; duration TODO(lead) — the current render is 3:49 and a re-cut with the slides is planned):** https://gadai-six.vercel.app/demo
 3. **Mainnet evidence:** https://gadai-six.vercel.app/evidence (source: [docs/EVIDENCE.md](docs/EVIDENCE.md)). Six items signed by the Dynamic agent wallet: a Uniswap Trading API swap, the FeeDesk deploy, the ERC-8004 registration, an x402 payment and a Definitive Flash TWAP on **Base mainnet**, plus a real **tokenized-equity purchase** (0.0002 ETH bridged Base → Robinhood Chain with Relay, then 0.00079 TSLA bought through the Uniswap Trading API on chain 4663).
 4. **Agent health:** `curl https://aqua-economic-moss-modes.trycloudflare.com/api/health` → `{"ok":true,"demoFork":true,"chainNote":"DEMO: Anvil fork of Base mainnet …","block":…}`. The same host serves `/api/board`, `/api/flynet/status`, `/api/flynet/trending`, `/api/flash/info`, `/api/risk/<token>` and `/api/signals/1`. This is a Cloudflare quick tunnel, so the hostname changes if the tunnel restarts; the site always has the current one.
 5. **Paid API:** `curl -i "https://x402.bankr.bot/0x0455408228f460722ecbe80789bcf1628b479e98/gadai-credit?token=0x5F980Dcfc4c0fa3911554cf5ab288ed0eb13DBa3"` → `HTTP/1.1 402 Payment Required` with x402 v2 requirements ($0.02 USDC on Base).
@@ -357,7 +357,7 @@ Flash doesn't run in fork mode, because it settles only on mainnet. The UI shows
 
 Tests (counts from the last full run, 2026-09-20):
 - `pnpm --filter @feedesk/agent test`: **118 tests, 117 pass, 1 skipped, 0 fail** (run on 2026-09-20) — engine, CCA math, Uniswap guards, x402 risk payment and budget, leaderboard scoring, Flynet helpers (against captured production responses).
-- `pnpm contracts:test`: **26** Foundry tests, forked against the real GITLAWB pool.
+- `pnpm contracts:test`: **26** Foundry tests, forked against the real GITLAWB pool (last green run by the contracts owner on 2026-09-19; it needs `forge` on `PATH` and a Base archive RPC).
 - End-to-end: **161** Playwright tests locally, and a **39**-test production smoke run against the deployed site.
 
 ## Repo layout
