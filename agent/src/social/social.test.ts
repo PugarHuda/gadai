@@ -193,3 +193,13 @@ test("signalFlashQuote: quotes the mirror's bracket (TP/SL off Flash spot), neve
     if (realKey === undefined) delete process.env.FLASH_API_KEY; else process.env.FLASH_API_KEY = realKey;
   }
 });
+
+test("auto-mirror executor does not run on DEMO_FORK unless AUTO_MIRROR_ON_FORK=1", async () => {
+  const { start } = await import("./index.ts");
+  const logs: string[] = [];
+  const ctx = { demoFork: true, db: { prepare: () => ({ all: () => { throw new Error("must not query on a fork"); } }) }, log: (_m: string, msg: string) => logs.push(msg) } as never;
+  const stop = start(ctx);
+  await new Promise((r) => setTimeout(r, 50));
+  stop();
+  assert.ok(logs.some((l) => l.includes("auto-mirror executor disabled on DEMO_FORK")));
+});

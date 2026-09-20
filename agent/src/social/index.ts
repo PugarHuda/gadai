@@ -541,8 +541,12 @@ export function register(app: Hono, ctx: Ctx) {
 // ─── loops ───
 export function start(ctx: Ctx): () => void {
   let autoBusy = false, pollBusy = false;
+  // Auto mirrors settle on Base MAINNET (mainPub), so a DEMO_FORK desk must not fire them: a follower's
+  // delegated wallet would place a real Flash order off a fork-only credit decision. AUTO_MIRROR_ON_FORK=1 overrides.
+  const autoBlocked = ctx.demoFork && process.env.AUTO_MIRROR_ON_FORK !== "1";
+  if (autoBlocked) ctx.log("social", "auto-mirror executor disabled on DEMO_FORK (set AUTO_MIRROR_ON_FORK=1 to allow real mainnet orders)");
   const runAuto = async () => {
-    if (autoBusy) return;
+    if (autoBusy || autoBlocked) return;
     autoBusy = true;
     try {
       const rows = ctx.db.prepare(`SELECT m.id FROM mirror_orders m JOIN follows f ON f.id = m.follow_id
