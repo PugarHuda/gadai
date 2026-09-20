@@ -12,12 +12,13 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SLIDES, type Slide, type Tone } from "./deck-content";
 
+// the exact tints the Remotion deck paints, so a slide looks the same in the video and on the page
 const TONE_FILL: Record<Tone, string> = {
   plain: "bg-paper",
   violet: "bg-violet-tint",
-  green: "bg-desk/10",
-  amber: "bg-amber/15",
-  red: "bg-stamp/10",
+  green: "bg-[#e3f1e8]",
+  amber: "bg-[#fbf1dc]",
+  red: "bg-[#fbeae8]",
 };
 const TONE_EDGE: Record<Tone, string> = {
   plain: "border-t-rule",
@@ -183,7 +184,7 @@ function Body({ s }: { s: Slide }) {
             })}
           </div>
           {s.strip && (
-            <dl className="grid gap-px border border-rule bg-rule sm:grid-cols-2 lg:grid-cols-5">
+            <dl className="grid gap-px border border-rule bg-rule sm:grid-cols-2 lg:[grid-template-columns:repeat(var(--dk-n),minmax(0,1fr))]" style={{ ["--dk-n" as string]: s.strip.length }}>
               {s.strip.map(([k, v], i) => (
                 <div key={k} className="dk-in bg-paper px-3 py-2.5" style={step(s.rows.length + i)}>
                   <dt className="label">{k}</dt>
@@ -250,10 +251,11 @@ export function DeckView() {
       <style>{`
         @keyframes dk-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
         @keyframes dk-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-        @keyframes dk-sweep { from { transform: translateX(-130%); } to { transform: translateX(130%); } }
+        @keyframes dk-sweep { 0% { opacity: 1; transform: translateX(-130%); } 99% { opacity: 1; } 100% { opacity: 0; transform: translateX(130%); } }
         .dk-in { animation: dk-rise .5s cubic-bezier(.22,1,.36,1) both; }
         .dk-grow { animation: dk-grow .6s cubic-bezier(.22,1,.36,1) both; animation-delay: 120ms; }
-        .dk-sweep { position: absolute; inset: 0 auto 0 0; width: 45%; background: linear-gradient(90deg, transparent, var(--color-violet-tint), transparent); animation: dk-sweep .75s cubic-bezier(.22,1,.36,1) both; }
+        /* opacity 0 at rest, so reduced motion (which drops the animation) leaves no band behind */
+        .dk-sweep { position: absolute; inset: 0 auto 0 0; width: 45%; opacity: 0; background: linear-gradient(90deg, transparent, var(--color-violet-tint), transparent); animation: dk-sweep .75s cubic-bezier(.22,1,.36,1) both; }
       `}</style>
 
       <div key={slide.id} className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pt-6 pb-4 sm:px-8 sm:pt-10 lg:px-14">
