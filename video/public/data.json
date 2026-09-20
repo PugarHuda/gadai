@@ -1,18 +1,23 @@
 {
- "capturedAt": "2026-09-19T15:26:11.890Z",
+ "capturedAt": "2026-09-20T02:11:31.814Z",
  "board": {
-  "generatedAt": "2026-09-19T15:24:59.085Z",
+  "generatedAt": "2026-09-20T02:10:06.781Z",
+  "ethUsd": 2618.032368,
   "totals": {
    "agents": 105,
    "eligible": 14,
-   "totalCreditUsdc": 755.31,
-   "lifetimeFeesWeth": 593.158038,
-   "claimableWeth": 9.670721,
-   "llmTokens30d": 18555413051,
+   "totalCreditUsdc": 855.72,
+   "lifetimeFeesWeth": 593.298861,
+   "claimableWeth": 9.685434,
+   "llmTokens30d": 19507304058,
    "failed": 0,
-   "nonBase": 17
-  },
-  "ethUsd": 2640.468925
+   "nonBase": 17,
+   "robinhoodAgents": 17,
+   "indicativeCreditUsdc": 444.52,
+   "equityAgents": 4,
+   "equityFeesUsd": 65093.22,
+   "indicativeEquityCreditUsdc": 164.37
+  }
  },
  "loan": {
   "id": 1,
@@ -408,51 +413,110 @@
      "fees halve"
     ]
    }
-  ]
+  ],
+  "fork": true,
+  "warning": "DEMO FORK: this desk runs on a local fork of Base, not Base mainnet. Submit this pledge tx ONLY to the fork (the desk's /api/rpc). Signed and sent on Base mainnet, it moves your REAL fee rights to a vault address with no code there: unrecoverable."
  },
- "loanSummary": {
+ "signal": {
   "id": 1,
-  "status": "RELEASED",
-  "via": "web",
-  "borrower": "0xfdb6430011f6E4796Ca380CB39e47975b1f876Bf",
-  "controller": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-  "token": "0x5F980Dcfc4c0fa3911554cf5ab288ed0eb13DBa3",
+  "loanId": 1,
+  "personaId": "prudent",
+  "token": "0x5f980dcfc4c0fa3911554cf5ab288ed0eb13dba3",
   "symbol": "GITLAWB",
-  "poolId": "0xec33256bf1ded407a57fd3c1965e7556e42ac14db09bc4e6fef57d5e2eb0b0b9",
-  "feesManager": "0xD59cE43E53D69F190E15d9822Fb4540dCcc91178",
-  "vault": "0x2286043ef6d70346b19831de8295E0D25f8987C9",
-  "note": "0xecF7Bc1aDB93d0D099f1293F82b10B461DE8FE60",
-  "auction": "0xEBc71e4Eb6FBF94196f9997598c41D5700C7E368",
-  "terms": {
-   "principalRaw": "237380000",
-   "faceValueRaw": "276023256",
-   "feeRatePct": 16.28,
-   "floorPrice": 0.86,
-   "floorPriceQ96": "68136219762267330330447797258",
-   "tickSpacingQ96": "792281625142643375935439503",
-   "termDays": 4.88,
-   "drawLimitRaw": "23730000",
-   "advanceRatePct": 30,
-   "maxPrincipalRaw": "237380000"
+  "decision": "approve",
+  "score": 50,
+  "principalRaw": "237380000",
+  "maxNotePrice": 0.86,
+  "rationale": "Rule prudent/approve fired: cv30d 3.466 < 5, approving the engine terms at 30% advance. r7=0.233159 r30=0.104438 rLife=0.246313 WETH/day, slope30d=0.00483051, cv30d=3.466, history 251d, $56.52/day, maxPrincipal $237.38.",
+  "createdAt": "2026-09-19T15:15:30.521Z",
+  "mirrorable": false,
+  "mirrorNote": "lead memo not written by an LLM (rules (Bankr LLM unavailable)): no follower orders",
+  "personaName": "Prudent",
+  "model": "rules (Bankr LLM unavailable)",
+  "llm": false,
+  "lead": true,
+  "loan": {
+   "status": "RELEASED",
+   "repaidPct": 100
   },
-  "leadMemo": {
-   "personaId": "prudent",
-   "model": "rules (Bankr LLM unavailable)",
-   "decision": "approve",
-   "principalRaw": "237380000",
-   "maxNotePrice": 0.86,
-   "confidence": 0.5,
-   "rationale": "Rule prudent/approve fired: cv30d 3.466 < 5, approving the engine terms at 30% advance. r7=0.233159 r30=0.104438 rLife=0.246313 WETH/day, slope30d=0.00483051, cv30d=3.466, history 251d, $56.52/day, maxPrincipal $237.38.",
-   "risks": [
-    "no LLM review",
-    "claim-timed fee history"
-   ]
+  "mirrors": {
+   "total": 0,
+   "placed": 0,
+   "filled": 0,
+   "spentUsdc": 0,
+   "pnlUsd": null
+  }
+ },
+ "quote": {
+  "signalId": 1,
+  "token": "0x5f980dcfc4c0fa3911554cf5ab288ed0eb13dba3",
+  "symbol": "GITLAWB",
+  "funder": "0x81b73786BF2dE819e66BB57d08effADe0085305D",
+  "sizeUsdc": 5,
+  "tpPct": 50,
+  "slPct": 20,
+  "spotUsd": 0.0000271511130058,
+  "riskFlagged": false,
+  "tpPriceUsd": 0.00004072667,
+  "slPriceUsd": 0.00002172089,
+  "estTokenOut": "182785.70918087792552716",
+  "estOutUsd": 4.945036,
+  "estFeeUsd": 0.038816,
+  "priceImpactPct": 0.32548,
+  "withinImpactGate": true,
+  "integratorFeeBps": 10,
+  "quoteId": "4bcc7247-4cb0-487c-a11e-62d490a99ed8",
+  "quotedAt": "2026-09-20T02:11:27.710Z"
+ },
+ "flash": {
+  "integratorFeeBps": 10,
+  "integratorFeeSet": true,
+  "mainnetOnly": true,
+  "demoFork": true,
+  "maxPriceImpactPct": 3,
+  "mirrors": {
+   "total": 0,
+   "placed": 0,
+   "filled": 0
+  }
+ },
+ "flynet": {
+  "env": "production",
+  "appName": "hackathon 2",
+  "allowedScopes": [
+   "read:profile",
+   "read:wallets",
+   "read:user_checkins",
+   "read:checkins",
+   "read:app",
+   "read:balance",
+   "read:restaurant_specials",
+   "read:restaurant_challenges",
+   "write:save_to_list",
+   "read:memberships",
+   "read:tags"
+  ],
+  "catalog": {
+   "count": 1675,
+   "fetchedAt": "2026-09-20T01:28:43.362Z"
   },
-  "pledgeTx": null,
-  "pledgeChatText": null,
-  "debt": null,
-  "createdAt": "2026-09-19T15:15:25.346Z",
-  "updatedAt": "2026-09-19T15:19:16.050Z"
+  "memberLogin": {
+   "available": true,
+   "reason": null
+  },
+  "payments": {
+   "state": "pending-review",
+   "enabled": false,
+   "maxFly": 5,
+   "reason": "Payments are pending Blackbird review for the app “hackathon 2”: its allowed_scopes carry no payment scope, so Flynet answers 403 on POST /payment_intents. Gadai still sends the real request and shows you the real 403 — it never fakes a paid intent."
+  }
+ },
+ "venues": {
+  "total": 1675,
+  "source": {
+   "fetchedAt": "2026-09-20T01:28:43.362Z",
+   "stale": false
+  }
  },
  "builder": {
   "tx": "0xa0475d0a9f340f4f74f527d1dadd6325ec375e5ad80020eb32c4dd1e2ddb36a7",
