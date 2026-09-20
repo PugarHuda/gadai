@@ -44,7 +44,7 @@ const tsla = () => pubRh.readContract({ address: TSLA, abi: erc20, functionName:
 const [baseEth, rhEth0, tsla0] = await Promise.all([pubBase.getBalance({ address: me }), pubRh.getBalance({ address: me }), tsla()]);
 console.log(`${execute ? "EXECUTE" : "DRY RUN (nothing is sent; add --execute)"}  wallet ${me}`);
 console.log(`  Base ${formatEther(baseEth)} ETH | Robinhood ${formatEther(rhEth0)} ETH, ${formatUnits(tsla0, 18)} TSLA`);
-if (execute && baseEth <= amount) throw new Error(`Base balance ${formatEther(baseEth)} ETH does not cover ${formatEther(amount)} + gas`);
+if (execute && !process.argv.includes("--skip-bridge") && baseEth <= amount) throw new Error(`Base balance ${formatEther(baseEth)} ETH does not cover ${formatEther(amount)} + gas`);
 
 async function json(url: string, init?: RequestInit): Promise<any> {
   const r = await fetch(url, { ...init, signal: AbortSignal.timeout(30_000) });
@@ -118,9 +118,10 @@ if (!execute) {
   process.exit(0);
 }
 
-for (const [i, tx] of relayTxs.entries()) await send(`relay deposit ${i + 1}/${relayTxs.length} (Base)`, base, pubBase as PublicClient, wcBase!, "https://basescan.org", tx);
-const minArrive = rhEth0 + BigInt(out.minimumAmount);
-let rhEth = rhEth0;
+const skipBridge = process.argv.includes("--skip-bridge"); // ETH already arrived on 4663 (e.g. a retry after a failed swap)
+if (!skipBridge) for (const [i, tx] of relayTxs.entries()) await send(`relay deposit ${i + 1}/${relayTxs.length} (Base)`, base, pubBase as PublicClient, wcBase!, "https://basescan.org", tx);
+const minArrive = skipBridge ? 0n : rhEth0 + BigInt(out.minimumAmount);
+let rhEth = skipBridge ? await pubRh.getBalance({ address: me }) : rhEth0;
 for (let t0 = Date.now(); rhEth < minArrive; ) {
   if (Date.now() - t0 > 10 * 60_000) throw new Error(`bridge not arrived after 10 min: ${RELAY}${rq.steps[0].items[0].check?.endpoint}`);
   await new Promise((r) => setTimeout(r, 5_000));
@@ -128,7 +129,7 @@ for (let t0 = Date.now(); rhEth < minArrive; ) {
   const st = await json(`${RELAY}${rq.steps[0].items[0].check.endpoint}`).catch(() => null);
   console.log(`  waiting for 4663: ${formatEther(rhEth)} ETH, relay status ${st?.status ?? "?"}${st?.txHashes?.length ? ` fill ${RH_EXPLORER}/tx/${st.txHashes[0]}` : ""}`);
 }
-const swapTx = await uniLeg(rhEth - rhEth0 - reserve, true);
+const swapTx = await uniLeg((skipBridge ? rhEth : rhEth - rhEth0) - reserve, true);
 await send("uniswap swap ETH->TSLA (Robinhood Chain)", robinhood, pubRh as PublicClient, wcRh!, RH_EXPLORER, swapTx);
 const tsla1 = await tsla();
 if (tsla1 <= tsla0) throw new Error("TSLA balance did not increase");
