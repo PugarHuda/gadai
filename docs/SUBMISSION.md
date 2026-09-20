@@ -13,7 +13,7 @@ The deadline is **Sun 2026-09-20 03:00 WIB**. Tick a box only against evidence y
 - [ ] The skill matches the server: `node skill/gadai/check.mjs` passes.
 - [x] `pnpm --filter @feedesk/agent test` is green: **118 tests, 117 pass, 1 skipped, 0 fail** (run 2026-09-20). `pnpm contracts:test` (26 Foundry fork tests) was last run green by the contracts owner on 2026-09-19; it needs `forge` on `PATH` and a Base archive RPC, so re-run it from a shell that has both.
 - [ ] `.env` is **not** committed: `git ls-files | grep -c '^.env$'` prints `0`.
-- [x] Video: https://gadai-six.vercel.app/demo (narrated; scene list in [DEMO.md](DEMO.md)). **Duration: TODO(lead)** — the file on disk is 228.8 s, but a new cut folding in the slide deck is planned; put the final number in DEMO.md, README, READY_TO_PASTE and the form together.
+- [x] Video (3:49, narrated): https://youtu.be/F7joLyWWB0E — also at https://gadai-six.vercel.app/demo (scene list in [DEMO.md](DEMO.md)). Paste the YouTube link into the Runtime form.
 - [x] Mainnet evidence (Base, signed by the Dynamic agent wallet `0x81b7…305D`):
   - Uniswap Trading API swap: `0x6dd51e0c3fa3a8ace9633a32200857b8795c1e6cadd06e0eb5d9f701026cc072`
   - FeeDesk: `0xa4f21ace41923bccfdebf1c6ab49659d80476b4f` (deploy tx `0x21cce9322a7ceb0a1af4225973d9ad3969c298a5594d7f71a7f7689c233ee858`)
