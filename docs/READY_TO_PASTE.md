@@ -61,22 +61,9 @@ The underwriter reads live data from Bankr's fee APIs and sizes the loan with a 
 
 **Grok Bot (only if the link exists).** `grok/` holds two Agent Skills: `gadai-credit` (quote, pledge-flow explainer, Credit Line Board, the paid x402 report after asking) and `gadai-loan-watch` (read-only daily loan summary). Submit this track only after the user has created the Bot in Grok Bot and copied its public link (Share → Create template → Public link; steps in docs/distribution.md). Template link: ______
 
-## X post (tag @DefinitiveFi, required for the Flash track)
+## X post
 
-(280 characters; X counts the link as 23, so it fits.)
-
-> Gadai: USDC credit for @bankrbot agents, secured by a lien on their token's creator fees. #Runtime
->
-> FeeNotes sell in a @Uniswap CCA, a @dynamic_xyz agent wallet pays out, fees repay.
->
-> Mirror every credit call with @DefinitiveFi Flash bracket/DCA orders.
->
-> gadai-six.vercel.app/demo
-
-Replies (the full thread is in [x-post.md](x-post.md)):
-1. Flash track: "The desk already mirrored its own approved signal with a real Flash TWAP on Base: order fb3b2572-48c6-4ce5-b79a-6199cefac82f, first slice filled. Integrator fee 10 bps. Evidence: gadai-six.vercel.app/evidence"
-2. Onchain equities: "Some Bankr creators are paid their fees in tokenized stocks. So the desk bought one: 0.0002 ETH bridged from @base with Relay, then 0.00079 TSLA via the @Uniswap Trading API on Robinhood Chain. Real tx, not a mock: gadai-six.vercel.app/evidence"
-3. Dynamic: "Follow the desk in auto mode and a @dynamic_xyz delegation lets it sign your mirror orders for you. The webhook is live and HMAC-verified; we only ever store the encrypted key share and decrypt it per signature."
+The final, single Premium post (plus the 280-char fallback, the video alt text and the posting steps) lives in [docs/x-post.md](x-post.md). Post it from @BangDropID with `web/public/gadai-demo.mp4` attached, then paste the post URL into the Runtime form.
 
 ## Uniswap developer feedback form
 

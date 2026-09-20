@@ -1,18 +1,43 @@
-# X (Twitter) launch kit
+# X (Twitter) posting package — Premium account, @BangDropID
 
-Every number and id below is copied from [EVIDENCE.md](EVIDENCE.md) and the [README](../README.md). Nothing here claims more than those two files do.
+Final. One long-form post, no thread. Every number and id is copied from [EVIDENCE.md](EVIDENCE.md), the [README](../README.md) and the canonical board snapshot below; nothing here claims more than those do.
 
-**Paste post 1 (the main post) into the Runtime submission form's "Project post on X" field**, after you publish it — the form wants the URL of that published post. Post the thread as replies to it. The @DefinitiveFi tag lives in the main post and in reply 5/, which is what the Definitive Flash track requires.
+**Canonical board snapshot (pinned by the lead, `/api/board` `generatedAt` 2026-09-20T01:19:15Z):** 105 Base agents, 14 eligible, **$856.57** pre-approved, 593.30 WETH lifetime fees, 9.6847 WETH claimable (~$25.4k at ETH $2,621.82), 19.48B LLM tokens in 30 days, 17 Robinhood Chain agents, 3 of them earning fees in tokenized stocks, $64,513.66 of lifetime equity fees. Never write "$756" or "$57k claimable". (A re-read at 01:34 UTC gave $855.82 / $64,527.60 — live drift, same shape. The pinned snapshot is what ships.)
 
-Handles used: `@DefinitiveFi`, `@bankrbot`, `@dynamic_xyz`, `@Uniswap`, `@base`. Blackbird/Flynet is written in plain text because we have not verified their handle.
-
-Media: attach `video/cuts/gadai-x.mp4` (2:00, 23.9 MB, H.264 + AAC) to post 1, with the alt text below. `video/cuts/gadai-x-poster.jpg` (1280x720) is the poster/OG frame if you need a still.
+Handles used: `@DefinitiveFi` (required by the Definitive Flash track), `@bankrbot`, `@dynamic_xyz`, `@Uniswap`, `@base`. Blackbird/Flynet stays in plain text because their handle is unverified.
 
 ---
 
-## 1. Main post (277 characters as X counts them)
+## 1. The post (1,606 characters as X weights them — Premium allows 25,000)
 
-Attach the video.
+Attach the video (§3), add the alt text (§4), then post.
+
+```
+Gadai — a credit desk for @bankrbot agents.
+
+An agent earns a cut of every trade of its token, but the fees land later and the compute bill is due now. Its options: top up by hand or sell.
+
+The lien. The borrower points its Doppler fee share at a per-loan FeeVault with updateBeneficiary. Only the contract moves it back, only to the borrower, and release() is permissionless; the desk can't keep them.
+
+The funding. Each loan mints a FeeNote, an ERC-20 whose face value is the debt, sold for USDC in a @Uniswap Continuous Clearing Auction. Collected fees repay it via the Uniswap Trading API.
+
+The underwriter reads real Bankr fee history and writes three memos; the lead is binding and can only lower it. Before approving, its @dynamic_xyz MPC wallet pays $0.05 USDC over x402 for a honeypot verdict, and uses it.
+
+Every call is a public signal you can mirror with @DefinitiveFi Flash: an entry plus a Bracket (TP/SL), or a DCA from a TWAP. The desk went first: TWAP fb3b2572-48c6-4ce5-b79a-6199cefac82f, filled on Base mainnet.
+
+The Credit Line Board prices every Bankr agent: 105 on Base, 14 eligible, $856.57 pre-approved (01:19 UTC, 20 Sep). Three are paid in tokenized stocks, so the desk bought one: 0.00079 TSLA on Robinhood Chain via Relay + Uniswap. A Blackbird Flynet concierge plans a meal inside the dining budget. ERC-8004 agent #94699 carries repayment reputation; @base builder code bc_32d4pc8g on every desk tx.
+
+Honest scope: the full lifecycle ran on an Anvil fork of Base against a real Bankr pool. The mainnet actions are at /evidence.
+
+https://gadai-six.vercel.app
+https://github.com/PugarHuda/gadai
+```
+
+Where each claim comes from: lien and release() — README "How it works" 2/5 and `FeeVault.sol`; FeeNote + CCA — README "Uniswap"; x402 honeypot verdict $0.05 — EVIDENCE #4; Flash TWAP order `fb3b2572-48c6-4ce5-b79a-6199cefac82f` filled — EVIDENCE #5; board numbers — the pinned snapshot above; TSLA buy — EVIDENCE #6; ERC-8004 #94699 and builder code `bc_32d4pc8g` — EVIDENCE #3; fork scope — README "Live vs simulated".
+
+## 2. Short fallback (277 characters, classic format)
+
+Use only if the long post is not wanted. Same video, same alt text.
 
 ```
 Gadai: USDC credit for @bankrbot agents, secured by an on-chain lien on the creator fees their token earns.
@@ -22,101 +47,37 @@ Every credit call is a public signal you can mirror with @DefinitiveFi Flash bra
 https://gadai-six.vercel.app
 ```
 
----
+## 3. Video to attach
 
-## 2. Thread (replies to post 1, in order)
+**Upload the full demo:** `C:\Hackathons\bankrbot hackathon\web\public\gadai-demo.mp4` — 3:49 (228.8 s), 39.0 MB, H.264 1920x1080 + AAC. X Premium takes video up to 4 hours and far past 39 MB, so the cut is not needed; the full render is the one the judges are pointed at from `/demo`.
 
-**2/ the problem and the lien**
+**Fallback cut (still valid):** `C:\Hackathons\bankrbot hackathon\video\cuts\gadai-x.mp4` — 2:00.8, 23.9 MB, inside the free-tier 2:20 / 512 MB limit. Poster still: `video\cuts\gadai-x-poster.jpg` (1280x720).
 
-```
-2/ A Bankr agent earns a cut of every trade of its token, then runs out of LLM credits. Its only moves: top up by hand or sell the token.
+The cut was made on 2026-09-20 08:21 from the current render, and `web/public/gadai-demo.mp4` is byte-identical to `video/out/final.mp4` (md5 `494dc29c5ad96da2047e629e26870007`, mtime 2026-09-19 23:14), so it is in sync. `video/public/marks.json` and `data.json` were touched at 08:35–08:38 and carry an "equities" scene that the rendered MP4 does not have yet, so a new render may land. Before posting, re-check:
 
-Gadai lends against that stream. The borrower points its Doppler fee share at a per-loan FeeVault with updateBeneficiary. That's the lien.
-```
-
-**3/ FeeNotes + the Uniswap CCA**
-
-```
-3/ The loan becomes a FeeNote: a new ERC-20 whose face value is the debt.
-
-Lenders buy it for USDC in a @Uniswap Continuous Clearing Auction. Collected fees are swapped WETH→USDC through the Uniswap Trading API, with the vault as the swapper.
-
-Covered? Anyone can call release().
+```bash
+md5sum web/public/gadai-demo.mp4 video/out/final.mp4
+ffprobe -v error -show_entries format=duration,size -of csv=p=0 web/public/gadai-demo.mp4
 ```
 
-**4/ underwriting + the agent that pays for data**
+If the hash or duration changed, the alt text below needs an onchain-equities line and the fallback cut must be re-cut from the new source (same segment recipe: 0.00–61.45, 129.60–159.80, 199.55–228.67, re-encoded segments joined with the concat demuxer).
 
-```
-4/ Underwriting reads real Bankr fee history. Three personas write memos; the lead is binding and can only LOWER it.
-
-Before approving, the @dynamic_xyz MPC agent wallet buys a third-party honeypot verdict over x402 — $0.05 USDC, EIP-3009, Bankr facilitator — and uses it.
-```
-
-**5/ Definitive Flash: the desk follows its own call**
-
-```
-5/ Every memo is a public signal. Followers mirror approved borrowers as a @DefinitiveFi Flash entry + Bracket (TP/SL), or a DCA built from a TWAP.
-
-The desk mirrored its own signal on Base mainnet:
-order fb3b2572-48c6-4ce5-b79a-6199cefac82f
-first fill 0.125 USDC → 2,158 GITLAWB
-```
-
-**6/ the rest, and the receipts**
-
-```
-6/ Also shipped:
-• Credit Line Board: 105 Base agents priced live, 14 eligible, $756.69 pre-approved
-• bought 0.00079 TSLA on Robinhood Chain — the tokenized-stock fee leg trades
-• ERC-8004 agent #94699 + @base builder code bc_32d4pc8g
-• Blackbird Flynet dining concierge
-```
-
-**7/ honest scope + links**
-
-```
-7/ Honest scope: the full loan cycle ran on an Anvil fork of Base against a real Bankr pool. Our Bankr LLM credits are $0, so memos run as rules and say so.
-
-The mainnet txs — FeeDesk, ERC-8004, x402, Flash TWAP, Uniswap swap:
-https://gadai-six.vercel.app/evidence
-https://github.com/PugarHuda/gadai
-```
-
----
-
-## 3. Video alt text
+## 4. Video alt text (994 characters; X allows 1,000)
 
 Paste into X's "Add description" box on the attached video.
 
 ```
-Two-minute demo of Gadai, a lending desk for Bankr agents. Opening counters: 105 Bankr agents on Base, 593 WETH in creator fees, 18.6 billion LLM tokens in 30 days. A nine-step diagram shows the loan: updateBeneficiary, FeeVault (the lien), FeeNotes sold in a Uniswap CCA, USDC to the borrower, fees swapped to USDC via the Uniswap Trading API, repay, release() returning the fee rights. The live Credit Line Board prices every Bankr agent on Base at over $750 across 14 agents. A loan timeline on an Anvil fork of Base shows debt hitting zero, release(), ERC-8004 repayment reputation and an ERC-8021 Base builder-code suffix. A card shows the desk's Definitive Flash TWAP placed and filled on Base mainnet. A mainnet evidence screen lists four Basescan transactions: FeeDesk deployed, ERC-8004 register to agent #94699, x402 risk check paid (0.05 USDC), and the Definitive Flash TWAP fill (0.125 USDC to 2,158.27 GITLAWB). Closing card: gadai-six.vercel.app and github.com/PugarHuda/gadai.
+Narrated 3:49 screen demo of Gadai, a lending desk for Bankr agents. It opens on live counters: 105 Bankr agents on Base, 593 WETH of creator fees and 19B LLM tokens in 30 days. A nine step diagram draws the loan: updateBeneficiary moves the fee share to a FeeVault, the lien; FeeNotes sell in a Uniswap Continuous Clearing Auction; USDC goes to the borrower; fees are swapped to USDC through the Uniswap Trading API; release() hands the fee rights back. Then the live Credit Line Board, three underwriter memos, the pledge, the auction with the desk's anchor bid, and a loan timeline on an Anvil fork of Base where the debt hits zero, release() fires and ERC-8004 reputation is written. A Follow the Desk screen shows the Definitive Flash TWAP the desk filled on Base mainnet, then the Dynamic MPC wallet paying 0.05 USDC over x402 for a honeypot verdict. A mainnet evidence screen lists four Basescan transactions: FeeDesk deployed, ERC-8004 agent #94699, the x402 payment and the Flash fill.
 ```
 
----
+## 5. Posting steps (Premium, @BangDropID)
 
-## 4. Farcaster (short version, fits 320 characters)
-
-Attach the same MP4.
-
-```
-Gadai: USDC credit for Bankr agents, secured by an on-chain lien on their token's creator fees.
-
-FeeNotes clear in a Uniswap CCA. A Dynamic MPC wallet pays for a risk check over x402, then pays out. Every credit call is a Definitive Flash signal you can mirror.
-
-https://gadai-six.vercel.app
-```
-
----
-
-## 5. Optional reply, if someone asks what actually ran on mainnet
-
-```
-Five Base mainnet txs, all signed by the desk's Dynamic MPC agent wallet:
-• FeeDesk 0xa4f21ace…476b4f deployed
-• ERC-8004 register → agent #94699
-• Uniswap Trading API swap
-• x402 risk check paid, $0.05 USDC
-• Definitive Flash TWAP, first slice filled
-
-https://gadai-six.vercel.app/evidence
-```
+1. Sign in as **@BangDropID** and confirm Premium is active — the composer must show the character counter going past 280. If it caps at 280, the long post will be truncated; use §2 instead.
+2. New post. Click the media button and upload `web\public\gadai-demo.mp4`. Wait for the upload to finish (the thumbnail appears) before typing.
+3. Click **ALT** / "Add description" on the video thumbnail and paste §4. Save.
+4. Paste §1 into the composer. Do not let the editor collapse the blank lines between paragraphs — paste, then check that the seven paragraphs are still separated.
+5. Check the two links preview as `gadai-six.vercel.app`; X will render a card for the first one. That is fine and expected.
+6. Post. Then open the published post, use **⋯ → Copy link**, and keep that URL.
+7. Paste that URL into the Runtime submission form's **"Project post on X"** field. The form wants the URL of the published post, not the text.
+8. Premium has edit for 1 hour after posting. If a number drifts or a handle is wrong, edit rather than delete — deleting loses the URL you already submitted.
+9. Nothing else needs to be posted. No thread, no reply. If someone asks what ran on mainnet, point them at https://gadai-six.vercel.app/evidence.
