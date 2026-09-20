@@ -29,10 +29,11 @@ grok/
     └── gadai-loan-watch/SKILL.md       # one loan: status, debt, change since last run (routine-ready)
 ```
 
-What the skills call (all live, checked today):
-- `GET $FD/api/quote?token=&borrower=` returns eligibility, terms and `formula`. It is free.
-- `GET $FD/api/board` is the Credit Line Board (105 Base agents, 14 eligible, $756.69 total at 15:44 UTC). It is free.
-- `GET $FD/api/loans/:id`, `/api/loans/:id/auction` and `/api/desk` are free.
+What the skills call (every one re-curled 2026-09-20, all 200):
+- `GET $FD/api/health` → `{"ok":true,"demoFork":true,...}`. Free. Drives the DEMO-fork guard.
+- `GET $FD/api/quote?token=&borrower=` returns eligibility, terms and `formula`. Free. **Both params are required** — a missing `borrower` is `400 {"error":"borrower must be a 0x address"}`, which is why the skill now states it as required rather than optional.
+- `GET $FD/api/board` is the Credit Line Board (105 Base agents, 14 eligible, $856.57 total at 01:19 UTC). Free.
+- `GET $FD/api/loans/:id` (404 → `{"error":"loan 999 not found"}`), `/api/loans/:id/auction`, `/api/loans?borrower=` and `/api/desk`. Free.
 - `https://x402.bankr.bot/0x0455408228f460722ecbe80789bcf1628b479e98/gadai-credit?token=` costs $0.02 USDC through `npx -y @bankr/cli@latest x402 call`. It answers `402` without payment. The Bot asks the user before every call.
 - `$FD` = `https://aqua-economic-moss-modes.trycloudflare.com`. **This is a quick tunnel and its hostname changes when the tunnel restarts.** If it changes, update the `FD=` line in both SKILL.md files (and in `skill/gadai/`).
 
@@ -56,22 +57,58 @@ Grok Bot is **not free-standing**. It needs one of the following:
 
 `grok/` is on `github.com/PugarHuda/gadai` (main); the raw SKILL.md URLs below return 200 (checked 2026-09-19).
 
-### Install (the documented path: ask the Bot)
+### Can the Bot and its template link be created without a human? **No.** (checked 2026-09-20)
 
-1. In Grok Bot, go to **New → Create new Bot**, then **Edit Profile**:
-   - **Name:** Gadai
-   - **Job:** Creator-fee credit desk
-   - **Description:** Quote Gadai USDC credit lines for Bankr tokens on Base, explain the pledge flow, read the Credit Line Board and watch loans. Read-only: never sign, send, transfer or pledge. Ask before any paid x402 call.
-2. Send it this message:
+Every xAI surface was enumerated. There is no REST or CLI path to (a) create a Bot, (c) create a routine or (d) publish a public template link. Only (b), hosting a skill, has an API — and it is a different skill store from Grok Bot's.
+
+| Surface | Checked | Bots? | Routines? | Templates? |
+|---|---|---|---|---|
+| Inference API `https://api.x.ai` | `https://docs.x.ai/openapi.json` — **38 paths**, full list read | no (`GET /v1/bots` → 404) | no | no |
+| Management API `https://management-api.x.ai` | `https://docs.x.ai/developers/management-api-guide.md` + `/developers/rest-api-reference/management/auth.md` | no (`/bots` → 404) | no | no |
+| Docs index | `https://docs.x.ai/llms.txt` — every Grok Bot page listed | all UI-only | UI-only | UI-only |
+| CLI | npm `@xai/cli`, `@xai/grok-bot`, `@x-ai/cli`, `@xai/sdk` → **404**; `xai-cli` → npm *security holding package*, empty | none exists | | |
+
+The Management API's whole surface is API keys, team models/endpoints and audit logs: `POST|GET /auth/teams/{teamId}/api-keys`, `GET|PATCH|DELETE /auth/api-keys/{id}`, `.../rotate`, `.../propagation`, `GET /auth/teams/{teamId}/models`, `.../endpoints`, `GET /auth/management-keys/validation`, `GET /audit/teams/{teamId}/events`. No bot, skill, routine or template resource.
+
+`https://docs.x.ai/grok-bot/bots.md` states the template flow in the UI only, verbatim: *"Open the **Share menu** and choose **Create template**. The Bot builds the template; when it is ready, **Copy link**, **View template details**, and **Update template** appear."* … *"Choose who can open the link: **Public link** or **Team-only**."* There is no API counterpart anywhere in the docs.
+
+**So `grok/create-bot.mjs` was not written** — there is nothing for it to call. The click-path below is the only path, and it is ~4 minutes.
+
+**The one thing that *is* automatable** (optional, not needed for the deliverable): xAI hosts skills for the *inference* API at `POST /v1/skills` (multipart zip, `name`/`description` read from `SKILL.md` frontmatter; then `GET /v1/skills`, `GET|DELETE /v1/skills/{id}`, `GET /v1/skills/{id}/content`). Needs an `XAI_API_KEY` from https://console.x.ai → API Keys. These are skills for `/v1/responses` agents, **not** Grok Bot's Private skills library, so this does not shortcut any step below:
+
+```bash
+cd grok/skills && zip -r gadai-credit.zip gadai-credit
+curl -s https://api.x.ai/v1/skills -H "Authorization: Bearer $XAI_API_KEY" -F files=@gadai-credit.zip
+```
+
+### Install: the click-path (the only path)
+
+Needs the Grok Bot desktop app and a qualifying plan (see above). ~4 minutes.
+
+0. **Push `grok/` first — step 2 downloads from `raw.githubusercontent.com`, not from disk.** As of 2026-09-20 the pushed `gadai-credit/SKILL.md` still says `BORROWER (optional)`, which makes the Bot's first quote fail with a 400. The local file is fixed; commit and push it, then confirm the fix is live:
+   ```bash
+   curl -s https://raw.githubusercontent.com/PugarHuda/gadai/main/grok/skills/gadai-credit/SKILL.md | grep -c 'BORROWER`: \*\*required\*\*'   # must print 1
+   ```
+   Also re-check the `FD=` line in both raw files still matches the running tunnel (it did at 2026-09-20 01:19 UTC). The tunnel hostname changes on restart; if it moved, edit `FD=` in both SKILL.md files, push again, and re-run step 0.
+1. **New** in the sidebar (`Cmd/Ctrl+N`) → **Create new Bot** → open the Bot menu → **Edit Profile**. Paste:
+   - **Name:** `Gadai`
+   - **Label / job:** `Creator-fee credit desk`
+   - **Description:** `Quote Gadai USDC credit lines for Bankr (Doppler) tokens on Base, explain the pledge flow, read the Credit Line Board and watch loans. Read-only: never sign, send, transfer or pledge. Ask before any paid x402 call.`
+2. Send the Bot this message (both raw URLs return 200, checked 2026-09-20):
    > Download https://raw.githubusercontent.com/PugarHuda/gadai/main/grok/skills/gadai-credit/SKILL.md and https://raw.githubusercontent.com/PugarHuda/gadai/main/grok/skills/gadai-loan-watch/SKILL.md. Save each one as a skill named after its `name` field (gadai-credit, gadai-loan-watch), keeping the instructions word for word. Then show me both in the / menu.
-3. If a skill does not appear under `/`, open **Marketplace → Your plugins → Manage plugins and skills** and check **Private skills**. (The Bot can also be given the files as chat attachments instead of URLs.)
-4. Optional, for the paid report only: in the Bot's **Secrets**, choose **Add secret**, name it `BANKR_API_KEY`, and paste a Bankr API key whose wallet holds at least $0.02 USDC on Base. The Bankr CLI reads that env var. Never paste the key in chat.
-5. Test: `/gadai-credit quote 0x5f980dcfc4c0fa3911554cf5ab288ed0eb13dba3` (GITLAWB) and `/gadai-credit show the Credit Line Board`.
-6. Routine: send the Bot this message, then use **Test run**:
-   > Every day at 9:00 AM, run the gadai-loan-watch skill for Gadai loan <ID> and post the summary in this conversation. Read-only: never repay, release, sign or contact anyone. If the Gadai desk is unreachable, report the failure instead of using old data. Pause the routine once the loan is RELEASED or CANCELLED.
+3. If a skill does not appear under `/`, open **Marketplace → Your plugins → Manage plugins and skills** → **Private skills**. (The two files can also be dragged into the chat as attachments instead.)
+4. **Test it** — paste this, and the answer should be `eligible: true`, about **$235 USDC**:
+   > /gadai-credit quote token 0x5f980dcfc4c0fa3911554cf5ab288ed0eb13dba3 borrower 0xfdb6430011f6E4796Ca380CB39e47975b1f876Bf
+   
+   Then: `/gadai-credit show the Credit Line Board` (105 agents, 14 eligible, $856.57 total).
+5. **Routine** — send this, then **Test run** (desktop only):
+   > Every day at 9:00 AM, run the gadai-loan-watch skill for Gadai loan 1 and post the summary in this conversation. Read-only: never repay, release, sign or contact anyone. If the Gadai desk is unreachable, report the failure instead of using old data. Pause the routine once the loan is RELEASED or CANCELLED.
 
-   The demo desk has loan `1` (GITLAWB, RELEASED, on the fork), so `<ID>` = 1 works for a test run, though the routine would pause at once because the loan is already released. For a live one, create a loan first (fork demo, docs/RUNBOOK.md).
-7. Share: go to **Share → Create template → Public link → Copy link**. That link is the submission artifact for the Grok Bot track. Check the template has no secrets in it first. Secrets are not part of the Bot description, but check anyway.
+   Loan `1` (GITLAWB) exists and is `RELEASED`, so a test run returns a real summary; a live routine would pause immediately, which is the correct behaviour. For an open loan, create one first (docs/RUNBOOK.md).
+6. **Publish the template** — **Share menu** → **Create template** → wait for it to build → set **Public link** (not Team-only; Enterprise accounts default to Team-only) → **Copy link**. **That link is the Grok Bot track deliverable.**
+7. Before sending it: **View template details** and confirm no secrets. The template carries identity, description, skills and routines — the skills contain no keys, and `BANKR_API_KEY` lives in Bot Secrets, which are not shared. Check anyway.
+
+**Optional, paid report only** (step 3c of `gadai-credit`): Bot → **Secrets** → **Add secret** → name `BANKR_API_KEY`, value a Bankr API key whose wallet holds ≥ $0.02 USDC on Base. The Bankr CLI reads that env var. Never paste it in chat. Skip this and everything else still works.
 
 ### Alternative: Cursor team marketplace (Cursor Teams plan only, untested for Grok Bot)
 

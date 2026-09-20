@@ -32,7 +32,7 @@ For status checks on an existing loan, use the `gadai-loan-watch` skill.
 ## 2. Required inputs and access
 
 - `TOKEN`: a Base token address (0x + 40 hex). Ask for it if it is missing.
-- `BORROWER` (optional): the wallet that is currently the token's fee beneficiary. The quote runs the on-chain checks only when it is given.
+- `BORROWER`: **required** for 3a. The wallet that is currently the token's fee beneficiary. Without it the desk answers `400 {"error":"borrower must be a 0x address"}`. If the user does not know it, read it from the board (3d): the `beneficiary` field of the row whose `token` matches. The paid report (3c) does take a bare token.
 - No login is needed for sections 3a, 3b and 3d. They are public GET requests.
 - For the paid report (3c) only: a Bot secret named `BANKR_API_KEY` (Bot → Secrets → Add secret) holding a Bankr API key whose wallet has at least $0.02 USDC on Base. The Bankr CLI reads that variable. Never ask for the key in chat.
 
@@ -51,7 +51,11 @@ If `demoFork` is `true`, tell the user: "This Gadai desk is a **DEMO fork of Bas
 
 ```bash
 curl -s "$FD/api/quote?token=$TOKEN&borrower=$BORROWER"
+# both params are required; a missing or malformed one is 400 {"error":"... must be a 0x address"}
 ```
+
+Worked example (live demo pair, returns `eligible: true`):
+`token=0x5f980dcfc4c0fa3911554cf5ab288ed0eb13dba3` (GITLAWB) `borrower=0xfdb6430011f6E4796Ca380CB39e47975b1f876Bf`.
 
 The response has `eligible`, `reasons[]`, `inputs` (`symbol`, `sharePct`, `weth30d`, `claimableWethRaw`, `ethUsd`, `poolId`, `feesManager`), `terms` (`maxPrincipalRaw`, `principalRaw`, `faceValueRaw`, `feeRatePct`, `floorPrice`, `termDays`, `drawLimitRaw`) and `formula`.
 
