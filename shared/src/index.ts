@@ -284,7 +284,7 @@ export type LoanEventKind =
   | "applied" | "memo" | "declined" | "loan_created" | "pledged" | "auction_started" | "bid"
   | "disbursed" | "collected" | "swapped" | "flash_twap" | "token_leg_sent" | "repaid" | "draw"
   | "desk_paid" | "released" | "cancelled" | "error" | "erc8004_registered" | "erc8004_feedback" | "erc8004_metadata"
-  | "risk_check";
+  | "risk_check" | "dine_payment";
 
 /** Third-party token risk verdict the desk BUYS over x402 (Bankr x402 Cloud honeypot-check, paid by the Dynamic agent wallet
  *  in real USDC on Base mainnet, even in DEMO_FORK). verdict null = not purchased; `note` says why. Never synthesized. */
@@ -566,7 +566,32 @@ export type DineSource = { fetchedAt: string; stale: boolean };
 export type DinePlaceList = { places: DinePlace[]; total: number; page: number; pageSize: number; regions: string[]; cuisines: string[]; source: DineSource };
 export type DinePlaceDetail = { place: DinePlace; hours: DineHour[] | null; openNow: boolean | null; specials: DineSpecial[]; challenges: DineChallenge[]; siblings: DinePlace[]; source: DineSource; errors: string[] };
 
-export type DinePayments = { enabled: false; reason: string };
+/** Whether this Flynet app may move FLY. `state` comes from the app's own `allowed_scopes` (GET /flynet/v1/app), never a guess:
+ *  no payment scope = Blackbird has not approved payments for the app yet, so /payment_intents answers 403. */
+export type DinePayments = { state: "enabled" | "pending-review" | "unknown"; enabled: boolean; maxFly: number; reason: string };
+/** A Flynet FLY payment intent the agent created for a loan, mirrored in the agent db. */
+export type DinePayment = {
+  intentId: string;
+  loanId: number;
+  status: string; // Flynet PaymentIntent.status: pending | paid | canceled | refunded | expired
+  amountWei: string; // Money.value — FLY base units, 18 decimals
+  memberId: string; // customer_user_id (the member's `sub`)
+  restaurantId: string | null;
+  description: string;
+  idempotencyKey: string;
+  createdAt: string;
+  updatedAt: string;
+};
+/** App-merchant FLY balance (GET /flynet/v1/balance, read:balance). null = the read failed; the reason is in `notes`. */
+export type DineFlyBalance = { flyWei: string; usdCents: number } | null;
+/** Result of POST /api/loans/:id/dine/pay (and the refund/cancel routes): the real intent plus the merchant balance either side. */
+export type DinePayResult = {
+  payment: DinePayment;
+  intent: unknown; // Flynet's PaymentIntent, verbatim
+  balanceBefore: DineFlyBalance;
+  balanceAfter: DineFlyBalance;
+  notes: string[];
+};
 export type DineMemberLogin = { available: boolean; reason: string | null };
 export type FlynetStatus = { env: string; appName: string | null; allowedScopes: string[]; catalog: { count: number; fetchedAt: string | null }; memberLogin: DineMemberLogin; payments: DinePayments };
 /** GET /api/loans/:id/dine */

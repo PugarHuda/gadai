@@ -2,20 +2,22 @@
 // What the production app "hackathon 2" may do (GET /app allowed_scopes, 2026-09-19): read restaurants/locations/hours,
 // specials, challenges, the anonymized network check-in feed, its own balance, and, with member OAuth, profile/wallets/
 // check-ins/memberships/tags plus write:save_to_list (granted, but no endpoint is published for it; see SAVE_TO_LIST).
-// It has NO write:rewards and no payment-intent access, so this module never moves FLY or USDC: the loan's drawLimit is a
-// planning budget, and the member pays in the Blackbird app. See the DECISION line in docs/COORDINATION.md.
+// It has NO write:rewards, and its allowed_scopes carry no payment scope (payments are PENDING BLACKBIRD REVIEW), so
+// POST /payment_intents answers 403 today. The checkout below is wired for real anyway and reports that 403 verbatim.
 import { createHash, randomBytes } from "node:crypto";
 import { HTTPException } from "hono/http-exception";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { Context, Hono } from "hono";
 import { AUTH_BASE_BY_ENV, FlynetOAuth } from "@flynetdev/core";
 import {
   API, flynetLinkMessage,
-  type DineChallenge, type DineHour, type DinePassport, type DinePick, type DinePlace, type DinePlaceDetail, type DinePlaceList,
+  type DineChallenge, type DineFlyBalance, type DineHour, type DinePassport, type DinePayment, type DinePayments, type DinePayResult,
+  type DinePick, type DinePlace, type DinePlaceDetail, type DinePlaceList,
   type DineMembership, type DinePlan, type DinePlanRequest, type DineSource, type DineSpecial, type DineState, type DineTrending, type FlynetStatus, type Hex, type Loan,
 } from "@feedesk/shared";
 import type { Ctx } from "../ctx.ts";
 import { jsonBody, need, opt, posInt } from "../ctx.ts";
-import { getLoan, now, useNonce } from "../db/index.ts";
+import { addEvent, getLoan, now, useNonce } from "../db/index.ts";
 import { llmChat, LlmNoCredits } from "../bankr/index.ts";
 
 type R = Record<string, any>;
@@ -24,10 +26,20 @@ type R = Record<string, any>;
 export const SCOPES = ["read:profile", "read:wallets", "read:user_checkins", "read:memberships", "read:tags", "write:save_to_list"];
 const env = () => (opt("FLYNET_ENV", "staging") === "production" ? "production" : "staging");
 const base = () => (env() === "production" ? API.FLYNET_PROD : API.FLYNET_STAGING);
-export const PAYMENTS = {
-  enabled: false as const,
-  reason: "Paying with FLY needs Blackbird partner access (write:rewards / payment intents). This app is read-only, so Gadai books no draw and moves no FLY or USDC: the member pays at the venue in the Blackbird app.",
-};
+/** Cap on one FLY charge (FLY, not wei). Deliberately small; the lead raises it once a real payment has run. */
+export const maxPayFly = () => { const n = Number(opt("FLYNET_MAX_PAY_FLY", "5")); return Number.isFinite(n) && n > 0 ? n : 5; };
+/** Whether this app may move FLY, read from its OWN `allowed_scopes` (GET /app) — never assumed, never invented.
+ *  "hackathon 2" holds no payment scope today, which is Blackbird's "payments pending review" state. */
+export function paymentsFrom(app: { name?: string; allowed_scopes?: string[] } | null): DinePayments {
+  const maxFly = maxPayFly();
+  if (!Array.isArray(app?.allowed_scopes))
+    return { state: "unknown", enabled: false, maxFly, reason: "Flynet did not answer GET /app, so whether this app may charge FLY is unknown right now. Paying will report exactly what Flynet answers." };
+  const pay = app.allowed_scopes.filter((s) => /payment/i.test(s));
+  const name = app.name || "this app";
+  return pay.length
+    ? { state: "enabled", enabled: true, maxFly, reason: `Blackbird granted “${name}” ${pay.join(" ")}. FLY checkout is live, capped at ${maxFly} FLY per charge (FLYNET_MAX_PAY_FLY).` }
+    : { state: "pending-review", enabled: false, maxFly, reason: `Payments are pending Blackbird review for the app “${name}”: its allowed_scopes carry no payment scope, so Flynet answers 403 on POST /payment_intents. Gadai still sends the real request and shows you the real 403 — it never fakes a paid intent.` };
+}
 // ponytail: write:save_to_list is granted to the app, but no save-to-list route exists in the Flynet OpenAPI 1.0, @flynetdev/core
 // 0.8.1, @flynetdev/mcp 0.2.0, @flynetdev/skills 0.1.0 or the docs MCP (all checked 2026-09-19), and SKILL.md forbids inventing
 // endpoints. Set the documented path + body here once Blackbird (support@blackbird.xyz) publishes it; the route below is ready.
@@ -39,22 +51,26 @@ const TTL = { catalog: 6 * 3600_000, hours: 6 * 3600_000, offers: 3600_000, app:
 
 // ─── Flynet HTTP (API key: `x-api-key`; member routes: Bearer) ───
 class FlyError extends Error { status: number; constructor(status: number, msg: string) { super(msg); this.status = status; } }
-async function flyGet<T = R>(path: string, bearer?: string, timeoutMs = 15_000, tries = 0): Promise<T> {
-  const headers: Record<string, string> = bearer ? { authorization: `Bearer ${bearer}` } : { "x-api-key": need("FLYNET_API_KEY") };
-  const r = await fetch(base() + path, { headers, signal: AbortSignal.timeout(timeoutMs) })
+/** One Flynet call. `bearer` = member OAuth token (payment routes reject API keys); otherwise the app's `x-api-key`. */
+async function flyCall<T = R>(path: string, o: { method?: string; bearer?: string; body?: unknown; timeoutMs?: number } = {}, tries = 0): Promise<T> {
+  const method = o.method ?? "GET";
+  const headers: Record<string, string> = o.bearer ? { authorization: `Bearer ${o.bearer}` } : { "x-api-key": need("FLYNET_API_KEY") };
+  if (o.body !== undefined) headers["content-type"] = "application/json";
+  const r = await fetch(base() + path, { method, headers, body: o.body === undefined ? undefined : JSON.stringify(o.body), signal: AbortSignal.timeout(o.timeoutMs ?? 15_000) })
     .catch((e) => { throw new FlyError(0, `Flynet unreachable (${(e as Error).message})`); });
   const text = await r.text();
   if (r.status === 429 && tries < 3) { // Flynet rate limit ("Retry after N seconds"): back off up to 3 times, then give up loudly
     await new Promise((ok) => setTimeout(ok, Math.min(5, Number(r.headers.get("retry-after")) || 1) * 1000 * (tries + 1)));
-    return flyGet<T>(path, bearer, timeoutMs, tries + 1);
+    return flyCall<T>(path, o, tries + 1); // safe to replay: create carries an idempotency_key, confirm/cancel/refund are state-based
   }
   if (!r.ok) {
     let why = r.headers.get("www-authenticate") ?? "";
     try { const j = JSON.parse(text); why = j.error?.message ?? j.message ?? j.error_description ?? why; } catch { /* empty 401 body */ }
-    throw new FlyError(r.status, `Flynet GET ${path.split("?")[0]} → ${r.status}${why ? ` ${why}` : ""}`);
+    throw new FlyError(r.status, `Flynet ${method} ${path.split("?")[0]} → ${r.status}${why ? ` ${why}` : ""}`);
   }
   return JSON.parse(text) as T;
 }
+const flyGet = <T = R>(path: string, bearer?: string, timeoutMs?: number): Promise<T> => flyCall<T>(path, { bearer, timeoutMs });
 /** Flynet failure → HTTP: its 404 stays 404, everything else is a 502 that names Flynet's status. */
 const toHttp = (e: unknown): never => {
   if (e instanceof HTTPException) throw e;
@@ -377,13 +393,15 @@ function memberSession(ctx: Ctx, c: Context, loanId: number, bodySession?: unkno
 }
 const memberCache = new Map<number, { at: number; p: Promise<Member> }>(); // personal data: memory only, 5 min
 type Member = { firstName: string; tier: string | null; wallets: R; checkIns: R[]; scopes: string[] | null; memberships: DineMembership[] | null; tags: R[] | null; notes: string[] };
+/** Payload claims of a Flynet access token, or null if it is not a readable JWT (Blackbird may issue an opaque token). */
+const claims = (token: string): R | null => { try { return JSON.parse(Buffer.from(token.split(".")[1]!, "base64url").toString()); } catch { return null; } };
 /** Scopes on a Flynet access token: its JWT `scope` claim (docs: concepts/oauth). null if the token is not a readable JWT. */
 export function tokenScopes(token: string): string[] | null {
-  try {
-    const sc = JSON.parse(Buffer.from(token.split(".")[1]!, "base64url").toString()).scope;
-    return typeof sc === "string" ? sc.split(" ").filter(Boolean) : null;
-  } catch { return null; }
+  const sc = claims(token)?.scope;
+  return typeof sc === "string" ? sc.split(" ").filter(Boolean) : null;
 }
+/** The member's Flynet user id: the token's `sub`. This is `customer_user_id` / `user_id` on the payment routes. */
+export const tokenSub = (token: string): string | null => { const s = claims(token)?.sub; return typeof s === "string" && s ? s : null; };
 export const toMembership = (m: R): DineMembership => ({
   restaurantId: m.restaurant_id, tier: m.membership_tier?.name || "Member", checkIns: Number(m.check_in_count ?? 0),
   lastCheckIn: m.last_check_in_date ?? null, art: m.membership_tier?.asset?.web_2x ?? m.membership_tier?.asset?.preview_1x ?? null,
@@ -456,14 +474,112 @@ export async function passport(ctx: Ctx, loanId: number): Promise<DinePassport> 
   };
 }
 
+// ─── FLY checkout (docs: concepts/payments; OpenAPI /payment_intents — create → confirm, POST cancel/refund, all member Bearer) ───
+// Nothing here is speculative: every field below is required (or documented optional) on CreatePaymentIntentRequest /
+// ConfirmPaymentIntentRequestBody in @flynetdev/core 0.8.1. `flynet_merchant_id` is omitted on purpose, which credits this
+// app's own merchant — the same account GET /balance reports, so before/after is comparable.
+const PAY_DDL = `CREATE TABLE IF NOT EXISTS flynet_payments (intent_id TEXT PRIMARY KEY, loan_id INTEGER NOT NULL,
+  member_id TEXT NOT NULL, restaurant_id TEXT, amount_wei TEXT NOT NULL, description TEXT NOT NULL,
+  idempotency_key TEXT NOT NULL, status TEXT NOT NULL, intent_json TEXT NOT NULL,
+  created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`;
+const FLY = 10n ** 18n; // FLY Money.value is a base-unit string with 18 decimals (OpenAPI: "never parse with a float")
+export const flyText = (wei: bigint) => `${Number((wei * 1000n) / FLY) / 1000}`;
+
+/** `amountWei` → bigint, or 400. Rejects non-digits, 0 and anything over the FLYNET_MAX_PAY_FLY cap. */
+export function payAmount(v: unknown): bigint {
+  if (typeof v !== "string" || !/^\d{1,30}$/.test(v))
+    throw new HTTPException(400, { message: 'amountWei must be a decimal string of FLY base units (18 decimals), e.g. "1000000000000000000" for 1 FLY' });
+  const wei = BigInt(v);
+  if (wei <= 0n) throw new HTTPException(400, { message: "amountWei must be greater than 0" });
+  const cap = (BigInt(Math.round(maxPayFly() * 1e6)) * FLY) / 1_000_000n;
+  if (wei > cap) throw new HTTPException(400, { message: `amountWei is over this desk's ${maxPayFly()} FLY cap for one charge (FLYNET_MAX_PAY_FLY); you asked for ${flyText(wei)} FLY` });
+  return wei;
+}
+/** Idempotency key: stable for one loan + restaurant + amount within the same UTC minute, so a double-click or a 429 retry
+ *  replays the same intent (docs: unique per (flynet_merchant_id, idempotency_key); a replay returns 200 with that intent). */
+export const payIdempotencyKey = (loanId: number, restaurantId: string | null, amountWei: string, at = new Date()): string =>
+  `gadai-${loanId}-${createHash("sha256").update([loanId, restaurantId ?? "", amountWei, at.toISOString().slice(0, 16)].join("|")).digest("hex").slice(0, 32)}`;
+
+/** App-merchant FLY balance (GET /balance, api key, read:balance). A failure is a note, never a fake number. */
+const flyBalance = (notes: string[]): Promise<DineFlyBalance> => flyGet("/balance")
+  .then((b) => ({ flyWei: String(b.balance?.value ?? "0"), usdCents: Math.round(Number(b.balance_usd?.value ?? 0)) }))
+  .catch((e) => { notes.push(`App merchant balance unavailable: ${(e as Error).message}`); return null; });
+
+type PayMeta = { memberId: string; restaurantId: string | null; description: string; idempotencyKey: string; amountWei: string };
+const toPayment = (r: R): DinePayment => ({
+  intentId: r.intent_id, loanId: Number(r.loan_id), status: r.status, amountWei: r.amount_wei, memberId: r.member_id,
+  restaurantId: r.restaurant_id ?? null, description: r.description, idempotencyKey: r.idempotency_key,
+  createdAt: r.created_at, updatedAt: r.updated_at,
+});
+function savePayment(ctx: Ctx, loanId: number, m: PayMeta, intent: R): DinePayment {
+  ctx.db.prepare(`INSERT INTO flynet_payments (intent_id,loan_id,member_id,restaurant_id,amount_wei,description,idempotency_key,status,intent_json,created_at,updated_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(intent_id) DO UPDATE SET status=excluded.status, intent_json=excluded.intent_json, updated_at=excluded.updated_at`)
+    .run(String(intent.id), loanId, m.memberId, m.restaurantId, m.amountWei, m.description, m.idempotencyKey, String(intent.status ?? "unknown"), JSON.stringify(intent), now(), now());
+  return toPayment(ctx.db.prepare("SELECT * FROM flynet_payments WHERE intent_id = ?").get(String(intent.id)) as R);
+}
+export const listPayments = (ctx: Ctx, loanId: number): DinePayment[] =>
+  (ctx.db.prepare("SELECT * FROM flynet_payments WHERE loan_id = ? ORDER BY created_at DESC, rowid DESC").all(loanId) as R[]).map(toPayment);
+
+/** A Flynet payment failure, told straight: the loan event records it and the HTTP status keeps Flynet's own (403 stays 403). */
+function payFailed(ctx: Ctx, loanId: number, action: string, e: unknown, data: R): HTTPException {
+  if (e instanceof HTTPException) return e;
+  const st = (e as FlyError).status, message = (e as Error).message;
+  addEvent(ctx.db, loanId, "dine_payment", null, { action, ok: false, status: st, error: message, ...data });
+  return new HTTPException(([400, 401, 403, 404, 409].includes(st) ? st : 502) as ContentfulStatusCode, { message });
+}
+const payerOf = (ctx: Ctx, loanId: number, token: string) => tokenSub(token) ?? getLink(ctx, loanId)!.member_id;
+
+/** Create then confirm one FLY payment intent. Returns the real intent plus the merchant balance on either side. */
+export async function pay(ctx: Ctx, loanId: number, wei: bigint, restaurantId: string | null, description: string): Promise<DinePayResult> {
+  const token = await accessToken(ctx, loanId);
+  const m: PayMeta = { memberId: payerOf(ctx, loanId, token), restaurantId, description, amountWei: String(wei), idempotencyKey: "" };
+  m.idempotencyKey = payIdempotencyKey(loanId, restaurantId, m.amountWei);
+  const notes: string[] = [];
+  const balanceBefore = await flyBalance(notes);
+  let intent: R;
+  try {
+    intent = await flyCall("/payment_intents", { method: "POST", bearer: token, body: {
+      customer_user_id: m.memberId, amount: { value: m.amountWei, currency: "FLY" }, description, idempotency_key: m.idempotencyKey,
+      metadata: { source: "gadai-dining-concierge", loan_id: loanId, restaurant_id: restaurantId },
+    } });
+  } catch (e) { throw payFailed(ctx, loanId, "create", e, { amountWei: m.amountWei, restaurantId, idempotencyKey: m.idempotencyKey }); }
+  savePayment(ctx, loanId, m, intent); // persisted while still `pending`, so a failed confirm leaves a record, not a hole
+  try {
+    intent = await flyCall(`/payment_intents/${encodeURIComponent(String(intent.id))}/confirm`, { method: "POST", bearer: token, body: { user_id: m.memberId } });
+  } catch (e) { throw payFailed(ctx, loanId, "confirm", e, { intentId: intent.id, amountWei: m.amountWei, restaurantId }); }
+  const payment = savePayment(ctx, loanId, m, intent);
+  const balanceAfter = await flyBalance(notes);
+  addEvent(ctx.db, loanId, "dine_payment", null, { action: "pay", ok: true, intentId: payment.intentId, status: payment.status, amountWei: m.amountWei, memberId: m.memberId, restaurantId, idempotencyKey: m.idempotencyKey, balanceBefore, balanceAfter });
+  return { payment, intent, balanceBefore, balanceAfter, notes };
+}
+
+/** Full refund (v1 has no partial) or cancel of an intent this loan created. Flynet takes POST for both. */
+export async function payAction(ctx: Ctx, loanId: number, intentId: string, action: "refund" | "cancel"): Promise<DinePayResult> {
+  const row = ctx.db.prepare("SELECT * FROM flynet_payments WHERE intent_id = ? AND loan_id = ?").get(intentId, loanId) as R | undefined;
+  if (!row) throw new HTTPException(404, { message: `loan ${loanId} has no payment intent ${intentId}` });
+  const prev = toPayment(row);
+  const token = await accessToken(ctx, loanId);
+  const m: PayMeta = { memberId: prev.memberId, restaurantId: prev.restaurantId, description: prev.description, idempotencyKey: prev.idempotencyKey, amountWei: prev.amountWei };
+  const notes: string[] = [];
+  const balanceBefore = await flyBalance(notes);
+  let intent: R;
+  try { intent = await flyCall(`/payment_intents/${encodeURIComponent(intentId)}/${action}`, { method: "POST", bearer: token }); }
+  catch (e) { throw payFailed(ctx, loanId, action, e, { intentId, amountWei: prev.amountWei }); }
+  const payment = savePayment(ctx, loanId, m, intent);
+  const balanceAfter = await flyBalance(notes);
+  addEvent(ctx.db, loanId, "dine_payment", null, { action, ok: true, intentId, was: prev.status, status: payment.status, amountWei: prev.amountWei, balanceBefore, balanceAfter });
+  return { payment, intent, balanceBefore, balanceAfter, notes };
+}
+
 // ─── public reads ───
+const appInfo = (ctx: Ctx) => cached(ctx, "app", TTL.app, () => flyGet("/app")).then((c) => c.v as R).catch(() => null);
 export async function status(ctx: Ctx): Promise<FlynetStatus> {
-  const app = await cached(ctx, "app", TTL.app, () => flyGet("/app")).catch(() => null);
+  const app = await appInfo(ctx);
   const cat = mem.get("catalog");
   return {
-    env: env(), appName: (app?.v as R)?.name ?? null, allowedScopes: (app?.v as R)?.allowed_scopes ?? [],
+    env: env(), appName: app?.name ?? null, allowedScopes: app?.allowed_scopes ?? [],
     catalog: { count: (cat?.v as unknown[] | undefined)?.length ?? 0, fetchedAt: cat ? new Date(cat.at).toISOString() : null },
-    memberLogin: memberLogin(), payments: PAYMENTS,
+    memberLogin: memberLogin(), payments: paymentsFrom(app as never),
   };
 }
 
@@ -608,9 +724,10 @@ async function llmRank(req: DinePlanRequest, picks: DinePick[], budgetUsd: numbe
   return [...new Map(out.map((x) => [x.place.id, x])).values()];
 }
 
-export function dineState(ctx: Ctx, loanId: number): DineState {
+export async function dineState(ctx: Ctx, loanId: number): Promise<DineState> {
   const loan = loanOr404(ctx, loanId);
-  return { loanId, symbol: loan.symbol, loanStatus: loan.status, budgetRaw: budgetRaw(loan), linked: !!getLink(ctx, loanId), memberLogin: memberLogin(), payments: PAYMENTS, saveToList: SAVE_TO_LIST };
+  return { loanId, symbol: loan.symbol, loanStatus: loan.status, budgetRaw: budgetRaw(loan), linked: !!getLink(ctx, loanId),
+    memberLogin: memberLogin(), payments: paymentsFrom(await appInfo(ctx) as never), saveToList: SAVE_TO_LIST };
 }
 
 // ─── routes ───
@@ -625,6 +742,7 @@ function listQuery(c: Context): ListQuery {
 }
 
 export function register(app: Hono, ctx: Ctx) {
+  ctx.db.exec(PAY_DDL); // this module owns flynet_payments (agent-core owns schema.sql)
   app.get("/api/flynet/status", async (c) => c.json(await status(ctx)));
   app.get("/api/flynet/restaurants", async (c) => {
     const q = listQuery(c);
@@ -639,7 +757,7 @@ export function register(app: Hono, ctx: Ctx) {
     if (region && region.length > 80) throw new HTTPException(400, { message: "region too long" });
     return c.json(await trending(ctx, region));
   });
-  app.get("/api/loans/:id/dine", (c) => c.json(dineState(ctx, posInt(c.req.param("id"), "loan id"))));
+  app.get("/api/loans/:id/dine", async (c) => c.json(await dineState(ctx, posInt(c.req.param("id"), "loan id"))));
   app.post("/api/loans/:id/dine/plan", async (c) => {
     const loanId = posInt(c.req.param("id"), "loan id");
     const req = validatePlan(await jsonBody(c));
@@ -667,6 +785,36 @@ export function register(app: Hono, ctx: Ctx) {
     if (!SAVE_TO_LIST.available) throw new HTTPException(501, { message: SAVE_TO_LIST.reason });
     return c.json({ ok: true }); // unreachable until SAVE_TO_LIST names the documented endpoint
   });
+  // FLY checkout. These four hit Flynet's real money routes; the member's OAuth token is the only thing that may.
+  app.post("/api/loans/:id/dine/pay", async (c) => {
+    const { loanId, b } = await memberPost(c);
+    const wei = payAmount(b.amountWei);
+    if (b.restaurantId != null && (typeof b.restaurantId !== "string" || !UUID.test(b.restaurantId)))
+      throw new HTTPException(400, { message: "restaurantId must be a Flynet restaurant or location UUID" });
+    if (b.description != null && (typeof b.description !== "string" || b.description.length > 200))
+      throw new HTTPException(400, { message: "description must be a string of at most 200 characters" });
+    const description = (b.description as string | undefined)?.trim() || `Gadai dining concierge — loan #${loanId}`;
+    return c.json(await pay(ctx, loanId, wei, (b.restaurantId as string | undefined) ?? null, description));
+  });
+  /** Refund/cancel take the member session the same way as pay: body `session`, `x-flynet-session` or `?session=`. */
+  const payOp = async (c: Context, action: "refund" | "cancel") => {
+    const loanId = posInt(c.req.param("id"), "loan id");
+    loanOr404(ctx, loanId);
+    const b = await jsonBody(c, true);
+    if (!memberSession(ctx, c, loanId, b.session)) throw new HTTPException(401, { message: "Blackbird member session required (log in with Blackbird on this loan's dine page)" });
+    const intentId = c.req.param("intentId") ?? "";
+    if (!/^[A-Za-z0-9_-]{1,64}$/.test(intentId)) throw new HTTPException(400, { message: "intentId must be a Flynet payment intent id" });
+    return c.json(await payAction(ctx, loanId, intentId, action));
+  };
+  app.post("/api/loans/:id/dine/pay/:intentId/refund", (c) => payOp(c, "refund"));
+  app.delete("/api/loans/:id/dine/pay/:intentId", (c) => payOp(c, "cancel"));
+  app.get("/api/loans/:id/dine/payments", (c) => {
+    const loanId = posInt(c.req.param("id"), "loan id");
+    loanOr404(ctx, loanId);
+    if (!memberSession(ctx, c, loanId)) throw new HTTPException(401, { message: "Blackbird member session required (log in with Blackbird on this loan's dine page)" });
+    return c.json(listPayments(ctx, loanId));
+  });
+
   app.delete("/api/loans/:id/dine/member", async (c) => {
     const loanId = posInt(c.req.param("id"), "loan id");
     if (!memberSession(ctx, c, loanId)) throw new HTTPException(401, { message: "Blackbird member session required" });

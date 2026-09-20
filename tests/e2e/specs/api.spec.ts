@@ -291,13 +291,15 @@ test.describe("agent API: social (Follow the Desk)", () => {
 });
 
 test.describe("agent API: Flynet (dine concierge)", () => {
-  test("GET /api/flynet/status: read-only app, payments disabled with a reason", async ({ request }) => {
+  test("GET /api/flynet/status: app scopes and the live FLY payment state", async ({ request }) => {
     const r = await request.get(`${AGENT}/api/flynet/status`);
     expect(r.status()).toBe(200);
     const s = await r.json();
     expect(Array.isArray(s.allowedScopes)).toBeTruthy();
-    expect(s.payments.enabled).toBe(false);
-    expect(s.payments.reason).toMatch(/FLY/);
+    expect(["enabled", "pending-review", "unknown"]).toContain(s.payments.state); // derived from the app's own allowed_scopes
+    expect(s.payments.enabled).toBe(s.payments.state === "enabled");
+    expect(typeof s.payments.maxFly).toBe("number");
+    expect(s.payments.reason).toMatch(/FLY|payment/i);
     expect(typeof s.memberLogin.available).toBe("boolean");
   });
 
@@ -306,8 +308,8 @@ test.describe("agent API: Flynet (dine concierge)", () => {
     expect(d.loanId).toBe(1);
     expect(d.budgetRaw).toMatch(/^\d+$/);
     expect(typeof d.linked).toBe("boolean");
-    expect(d.payments.enabled).toBe(false);
-    expect(d.payments.reason).toMatch(/moves no FLY or USDC/);
+    expect(["enabled", "pending-review", "unknown"]).toContain(d.payments.state);
+    expect(d.payments.reason).toMatch(/FLY|payment/i);
     expect(d.saveToList.available).toBe(false);
     expect(d.saveToList.reason).toMatch(/nothing was saved/);
     expect(d).not.toHaveProperty("draws");

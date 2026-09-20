@@ -207,3 +207,51 @@ Then:
    - Asking the concierge gives a plan whose header says "personalized with your check-ins and membership cards".
    - Cards show "your card: <tier>" where the member holds a card.
    - Each card has a disabled "Save to my Blackbird list" button with the reason.
+
+## 11. [flynet-pay] FLY checkout for the dining concierge (code complete 2026-09-20, blocked on Blackbird review)
+
+Written from the docs only: `docs.flynet.org/concepts/payments.md`, the OpenAPI 1.0 `/payment_intents` paths, and the
+`Payments` SDK in `@flynetdev/core@0.8.1`. **No payment endpoint has been called from this repo. Not once, not as a probe.**
+
+### What the docs say (the fields are copied, not guessed)
+- Lifecycle: `pending` --confirm--> `paid` --refund--> `refunded`; `pending` --cancel--> `canceled`; `expires_at` elapsing gives `expired`.
+- **Every payment-intent route takes an OAuth access token. "API keys are not accepted on payment routes."** So the charge runs on the *member's* Bearer token, not the app key.
+- `POST /payment_intents` body (`CreatePaymentIntentRequest`): `customer_user_id`, `amount` (`Money` = `{value, currency:"FLY"}`, `value` is an 18-decimal base-unit string), `description`, `idempotency_key`; optional `flynet_merchant_id`, `expires_at`, `metadata`. **`flynet_merchant_id` is deliberately omitted**, which credits this app's own merchant — the same account `GET /balance` reports, so before/after is comparable.
+- `POST /payment_intents/{id}/confirm` body: `{ "user_id": "<uuid>" }`. It transfers FLY from the customer's wallet; v1 never card-funds or auto-loads, so the member must already hold the FLY. Not enough → `400 payment0030`.
+- `POST /payment_intents/{id}/cancel` and `.../refund` take no body. Refund is **full only** in v1.
+- Idempotency is per `(flynet_merchant_id, idempotency_key)`: first create is `201`, a replay is `200` with the same intent. Confirm/cancel/refund are state-based, so no key.
+- `GET /balance` is the one API-key call here (`read:balance`). FLY is `balance.value` (18 decimals) and `balance_usd.value` is integer cents.
+
+### Routes added (`agent/src/flynet/index.ts`)
+| route | does |
+| --- | --- |
+| `POST /api/loans/:id/dine/pay` | `{session, amountWei, restaurantId?, description?}` → create then confirm, persist, event, returns the intent + `/balance` before and after |
+| `POST /api/loans/:id/dine/pay/:intentId/refund` | full refund of an intent this loan created |
+| `DELETE /api/loans/:id/dine/pay/:intentId` | cancel (maps to Flynet's `POST .../cancel`) |
+| `GET /api/loans/:id/dine/payments` | the loan's intents from the agent db |
+
+Guards, in the order they fire: unknown loan → **404**; no or wrong member session → **401**; `amountWei` not a positive decimal string of base units → **400**; over `FLYNET_MAX_PAY_FLY` (default 5 FLY) → **400**; bad `restaurantId` / over-long `description` → **400**. None of these touch the network. Flynet's own status is preserved (400/401/403/404/409 pass through; anything else is a 502 naming Flynet), so **the 403 is shown word for word** and a failed create is recorded as a `dine_payment` loan event with `ok:false`.
+
+`customer_user_id` / `user_id` is the member token's `sub` (`tokenSub`), falling back to the id stored at login. Persistence is the module's own `flynet_payments` table (created in `register`, so `schema.sql` stays agent-core's). Every attempt writes a `dine_payment` loan event.
+
+### Status: payments are PENDING BLACKBIRD REVIEW
+`DinePayments` is now `{state, enabled, maxFly, reason}` and is derived from the app's **own** `allowed_scopes` (`GET /flynet/v1/app`), never assumed. "hackathon 2" holds `read:profile read:wallets read:user_checkins read:checkins read:app read:balance read:restaurant_specials read:restaurant_challenges write:save_to_list read:memberships read:tags` — **no payment scope** — so `state = "pending-review"` and `POST /payment_intents` is expected to answer **403**. `GET /api/flynet/status` carries this, and `/dine/[id]` shows it live instead of the old hard-coded "Payment: not enabled" line. The "Pay with FLY" control stays clickable on purpose: it sends the real request and prints Flynet's real 403.
+
+### Human steps for the FIRST REAL PAYMENT (lead + user only; nothing here has ever been run)
+Preconditions: everything in §10's checklist, plus the member account must actually hold FLY (v1 does not fund the wallet), and the agent must run this build with `FLYNET_MAX_PAY_FLY` set to something small (start at `1`).
+
+1. Finish the Blackbird member login of §10 on `https://gadai-six.vercel.app/dine/N`. The passport card must show a **FLY balance greater than the amount you are about to charge**.
+2. Note the starting app-merchant balance: `curl -s -H "x-api-key: $FLYNET_API_KEY" https://api.blackbird.xyz/flynet/v1/balance` → `balance.value` (18 decimals).
+3. Ask the concierge for a shortlist. On any card, the **Pay … FLY with Blackbird** control shows the amount box (default `1`) and, while review is pending, the tag "payments pending Blackbird review" with the reason.
+4. Set the amount to **0.1 or 1 FLY**, click the button and **confirm the browser dialog**. The dialog is the last stop before real FLY moves.
+5. Read the line under the button:
+   - **Expected today:** `Not paid. Flynet said: Flynet POST /payment_intents → 403 forbidden`. That is Blackbird's review gate, reported verbatim. Stop here; there is nothing to refund.
+   - **Once approved:** `Paid: intent <uuid> is paid · −1 FLY (app merchant X → Y)`. The intent id and the balance delta both come from Flynet.
+6. Verify independently, do not trust the page: re-run the `/balance` curl from step 2 (the app merchant should be **up** by the amount) and `GET /api/loans/N/dine/payments?session=<session>` for the stored row (`status: "paid"`). The member's own balance is on the passport card after a reload.
+7. **Refund it.** Click **Refund it** on the same result line, or `curl -X POST -H 'content-type: application/json' -d '{"session":"<session>"}' $AGENT/api/loans/N/dine/pay/<intentId>/refund`. The status must become `refunded` and `/balance` must return to the step-2 figure. A never-confirmed intent is cancelled with `curl -X DELETE …/dine/pay/<intentId>` instead.
+8. `GET /api/loans/N` shows the `dine_payment` events for the whole sequence (pay, then refund), each with the balance either side.
+
+### Still blocked on Blackbird
+- **Payments**: the app has no payment scope, so every `/payment_intents` call 403s. Ask support@blackbird.xyz to approve payments for app `ba3ca201-5d5c-4a51-bbdb-f905df5ca146` ("hackathon 2"); once `allowed_scopes` carries a payment scope, `state` flips to `enabled` on its own — no code change.
+- **Payment scope name**: the docs and the OpenAPI never name one, so the code matches any allowed scope containing `payment` rather than inventing a literal.
+- **No response has ever been captured** from a payment route. `fixtures/payment_intents_openapi.json` is labelled `captured_on: null` and holds OpenAPI shapes only; replace it with real captures after the first payment.

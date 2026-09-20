@@ -7,7 +7,7 @@ import { api } from "@/lib/api";
 import { ENV } from "@/lib/env";
 import { useSigner } from "@/lib/wallet";
 import { Btn, Card, Empty, Err, Loading, Pill, ago, usd, usdcRaw, useLoad } from "@/components/ui";
-import { FlynetNotes, PickCard, PlaceCard, PlaceLinks, SaveToList, SourceLine, Trending } from "@/components/dine";
+import { FlynetNotes, PayWithFly, PickCard, PlaceCard, PlaceLinks, SaveToList, SourceLine, Trending } from "@/components/dine";
 
 const EXAMPLES = ["somewhere in NYC for four, open late, burgers", "cheap drinks in SF", "Italian in Denver, takes reservations", "coffee in the Financial District"];
 const skey = (id: number) => `gadai:flynet-session:${id}`;
@@ -94,9 +94,20 @@ export default function DinePlanner({ params }: { params: Promise<{ id: string }
                   The loan&apos;s <span className="num">drawLimit</span> from underwriting, backed by the pledged creator-fee rights. The concierge plans inside it
                   {d.loanStatus !== "ACTIVE" && `; the loan is ${d.loanStatus}, so this is a plan only`}.
                 </p>
-                <div className="mt-3 rounded-[3px] border border-stamp/30 bg-stamp/5 px-3 py-2 text-xs">
-                  <b className="text-stamp">Payment: not enabled.</b> {d.payments.reason}
-                </div>
+                {/* live state from GET /api/flynet/status (the app's own allowed_scopes), not a hard-coded line */}
+                {(() => {
+                  const p = fs.data?.payments ?? d.payments;
+                  const live = p.state === "enabled";
+                  return (
+                    <div className={`mt-3 rounded-[3px] border px-3 py-2 text-xs ${live ? "border-desk/30 bg-desk/5" : "border-stamp/30 bg-stamp/5"}`}>
+                      <b className={live ? "text-desk" : "text-stamp"}>
+                        FLY payments: {live ? "enabled" : p.state === "pending-review" ? "pending Blackbird review" : "unknown"}.
+                      </b>{" "}
+                      {p.reason} Paying charges the member&apos;s own Blackbird FLY balance; the loan&apos;s{" "}
+                      <span className="num">drawLimit</span> stays a planning budget.
+                    </div>
+                  );
+                })()}
               </Card>
 
               <Card title="Blackbird passport" right="Flynet OAuth + PKCE">
@@ -248,7 +259,14 @@ export default function DinePlanner({ params }: { params: Promise<{ id: string }
                         key={x.place.id}
                         x={x}
                         rank={i + 1}
-                        action={session && pass.data ? <SaveToList loanId={loanId} session={session} restaurantId={x.place.restaurantId} state={d.saveToList} /> : undefined}
+                        action={
+                          session && pass.data ? (
+                            <>
+                              <SaveToList loanId={loanId} session={session} restaurantId={x.place.restaurantId} state={d.saveToList} />
+                              <PayWithFly loanId={loanId} session={session} restaurantId={x.place.restaurantId} name={x.place.name} payments={fs.data?.payments ?? d.payments} />
+                            </>
+                          ) : undefined
+                        }
                       />
                     ))}
                   </div>
